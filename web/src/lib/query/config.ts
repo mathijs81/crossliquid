@@ -1,4 +1,5 @@
 import { QueryClient } from "@tanstack/svelte-query";
+import { hashFn } from "@wagmi/core/query";
 
 export const DEFAULT_STALE_TIME = 5_000;
 export const DEFAULT_WATCH_INTERVAL = 5_000;
@@ -15,9 +16,10 @@ export function createBlockchainQueryClient() {
         refetchOnWindowFocus: false,
         retry: 3,
         retryOnMount: false,
+        queryKeyHashFn: hashFn,
       },
       mutations: {
-        retry: 1,
+        retry: 0,
       },
     },
   });

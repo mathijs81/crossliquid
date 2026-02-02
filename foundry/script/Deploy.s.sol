@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import { Script, console } from "forge-std/Script.sol";
 import { YourContract } from "../src/YourContract.sol";
+import { CrossLiquidVault } from "../src/CrossLiquidVault.sol";
 
 /**
  * @title Deploy
@@ -33,6 +34,9 @@ contract Deploy is Script {
         // Deploy YourContract
         YourContract yourContract = new YourContract(deployer);
         console.log("YourContract deployed at:", address(yourContract));
+
+        CrossLiquidVault crossLiquidVault = new CrossLiquidVault(deployer);
+        console.log("CrossLiquidVault deployed at:", address(crossLiquidVault));
 
         // Stop broadcasting
         vm.stopBroadcast();

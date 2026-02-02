@@ -45,6 +45,7 @@ async function disconnectWallet() {
 }
 
 const baseDestinations = [
+  ["Cross Liquid", "/cross-liquid"],
   ["Debug", "/debug"],
   // Add your other destinations here
 ] as const;

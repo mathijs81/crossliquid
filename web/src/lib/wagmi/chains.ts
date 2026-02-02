@@ -1,6 +1,16 @@
 import type { WagmiChain } from "$lib/utils/types";
 import * as viemChains from "viem/chains";
 
+// Environments:
+// - local: everything on foundry/anvil
+// - prod: vault on base, various other chains for liquidity on uniswap
+
+enum Environment {
+  LOCAL = "local",
+  PROD = "prod",
+}
+export const environment = Environment.LOCAL;
+
 /**
  * Foundry local chain configuration
  */
@@ -69,3 +79,6 @@ export const scaffoldConfig = {
  */
 export const getTargetNetwork = () => scaffoldConfig.targetNetworks[0];
 export const targetChainId = scaffoldConfig.targetNetworks[0].id as WagmiChain;
+
+export const vaultChain =
+  environment === Environment.LOCAL ? foundry : viemChains.base;
