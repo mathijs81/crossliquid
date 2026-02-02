@@ -4,6 +4,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import { Test, console } from "forge-std/Test.sol";
 import { PositionManager } from "../src/PositionManager.sol";
 import { CrossLiquidVault } from "../src/CrossLiquidVault.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// Integration tests for CrossLiquidVault + PositionManager
 contract IntegrationTest is Test {
@@ -22,14 +23,29 @@ contract IntegrationTest is Test {
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
 
-        vm.prank(owner);
-        vault = new CrossLiquidVault(owner);
+        // Deploy vault with proxy
+        CrossLiquidVault vaultImpl = new CrossLiquidVault();
+        ERC1967Proxy vaultProxy = new ERC1967Proxy(
+            address(vaultImpl),
+            abi.encodeCall(CrossLiquidVault.initialize, (owner))
+        );
+        vault = CrossLiquidVault(payable(address(vaultProxy)));
 
-        vm.prank(owner);
-        managerBase = new PositionManager(payable(address(vault)), owner);
+        // Deploy Base manager with proxy
+        PositionManager managerBaseImpl = new PositionManager();
+        ERC1967Proxy managerBaseProxy = new ERC1967Proxy(
+            address(managerBaseImpl),
+            abi.encodeCall(PositionManager.initialize, (payable(address(vault)), owner))
+        );
+        managerBase = PositionManager(payable(address(managerBaseProxy)));
 
-        vm.prank(owner);
-        managerOptimism = new PositionManager(payable(address(0)), owner);
+        // Deploy Optimism manager with proxy (no vault)
+        PositionManager managerOptimismImpl = new PositionManager();
+        ERC1967Proxy managerOptimismProxy = new ERC1967Proxy(
+            address(managerOptimismImpl),
+            abi.encodeCall(PositionManager.initialize, (payable(address(0)), owner))
+        );
+        managerOptimism = PositionManager(payable(address(managerOptimismProxy)));
 
         vm.startPrank(owner);
         vault.setManager(address(managerBase));

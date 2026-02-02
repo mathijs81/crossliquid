@@ -1,24 +1,26 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import { Ownable } from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
-import { ReentrancyGuard } from "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import { IERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { CrossLiquidVault } from "./CrossLiquidVault.sol";
 
 /// PositionManager for CrossLiquid
 /// Keeps funds, deploys them to uniswap, bridges funds to other chains.
-/// Deployed on all chains with same bytecode. On "parent chain", vault is set. 
+/// Deployed on all chains with same bytecode. On "parent chain", vault is set.
 /// On other chains, vault is address(0).
-contract PositionManager is Ownable, ReentrancyGuard {
+contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuard, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     // === State Variables ===
 
     /// Vault contract (only set on parent chain (Base))
-    CrossLiquidVault public immutable vault;
-    bool public immutable isVaultChain;
+    CrossLiquidVault public vault;
+    bool public isVaultChain;
 
     address public operator;
 
@@ -51,9 +53,16 @@ contract PositionManager is Ownable, ReentrancyGuard {
 
     // === Constructor ===
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @param _vault Address of CrossLiquidVault (only on Base, pass address(0) on other chains)
     /// @param initialOwner Owner address (should be same across all chains)
-    constructor(address payable _vault, address initialOwner) Ownable(initialOwner) {
+    function initialize(address payable _vault, address initialOwner) public initializer {
+        __Ownable_init(initialOwner);
+
         vault = CrossLiquidVault(_vault);
         isVaultChain = _vault != address(0);
     }
@@ -176,10 +185,15 @@ contract PositionManager is Ownable, ReentrancyGuard {
         IERC20(token).safeTransfer(to, amount);
     }
 
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
     // === Receive ETH ===
 
     receive() external payable {
         // Accept ETH from any source
         emit ReceivedFromBridge(msg.sender, msg.value);
     }
+
+    /// @dev Storage gap for future upgrades
+    uint256[50] private __gap;
 }

@@ -3,6 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import { Test, console } from "forge-std/Test.sol";
 import { CrossLiquidVault } from "../src/CrossLiquidVault.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract CrossLiquidVaultTest is Test {
     CrossLiquidVault public vault;
@@ -20,8 +21,16 @@ contract CrossLiquidVaultTest is Test {
         user2 = makeAddr("user2");
         manager = makeAddr("manager");
 
-        vm.prank(owner);
-        vault = new CrossLiquidVault(owner);
+        // Deploy implementation
+        CrossLiquidVault vaultImpl = new CrossLiquidVault();
+
+        // Deploy proxy
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(vaultImpl),
+            abi.encodeCall(CrossLiquidVault.initialize, (owner))
+        );
+
+        vault = CrossLiquidVault(payable(address(proxy)));
 
         vm.deal(user1, 100 ether);
         vm.deal(user2, 100 ether);

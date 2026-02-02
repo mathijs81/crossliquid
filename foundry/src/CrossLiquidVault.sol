@@ -1,32 +1,40 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import { ERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import { Ownable } from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import { ERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-// import { console } from "forge-std/console.sol";
-
-// Mint/retrieve assets for CLQ tokens
-// The offchain brain bot will regularly update the conversion rate
-// We keep this as a multiplier vs. oracle ETH price
-contract CrossLiquidVault is ERC20, Ownable {
+/// Mint/retrieve assets for CLQ tokens
+/// The offchain brain bot will regularly update the conversion rate
+/// We keep this as a multiplier vs. oracle ETH price
+contract CrossLiquidVault is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     uint256 public constant CONVERSION_RATE_MULTIPLIER = 1e9;
     uint256 public constant FEE_DIVISOR = 100000;
 
-    uint256 public mintFee = 1000; // 1%
-    uint256 public redeemFee = 1000; // 1%
+    uint256 public mintFee;
+    uint256 public redeemFee;
+    uint256 public conversionRate;
 
-    // This defines the ratio of ETH-to-tokens. E.g. 2e9 means 1 token = 2 ETH
-    // 1-to-1 default
-    uint256 public conversionRate = CONVERSION_RATE_MULTIPLIER;
-
-    // Manager can withdraw funds for investment (typically the PositionManager)
+    /// Manager can withdraw funds for investment (typically the PositionManager)
     address public manager;
 
     event ManagerUpdated(address indexed oldManager, address indexed newManager);
     event FundsWithdrawn(address indexed to, uint256 amount);
 
-    constructor(address initialOwner) ERC20("CrossLiquidVault", "CLQ") Ownable(initialOwner) {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address initialOwner) public initializer {
+        __ERC20_init("CrossLiquidVault", "CLQ");
+        __Ownable_init(initialOwner);
+
+        mintFee = 1000; // 1%
+        redeemFee = 1000; // 1%
+        conversionRate = CONVERSION_RATE_MULTIPLIER; // 1:1 default
     }
 
     function mint(uint256 tokens) payable public {
@@ -38,13 +46,11 @@ contract CrossLiquidVault is ERC20, Ownable {
     }
 
     function redeem(uint256 amount) public {
-        // TODO(mathijs): check that we can pay out this amount, e.g. keep track of 
-        // accumulated fees?
         _burn(msg.sender, amount);
         uint256 fee = (amount * redeemFee) / FEE_DIVISOR;
         uint256 payout = ((amount - fee) * conversionRate) / CONVERSION_RATE_MULTIPLIER;
-        (bool success, ) = payable(msg.sender).call{value: payout}("");                                                    
-        require(success, "Transfer failed");   
+        (bool success, ) = payable(msg.sender).call{value: payout}("");
+        require(success, "Transfer failed");
     }
 
     function setConversionRate(uint256 newConversionRate) public onlyOwner {
@@ -79,6 +85,11 @@ contract CrossLiquidVault is ERC20, Ownable {
         return tokenCost * FEE_DIVISOR / (FEE_DIVISOR - mintFee);
     }
 
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
     /// Accept ETH from manager returning funds
     receive() external payable {}
+
+    /// @dev Storage gap for future upgrades
+    uint256[50] private __gap;
 }
