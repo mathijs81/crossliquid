@@ -1,15 +1,15 @@
-import type { WagmiChain } from "$lib/utils/types";
 import * as viemChains from "viem/chains";
 
 // Environments:
 // - local: everything on foundry/anvil
 // - prod: vault on base, various other chains for liquidity on uniswap
 
-enum Environment {
+export enum Environment {
   LOCAL = "local",
   PROD = "prod",
 }
-export const environment = Environment.LOCAL;
+export const environment =
+  process.env.NODE_ENV === "production" ? Environment.PROD : Environment.LOCAL;
 
 /**
  * Foundry local chain configuration
@@ -35,50 +35,17 @@ export const foundry = {
  * All supported chains for the application
  */
 export const chains = [
-  foundry,
-  viemChains.mainnet,
-  viemChains.sepolia,
-  viemChains.arbitrum,
-  viemChains.arbitrumSepolia,
-  viemChains.optimism,
-  viemChains.optimismSepolia,
-  viemChains.base,
-  viemChains.baseSepolia,
-  viemChains.polygon,
-  viemChains.polygonAmoy,
-] as const;
+  environment === Environment.LOCAL ? foundry : viemChains.base,
+  ...(environment === Environment.LOCAL
+    ? []
+    : [
+        viemChains.unichain,
+        viemChains.arbitrum,
+        viemChains.optimism,
+        viemChains.polygon,
+        viemChains.ink,
+      ]),
+] as readonly [viemChains.Chain, ...viemChains.Chain[]];
 
-/**
- * Application-wide scaffold configuration
- */
-export const scaffoldConfig = {
-  // TODO: the target network should probably be settable from .env
-  // The network on which your dApp runs
-  targetNetworks: [foundry],
-
-  // Polling interval for read operations (in milliseconds)
-  // Faster for local chains, slower for remote chains
-  pollingInterval: 4000,
-
-  // RPC provider URLs (optional - uses public RPCs by default)
-  // Add your own Alchemy/Infura keys here for better rate limits
-  rpcProviderUrls: {
-    // mainnet: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
-    //   ? `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
-    //   : undefined,
-  },
-
-  // Block explorer API keys for contract verification
-  blockExplorerApiKeys: {
-    // etherscan: process.env.ETHERSCAN_API_KEY,
-  },
-} as const;
-
-/**
- * Get the target network (first network in targetNetworks array)
- */
-export const getTargetNetwork = () => scaffoldConfig.targetNetworks[0];
-export const targetChainId = scaffoldConfig.targetNetworks[0].id as WagmiChain;
-
-export const vaultChain =
-  environment === Environment.LOCAL ? foundry : viemChains.base;
+export const vaultChain = chains[0];
+export const vaultChainId = vaultChain.id;

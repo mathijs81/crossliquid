@@ -2,11 +2,10 @@
 import { switchChain } from "@wagmi/core";
 import WarningIcon from "phosphor-svelte/lib/WarningIcon";
 import { config } from "$lib/wagmi/config";
-import { getTargetNetwork } from "$lib/wagmi/chains";
 import { createConnection } from "$lib/web3/createConnection.svelte";
+import { vaultChain, vaultChainId } from "$lib/wagmi/chains";
 
 const connection = createConnection();
-const targetNetwork = getTargetNetwork();
 
 let isSwitchingChain = $state(false);
 let switchError = $state<string | null>(null);
@@ -17,7 +16,7 @@ async function handleSwitchChain() {
   isSwitchingChain = true;
   switchError = null;
   try {
-    await switchChain(config, { chainId: targetNetwork.id });
+    await switchChain(config, { chainId: vaultChainId });
   } catch (error: unknown) {
     console.error("Failed to switch chain:", error);
     switchError =
@@ -32,7 +31,7 @@ async function handleSwitchChain() {
   <div class="alert alert-warning mx-4 mt-2">
     <WarningIcon class="shrink-0 h-6 w-6" />
     <span>
-      You are connected to the wrong network. Please switch to {targetNetwork.name}.
+      You are connected to the wrong network. Please switch to {vaultChain.name}.
     </span>
     <button
       class="btn btn-sm btn-primary"

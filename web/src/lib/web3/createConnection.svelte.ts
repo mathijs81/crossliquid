@@ -1,27 +1,26 @@
-import { getConnection, reconnect, watchConnection } from "@wagmi/core";
-import { getTargetNetwork, targetChainId } from "$lib/wagmi/chains";
-import { config } from "$lib/wagmi/config";
 import type { WagmiChain } from "$lib/utils/types";
+import { vaultChainId } from "$lib/wagmi/chains";
+import { config } from "$lib/wagmi/config";
+import { getConnection, reconnect, watchConnection } from "@wagmi/core";
 
 class ConnectionData {
   address = $state<string | undefined>(undefined);
   isConnected = $state(false);
-  chainId = $state<WagmiChain>(targetChainId);
+  chainId = $state<WagmiChain>(vaultChainId);
   status = $state<"connecting" | "connected" | "disconnected" | "reconnecting">(
     "disconnected",
   );
 
   // Derived property to check if connected to wrong chain
   isWrongChain = $derived.by(() => {
-    const targetNetwork = getTargetNetwork();
-    return this.isConnected && this.chainId !== targetNetwork.id;
+    return this.isConnected && this.chainId !== vaultChainId;
   });
 
   constructor() {
     const initialConnection = getConnection(config);
     this.address = initialConnection.address;
     this.isConnected = initialConnection.isConnected;
-    this.chainId = (initialConnection.chainId as WagmiChain) ?? targetChainId;
+    this.chainId = (initialConnection.chainId as WagmiChain) ?? vaultChainId;
     this.status = initialConnection.status;
   }
 
@@ -31,7 +30,7 @@ class ConnectionData {
       onChange(connection) {
         data.address = connection.address;
         data.isConnected = connection.isConnected;
-        data.chainId = (connection.chainId as WagmiChain) ?? targetChainId;
+        data.chainId = (connection.chainId as WagmiChain) ?? vaultChainId;
         data.status = connection.status;
       },
     });

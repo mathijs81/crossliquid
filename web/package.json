@@ -11,7 +11,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format": "biome format --write",
-    "generate": "wagmi generate",
+    "generate": "wagmi generate && NODE_ENV=production wagmi generate",
     "lint": "biome lint --write",
     "fix": "biome lint --write && biome format --write",
     "test:unit": "vitest",

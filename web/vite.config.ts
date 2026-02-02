@@ -43,10 +43,18 @@ export default defineConfig({
     },
     reporters: ["default"],
   },
-  // Tell Vitest to use the `browser` entry points in `package.json` files, even though it's running in Node
-  resolve: process.env.VITEST
-    ? {
-        conditions: ["browser"],
-      }
-    : undefined,
+  resolve: {
+    alias: {
+      "./src/lib/contracts/generated.local":
+        process.env.NODE_ENV === "production"
+          ? "./src/lib/contracts/generated.prod"
+          : "./src/lib/contracts/generated.local",
+    },
+    // Tell Vitest to use the `browser` entry points in `package.json` files, even though it's running in Node
+    ...(process.env.VITEST
+      ? {
+          conditions: ["browser"],
+        }
+      : {}),
+  },
 });

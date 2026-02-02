@@ -24,6 +24,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Auto-generated contract deployments
-src/lib/contracts/generated.ts
+src/lib/contracts/generated.local.ts
+src/lib/contracts/generated.prod.ts
 
 coverage

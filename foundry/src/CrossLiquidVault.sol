@@ -33,7 +33,7 @@ contract CrossLiquidVault is ERC20, Ownable {
 
     function redeem(uint256 amount) public {
         // TODO(mathijs): check that we can pay out this amount, e.g. keep track of 
-        // accumulated fees
+        // accumulated fees?
         _burn(msg.sender, amount);
         uint256 fee = (amount * redeemFee) / FEE_DIVISOR;
         uint256 payout = ((amount - fee) * conversionRate) / CONVERSION_RATE_MULTIPLIER;
