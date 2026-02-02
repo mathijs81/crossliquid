@@ -9,6 +9,7 @@ contract CrossLiquidVaultTest is Test {
     address public owner;
     address public user1;
     address public user2;
+    address public manager;
 
     uint256 constant CONVERSION_RATE_MULTIPLIER = 1e9;
     uint256 constant FEE_DIVISOR = 100000;
@@ -17,6 +18,7 @@ contract CrossLiquidVaultTest is Test {
         owner = makeAddr("owner");
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
+        manager = makeAddr("manager");
 
         vm.prank(owner);
         vault = new CrossLiquidVault(owner);
@@ -246,5 +248,110 @@ contract CrossLiquidVaultTest is Test {
         vault.mint{value: calculatedPrice}(tokensToMint);
 
         assertEq(vault.balanceOf(user1), tokensToMint);
+    }
+
+    // === Manager Tests ===
+
+    function testSetManager() public {
+        vm.prank(owner);
+        vault.setManager(manager);
+
+        assertEq(vault.manager(), manager);
+    }
+
+    function testSetManagerRevertsForNonOwner() public {
+        vm.prank(user1);
+        vm.expectRevert();
+        vault.setManager(manager);
+    }
+
+    function testSetManagerEmitsEvent() public {
+        vm.prank(owner);
+        vm.expectEmit(true, true, false, false);
+        emit CrossLiquidVault.ManagerUpdated(address(0), manager);
+        vault.setManager(manager);
+    }
+
+    function testWithdraw() public {
+        // Setup: mint some tokens to get ETH in vault
+        uint256 tokensToMint = 10 ether;
+        uint256 price = vault.calcMintPrice(tokensToMint);
+        vm.prank(user1);
+        vault.mint{value: price}(tokensToMint);
+
+        // Set manager
+        vm.prank(owner);
+        vault.setManager(manager);
+
+        // Manager withdraws
+        uint256 withdrawAmount = 5 ether;
+        address recipient = makeAddr("recipient");
+        uint256 balanceBefore = recipient.balance;
+
+        vm.prank(manager);
+        vault.withdraw(recipient, withdrawAmount);
+
+        assertEq(recipient.balance, balanceBefore + withdrawAmount);
+        assertEq(address(vault).balance, price - withdrawAmount);
+    }
+
+    function testWithdrawRevertsForNonManager() public {
+        // Setup: mint some tokens
+        uint256 tokensToMint = 10 ether;
+        uint256 price = vault.calcMintPrice(tokensToMint);
+        vm.prank(user1);
+        vault.mint{value: price}(tokensToMint);
+
+        // Try to withdraw without being manager
+        vm.prank(user1);
+        vm.expectRevert("Only manager can withdraw");
+        vault.withdraw(user2, 1 ether);
+    }
+
+    function testWithdrawRevertsIfInsufficientBalance() public {
+        vm.prank(owner);
+        vault.setManager(manager);
+
+        vm.prank(manager);
+        vm.expectRevert("Insufficient balance");
+        vault.withdraw(user1, 1 ether);
+    }
+
+    function testWithdrawEmitsEvent() public {
+        // Setup
+        uint256 price = vault.calcMintPrice(10 ether);
+        vm.prank(user1);
+        vault.mint{value: price}(10 ether);
+
+        vm.prank(owner);
+        vault.setManager(manager);
+
+        // Expect event
+        address recipient = makeAddr("recipient");
+        vm.prank(manager);
+        vm.expectEmit(true, false, false, true);
+        emit CrossLiquidVault.FundsWithdrawn(recipient, 1 ether);
+        vault.withdraw(recipient, 1 ether);
+    }
+
+    function testWithdrawMultipleTimes() public {
+        // Setup
+        uint256 price = vault.calcMintPrice(20 ether);
+        vm.prank(user1);
+        vault.mint{value: price}(20 ether);
+
+        vm.prank(owner);
+        vault.setManager(manager);
+
+        address recipient = makeAddr("recipient");
+
+        // Multiple withdrawals
+        vm.startPrank(manager);
+        vault.withdraw(recipient, 5 ether);
+        vault.withdraw(recipient, 3 ether);
+        vault.withdraw(recipient, 2 ether);
+        vm.stopPrank();
+
+        assertEq(recipient.balance, 10 ether);
     }
 }

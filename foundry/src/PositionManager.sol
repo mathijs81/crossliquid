@@ -53,7 +53,7 @@ contract PositionManager is Ownable, ReentrancyGuard {
 
     /// @param _vault Address of CrossLiquidVault (only on Base, pass address(0) on other chains)
     /// @param initialOwner Owner address (should be same across all chains)
-    constructor(address _vault, address initialOwner) Ownable(initialOwner) {
+    constructor(address payable _vault, address initialOwner) Ownable(initialOwner) {
         vault = CrossLiquidVault(_vault);
         isVaultChain = _vault != address(0);
     }
@@ -62,9 +62,8 @@ contract PositionManager is Ownable, ReentrancyGuard {
 
     /// Withdraw ETH from the vault to this contract
     /// @param amount Amount of ETH to withdraw
-    function withdrawFromVault(uint256 amount) external onlyOwner onlyVaultChain nonReentrant {
-        // TODO(mathijs): Implement mechanism to pull from crossliquid vault
-
+    function withdrawFromVault(uint256 amount) external onlyOperatorOrOwner onlyVaultChain nonReentrant {
+        vault.withdraw(address(this), amount);
         emit FundsWithdrawnFromVault(amount);
     }
 

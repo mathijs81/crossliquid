@@ -15,11 +15,17 @@ contract CrossLiquidVault is ERC20, Ownable {
 
     uint256 public mintFee = 1000; // 1%
     uint256 public redeemFee = 1000; // 1%
-    
+
     // This defines the ratio of ETH-to-tokens. E.g. 2e9 means 1 token = 2 ETH
     // 1-to-1 default
-    uint256 public conversionRate = CONVERSION_RATE_MULTIPLIER; 
-    
+    uint256 public conversionRate = CONVERSION_RATE_MULTIPLIER;
+
+    // Manager can withdraw funds for investment (typically the PositionManager)
+    address public manager;
+
+    event ManagerUpdated(address indexed oldManager, address indexed newManager);
+    event FundsWithdrawn(address indexed to, uint256 amount);
+
     constructor(address initialOwner) ERC20("CrossLiquidVault", "CLQ") Ownable(initialOwner) {
     }
 
@@ -50,9 +56,29 @@ contract CrossLiquidVault is ERC20, Ownable {
         redeemFee = newRedeemFee;
     }
 
+    function setManager(address newManager) public onlyOwner {
+        address oldManager = manager;
+        manager = newManager;
+        emit ManagerUpdated(oldManager, newManager);
+    }
+
+    /// Withdraw funds for investment purposes (callable by manager, typically PositionManager)
+    function withdraw(address to, uint256 amount) public {
+        require(msg.sender == manager, "Only manager can withdraw");
+        require(address(this).balance >= amount, "Insufficient balance");
+
+        (bool success, ) = payable(to).call{value: amount}("");
+        require(success, "Transfer failed");
+
+        emit FundsWithdrawn(to, amount);
+    }
+
     function calcMintPrice(uint256 tokens) public view returns (uint256) {
         uint256 tokenCost = (tokens * conversionRate) / CONVERSION_RATE_MULTIPLIER;
         // mintPrice - (mintPrice * mintFee / FEE_DIVISOR) = tokenCost
         return tokenCost * FEE_DIVISOR / (FEE_DIVISOR - mintFee);
     }
+
+    /// Accept ETH from manager returning funds
+    receive() external payable {}
 }
