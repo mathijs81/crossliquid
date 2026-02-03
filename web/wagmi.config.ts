@@ -16,13 +16,17 @@ for (const transaction of latestDeploy.transactions) {
   if (transaction.transactionType === "CREATE") {
     if (lastContractName !== undefined) {
       deployments[lastContractName] = {
+        // biome-ignore lint/style/noNonNullAssertion: guaranteed set here
         [latestDeploy.chain]: lastContractAddress!,
       };
     }
     lastContractName = transaction.contractName;
     lastContractAddress = transaction.contractAddress as `0x${string}`;
-  } else if (transaction.transactionType === "CREATE2") {
-    deployments[lastContractName!] = {
+  } else if (
+    transaction.transactionType === "CREATE2" &&
+    lastContractName !== undefined
+  ) {
+    deployments[lastContractName] = {
       [latestDeploy.chain]: transaction.contractAddress as `0x${string}`,
     };
     lastContractName = undefined;
@@ -41,7 +45,13 @@ export default defineConfig(() => {
       foundry({
         project: "../foundry",
         deployments,
-        exclude: [
+        include: [
+          ...Object.keys(deployments).map(
+            (contractName) => `${contractName}.sol/**`,
+          ),
+        ],
+
+        /*exclude: [
           // Default excludes:
           "Common.sol/**",
           "Components.sol/**",
@@ -63,8 +73,9 @@ export default defineConfig(() => {
 
           // Our excludes:
           "Test.sol/**",
-          "IMulticall3.sol/**",
-        ],
+          "IMulticall3.sol/**", 
+          "SafeCast.sol/**", 
+        ],*/
       }),
       actions(),
     ],
