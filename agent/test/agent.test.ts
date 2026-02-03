@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { agent } from "../src/agent.js";
+import { ENVIRONMENT } from "../src/config.js";
 
 describe("Agent", () => {
   beforeEach(() => {
@@ -50,5 +51,15 @@ describe("Agent", () => {
     expect(chainIds).toContain(8453); // Base
     expect(chainIds).toContain(10); // Optimism
     expect(chainIds).toContain(1); // Mainnet
+  });
+
+  it("should have ethUsdcData field in stats", () => {
+    const stats = agent.getStats();
+    expect(stats).toHaveProperty("ethUsdcData");
+    expect(typeof stats.ethUsdcData).toBe("object");
+  });
+
+  it("should detect environment mode correctly", () => {
+    expect(ENVIRONMENT).toMatch(/^(development|production|testnet)$/);
   });
 });

@@ -5,11 +5,13 @@ import { calculateLOS } from "./services/los";
 import { getTargetDistribution } from "./services/los";
 import { getPoolState } from "./services/pool";
 import { getVaultState } from "./services/vault";
+import { collectEthUsdcData, type EthUsdcData } from "./services/ethusdc";
 
 export interface AgentStats {
   status: "running" | "stopped";
   lastUpdate: string | null;
   chainStats: Record<string, ChainStats>;
+  ethUsdcData: Record<string, EthUsdcData>;
   lastError: string | null;
 }
 
@@ -40,6 +42,7 @@ class Agent {
     status: "stopped",
     lastUpdate: null,
     chainStats: {},
+    ethUsdcData: {},
     lastError: null,
   };
 
@@ -168,6 +171,21 @@ class Agent {
 
       const losScores = await calculateLOS();
       const _targetDistribution = getTargetDistribution(losScores);
+
+      for (const [chainId] of this.clients) {
+        try {
+          const data = await collectEthUsdcData(chainId);
+          this.stats.ethUsdcData[String(chainId)] = data;
+        } catch (error) {
+          logger.error(
+            {
+              chainId,
+              error: error instanceof Error ? error.message : String(error),
+            },
+            "Failed to collect ETH-USDC data",
+          );
+        }
+      }
 
       const vaultAddress = process.env.VAULT_ADDRESS as
         | `0x${string}`

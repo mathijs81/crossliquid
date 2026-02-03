@@ -2,7 +2,6 @@ import Fastify from "fastify";
 import { agent } from "./agent";
 import { logger } from "./logger";
 
-
 const fastify = Fastify({
   loggerInstance: logger,
 });
