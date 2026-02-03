@@ -6,11 +6,12 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import { ERC20PermitUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 
 /// Mint/retrieve assets for CLQ tokens
 /// The offchain brain bot will regularly update the conversion rate
 /// We keep this as a multiplier vs. oracle ETH price
-contract CrossLiquidVault is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardTransient {
+contract CrossLiquidVault is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardTransient, ERC20PermitUpgradeable {
     uint256 public constant CONVERSION_RATE_MULTIPLIER = 1e9;
     uint256 public constant FEE_DIVISOR = 100_000;
     uint256 public constant MAX_FEE = 10_000; // 10% maximum fee
@@ -35,6 +36,7 @@ contract CrossLiquidVault is Initializable, ERC20Upgradeable, OwnableUpgradeable
     function initialize(address initialOwner) public initializer {
         __ERC20_init("CrossLiquidVault", "CLQ");
         __Ownable_init(initialOwner);
+        __ERC20Permit_init("CrossLiquidVault");
 
         mintFee = 1000; // 1%
         redeemFee = 1000; // 1%
