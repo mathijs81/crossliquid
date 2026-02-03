@@ -48,7 +48,9 @@ chains.set(mainnet.id, {
   publicClient: createClient(mainnet, getRpcUrl(mainnet.id)),
 });
 
-const validatePrivateKey = (key: string | undefined): `0x${string}` | undefined => {
+const validatePrivateKey = (
+  key: string | undefined,
+): `0x${string}` | undefined => {
   if (!key) {
     return undefined;
   }
@@ -69,7 +71,9 @@ const validatePrivateKey = (key: string | undefined): `0x${string}` | undefined 
   return key as `0x${string}`;
 };
 
-const validateAddress = (address: string | undefined): `0x${string}` | undefined => {
+const validateAddress = (
+  address: string | undefined,
+): `0x${string}` | undefined => {
   if (!address) {
     return undefined;
   }

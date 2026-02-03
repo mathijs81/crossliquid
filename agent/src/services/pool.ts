@@ -83,7 +83,11 @@ export const getPoolState = async (
     };
   } catch (error) {
     logger.error(
-      { chainId, poolAddress, error: error instanceof Error ? error.message : String(error) },
+      {
+        chainId,
+        poolAddress,
+        error: error instanceof Error ? error.message : String(error),
+      },
       "Failed to fetch pool state",
     );
     return null;

@@ -113,7 +113,11 @@ class Agent {
     }
 
     logger.error(
-      { chainId, attempts: RETRY_CONFIG.maxAttempts, error: lastError?.message },
+      {
+        chainId,
+        attempts: RETRY_CONFIG.maxAttempts,
+        error: lastError?.message,
+      },
       "Chain operation failed after all retries",
     );
     return null;

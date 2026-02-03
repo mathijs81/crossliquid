@@ -1,9 +1,25 @@
 import Fastify from "fastify";
-import { agent } from "./agent.js";
-import { logger } from "./logger.js";
+import { agent } from "./agent";
+import { logger } from "./logger";
+
+const envToLogger = {
+  development: {
+    transport: {
+      target: "pino-pretty",
+      options: {
+        translateTime: "HH:MM:ss Z",
+        ignore: "pid,hostname",
+      },
+    },
+  },
+  production: true,
+  test: false,
+};
+
+const environment = process.env.NODE_ENV || "development";
 
 const fastify = Fastify({
-  logger,
+  logger: envToLogger[environment as keyof typeof envToLogger] ?? true,
 });
 
 // Health check endpoint

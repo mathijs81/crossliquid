@@ -68,7 +68,11 @@ export const getVaultState = async (
     };
   } catch (error) {
     logger.error(
-      { chainId, vaultAddress, error: error instanceof Error ? error.message : String(error) },
+      {
+        chainId,
+        vaultAddress,
+        error: error instanceof Error ? error.message : String(error),
+      },
       "Failed to fetch vault state",
     );
     return null;
