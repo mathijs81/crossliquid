@@ -7,6 +7,9 @@ import { connect, disconnect } from "@wagmi/core";
 import XCircleIcon from "phosphor-svelte/lib/XCircleIcon";
 import NetworkMismatchAlert from "./NetworkMismatchAlert.svelte";
 import ShuffleAngularIcon from "phosphor-svelte/lib/ShuffleAngularIcon";
+import PiggyBankIcon from "phosphor-svelte/lib/PiggyBankIcon";
+import BugIcon from "phosphor-svelte/lib/BugIcon";
+import type { Component } from "svelte";
 
 const connection = createConnection();
 
@@ -48,27 +51,28 @@ async function disconnectWallet() {
 }
 
 const baseDestinations = [
-  ["🏛️ Deposit to Vault", "/cross-liquid"],
-  ["🔍 Debug", "/debug"],
+  [PiggyBankIcon, "Deposit to Vault", "/cross-liquid"],
+  [BugIcon, "Debug", "/debug"],
   // Add your other destinations here
 ] as const;
 
 const destinations = $derived(
-  baseDestinations.map(([name, href]) => [
+  baseDestinations.map(([Icon, name, href]) => [
+    Icon,
     name,
     href,
     page.url.pathname?.startsWith(href) ?? false,
   ]),
-) as [string, string, boolean][];
+) as [Component, string, string, boolean][];
 </script>
 
 <div class="navbar bg-base-100 shadow-lg">
   <div>
-    <a href="/" class="btn btn-ghost text-xl"><ShuffleAngularIcon class="h-6 w-6" /> CrossLiquid</a>
+    <a href="/" class="btn btn-ghost text-xl text-primary"><ShuffleAngularIcon class="h-6 w-6" /> CrossLiquid</a>
   </div>
   <div class="flex gap-3 flex-1">
-    {#each destinations as [name, href, active] (name)}
-      <a href={href} class="btn btn-ghost" class:btn-active={active}>{name}</a>
+    {#each destinations as [Icon, name, href, active] (name)}
+      <a href={href} class="btn btn-ghost" class:btn-active={active}><Icon class="h-6 w-6" /> <span>{name}</span></a>
     {/each}
   </div>
   <div class="flex gap-3 items-baseline">

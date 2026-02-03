@@ -7,9 +7,12 @@ import { createConnection } from "$lib/web3/createConnection.svelte";
 const connection = createConnection();
 </script>
 
-<div class="hero min-h-[calc(100vh-4rem)]">
+<div class="hero min-h-[calc(60vh-4rem)]">
   <div class="hero-content text-center">
     <div class="max-w-3xl">
+      <p class="py-4 text-sm text-base-content/50">
+        HackMoney 2026 submission
+      </p>
       <h1 class="text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent flex justify-center items-center gap-2">
         <ShuffleAngularIcon class="h-12 w-12 text-primary" /> CrossLiquid
       </h1>
@@ -28,9 +31,6 @@ const connection = createConnection();
         </a>
       </div>
 
-      <p class="py-4 text-sm text-base-content/50">
-        Built for HackMoney 2026
-      </p>
 
       {#if connection.isConnected}
         <div class="mt-8">

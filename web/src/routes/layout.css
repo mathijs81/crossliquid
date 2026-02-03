@@ -1,3 +1,92 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 @plugin "daisyui";
+
+@plugin "daisyui/theme" {
+  name: "prism";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(98% 0.01 250);
+  --color-base-200: oklch(96% 0.015 250);
+  --color-base-300: oklch(92% 0.02 255);
+  --color-base-content: oklch(15% 0.03 265);
+  --color-primary: oklch(55% 0.2 250);
+  --color-primary-content: oklch(98% 0.01 255);
+  --color-secondary: oklch(65% 0.18 260);
+  --color-secondary-content: oklch(98% 0.01 265);
+  --color-accent: oklch(55% 0.15 200);
+  --color-accent-content: oklch(98% 0.01 205);
+  --color-neutral: oklch(30% 0.02 260);
+  --color-neutral-content: oklch(98% 0.01 255);
+  --color-info: oklch(65% 0.16 220);
+  --color-info-content: oklch(98% 0.01 225);
+  --color-success: oklch(70% 0.16 150);
+  --color-success-content: oklch(98% 0.01 155);
+  --color-warning: oklch(75% 0.18 75);
+  --color-warning-content: oklch(15% 0.04 80);
+  --color-error: oklch(65% 0.19 25);
+  --color-error-content: oklch(98% 0.01 30);
+  --radius-selector: 0.75rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1.5px;
+  --depth: 0;
+  --noise: 0;
+}
+
+:root {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+* {
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-display,
+.display-font {
+  font-family: var(--font-display);
+}
+
+code,
+pre,
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-feature-settings: "cv11", "ss01";
+}
+
+[data-theme="prism"] .hero {
+  background: radial-gradient(
+    ellipse at top,
+    oklch(55% 0.2 250 / 0.08) 0%,
+    transparent 50%
+  );
+}
+
+[data-theme="prism"] .btn-primary {
+  background: linear-gradient(
+    135deg,
+    oklch(55% 0.2 250) 0%,
+    oklch(48% 0.18 245) 100%
+  );
+  border: none;
+}
