@@ -2,24 +2,9 @@ import Fastify from "fastify";
 import { agent } from "./agent";
 import { logger } from "./logger";
 
-const envToLogger = {
-  development: {
-    transport: {
-      target: "pino-pretty",
-      options: {
-        translateTime: "HH:MM:ss Z",
-        ignore: "pid,hostname",
-      },
-    },
-  },
-  production: true,
-  test: false,
-};
-
-const environment = process.env.NODE_ENV || "development";
 
 const fastify = Fastify({
-  logger: envToLogger[environment as keyof typeof envToLogger] ?? true,
+  loggerInstance: logger,
 });
 
 // Health check endpoint
@@ -49,19 +34,14 @@ const start = async () => {
   }
 };
 
-// Graceful shutdown
-process.on("SIGINT", async () => {
+const shutdown = async () => {
   logger.info("Shutting down gracefully...");
   agent.stop();
   await fastify.close();
   process.exit(0);
-});
+};
 
-process.on("SIGTERM", async () => {
-  logger.info("Shutting down gracefully...");
-  agent.stop();
-  await fastify.close();
-  process.exit(0);
-});
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 
 start();

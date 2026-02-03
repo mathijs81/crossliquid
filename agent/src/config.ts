@@ -1,6 +1,6 @@
 import { type Chain, createPublicClient, http, type PublicClient } from "viem";
 import { base, mainnet, optimism } from "viem/chains";
-import { logger } from "./logger.js";
+import { logger } from "./logger";
 
 export interface ChainConfig {
   chainId: number;

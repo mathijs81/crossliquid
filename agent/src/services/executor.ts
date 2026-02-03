@@ -1,4 +1,4 @@
-import { chains } from "../config.js";
+import { chains } from "../config";
 
 export interface RebalanceAction {
   chainId: number;

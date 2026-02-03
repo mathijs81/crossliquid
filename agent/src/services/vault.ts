@@ -1,5 +1,5 @@
-import { chains } from "../config.js";
-import { logger } from "../logger.js";
+import { chains } from "../config";
+import { logger } from "../logger";
 
 const VAULT_ABI = [
   {

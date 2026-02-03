@@ -1,12 +1,10 @@
 import { type Chain, createPublicClient, http, type PublicClient } from "viem";
 import { base, mainnet, optimism } from "viem/chains";
-import { logger } from "./logger.js";
-import {
-  calculateLOS,
-  getPoolState,
-  getTargetDistribution,
-  getVaultState,
-} from "./services/index.js";
+import { logger } from "./logger";
+import { calculateLOS } from "./services/los";
+import { getTargetDistribution } from "./services/los";
+import { getPoolState } from "./services/pool";
+import { getVaultState } from "./services/vault";
 
 export interface AgentStats {
   status: "running" | "stopped";

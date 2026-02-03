@@ -1,5 +1,5 @@
 import type { PublicClient } from "viem";
-import { chains } from "../config.js";
+import { chains } from "../config";
 
 export interface LiquidityOpportunityScore {
   chainId: number;
