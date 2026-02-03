@@ -103,8 +103,9 @@ pnpm install
 # Start local Foundry node (in terminal 1)
 pnpm chain
 
-# Deploy contracts + generate `web/src/lib/contracts/deployedContracts.ts` (in terminal 2)
+# Deploy contracts + generate `web/src/lib/contracts/generated.*.ts` (in terminal 2)
 pnpm deploy:anvil
+pnpm generate
 
 # Start the web dev server (in terminal 3)
 pnpm dev
@@ -115,29 +116,62 @@ pnpm dev
 Your app is now running with:
 
 - Local Foundry node on `http://localhost:8545`
+- CrossLiquid contracts (Vault, PositionManager) deployed
+- Uniswap v4 infrastructure (PoolManager, USDC, WETH, initialized pool)
 - Contracts deployed via Foundry scripts (see `foundry/broadcast/`)
-- Generated contract deployment/ABI map at `web/src/lib/contracts/deployedContracts.ts`
+- Generated contract deployment/ABI map at `web/src/lib/contracts/generated.*.ts`
+
+**Note**: `pnpm deploy:anvil` automatically deploys both CrossLiquid contracts AND Uniswap v4 infrastructure for local testing.
 
 ## Development Workflow
 
-The typical development cycle:
+### Uniswap v4 Local Deployment
 
+The deployment script automatically deploys Uniswap v4 infrastructure for local testing:
+- **PoolManager**: Core v4 singleton contract
+- **Mock Tokens**: USDC (6 decimals) and WETH (18 decimals)
+- **Initialized Pool**: USDC-WETH pool with 0.3% fee tier
+
+To deploy Uniswap v4 separately:
 ```bash
-pnpm chain            # Start local Anvil node
-pnpm deploy:anvil     # Deploy contracts & generate types
-pnpm dev              # Start the frontend dev server
+# Deploy just Uniswap v4 (useful for testing)
+cd foundry && pnpm deploy:uniswap:anvil
+
+# With test tokens minted to deployer
+MINT_TOKENS=true pnpm deploy:uniswap:anvil
 ```
 
-Run tests and checks (as executed in CI):
+### Testing
 
 ```bash
-pnpm test:contracts   # Run Foundry tests
-pnpm test:web         # Run frontend tests (unit + E2E)
-pnpm check            # Type-check all code
-pnpm lint             # Lint frontend code
+# Run all tests (including Uniswap v4 integration)
+pnpm test:contracts
+
+# Run only Uniswap v4 tests
+cd foundry && forge test --match-contract PositionManagerUniswap
+
+# Gas report
+pnpm test:gas
 ```
 
-See `package.json` for the full list of available commands including deployment to testnets, coverage reports, and more.
+### Contract Structure
+
+```
+foundry/
+├── src/
+│   ├── CrossLiquidVault.sol        # ERC20 vault for deposits
+│   └── PositionManager.sol          # Manages Uniswap positions & bridging
+├── script/
+│   ├── Deploy.s.sol                 # CrossLiquid deployment
+│   └── DeployUniswapV4.s.sol       # Uniswap v4 local deployment
+└── test/
+    ├── CrossLiquidVault.t.sol
+    ├── PositionManager.t.sol
+    ├── PositionManagerUniswap.t.sol # Uniswap v4 integration tests
+    └── Integration.t.sol
+```
+
+See `docs/uniswap-v4-integration.md` for detailed integration guide.
 
 ## License
 
@@ -151,7 +185,9 @@ MIT
 
 - **Gemini** explained inner workings of Uniswapv4 to me and helped me brainstorm and sharpen the idea of this hack
 
-- **Claude Code** helped with implementing big parts of the frontend and Univ4 hook.
+- **Claude Code** helped with implementing big parts of the frontend, local deployment of Uniswap and Univ4 hook.
+
+- **OpenCode** for mostly UI tweaks
 
 **Dev projects**
 

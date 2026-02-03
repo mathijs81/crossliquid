@@ -22,9 +22,11 @@
 
 - [ ] "scheduled" redeem. If you have more than 3% of the total earnings it's cumbersome to redeem small amounts at a time and wait for the 'brain' to replenish the liquid vault
 
-## Later (not production ready without this)
+## Later (to make more production ready)
 
 - [ ] whitelist target chain swap calls? with timelock?
+- [ ] set mint / redeem per time limits?
+- [ ] pause minting / redeeming
 
 
 

@@ -1,6 +1,7 @@
 packages:
   - foundry
   - web
+  - agent
 
 onlyBuiltDependencies:
   - bufferutil
