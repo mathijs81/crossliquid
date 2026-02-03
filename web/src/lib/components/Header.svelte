@@ -6,6 +6,7 @@ import { createConnection } from "$lib/web3/createConnection.svelte";
 import { connect, disconnect } from "@wagmi/core";
 import XCircleIcon from "phosphor-svelte/lib/XCircleIcon";
 import NetworkMismatchAlert from "./NetworkMismatchAlert.svelte";
+import ShuffleAngularIcon from "phosphor-svelte/lib/ShuffleAngularIcon";
 
 const connection = createConnection();
 
@@ -47,8 +48,8 @@ async function disconnectWallet() {
 }
 
 const baseDestinations = [
-  ["Cross Liquid", "/cross-liquid"],
-  ["Debug", "/debug"],
+  ["🏛️ Deposit to Vault", "/cross-liquid"],
+  ["🔍 Debug", "/debug"],
   // Add your other destinations here
 ] as const;
 
@@ -63,7 +64,7 @@ const destinations = $derived(
 
 <div class="navbar bg-base-100 shadow-lg">
   <div>
-    <a href="/" class="btn btn-ghost text-xl">Svelte Scaffold ETH</a>
+    <a href="/" class="btn btn-ghost text-xl"><ShuffleAngularIcon class="h-6 w-6" /> CrossLiquid</a>
   </div>
   <div class="flex gap-3 flex-1">
     {#each destinations as [name, href, active] (name)}

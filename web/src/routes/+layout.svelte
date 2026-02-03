@@ -37,4 +37,6 @@ if (dev) {
   {/if}
 </QueryClientProvider>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head>
+  <title>CrossLiquid - Agentic Crosschain LP</title>
+  <link rel="icon" href={favicon} /></svelte:head>
