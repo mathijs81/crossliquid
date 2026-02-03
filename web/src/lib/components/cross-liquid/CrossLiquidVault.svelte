@@ -15,13 +15,15 @@ import TransactionStatus from "../TransactionStatus.svelte";
 
 const connection = createConnection();
 
-let amount = $state(0);
-let amountWei = $derived(BigInt(parseUnits(amount?.toString() ?? "0", 18)));
+let ethAmount = $state(0);
+let ethAmountWei = $derived(
+  BigInt(parseUnits(ethAmount?.toString() ?? "0", 18)),
+);
 
-const debouncedAmountWei = new Debounced(() => amountWei, 250);
+const debouncedEthAmountWei = new Debounced(() => ethAmountWei, 250);
 
-let price = $derived(
-  readVaultQuery("calcMintPrice", [debouncedAmountWei?.current ?? 0n]),
+let tokensToReceive = $derived(
+  readVaultQuery("calcTokensFromValue", [debouncedEthAmountWei?.current ?? 0n]),
 );
 let hash = $state<`0x${string}` | undefined>(undefined);
 
@@ -46,17 +48,9 @@ const mintMutation = useContractWrite({
 });
 
 const mint = async () => {
-  while (debouncedAmountWei.pending || price.isLoading) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  if (price.isError) {
-    toastError("Failed to calculate price");
-    return;
-  }
-  const priceValue = price.data;
   await mintMutation.mutate({
-    args: [amountWei],
-    value: priceValue,
+    args: [],
+    value: ethAmountWei,
   });
 };
 </script>
@@ -93,29 +87,29 @@ const mint = async () => {
     <div class="card-body">
       <h2 class="card-title text-xl">Mint new tokens</h2>
       <p class="text-base-content/70 text-sm">
-        Enter how many $CLQ tokens you want to mint.
+        Enter how much ETH you want to spend.
       </p>
 
       <div class="form-control w-full max-w-xs">
         <label class="label" for="mint-amount">
-          <span class="label-text">Amount</span>
+          <span class="label-text">ETH Amount</span>
         </label>
         <input
           id="mint-amount"
           type="number"
           min="0"
-          step="1"
-          bind:value={amount}
+          step="0.001"
+          bind:value={ethAmount}
           class="input input-bordered input-primary w-full"
         />
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
         <span class="text-base-content/80">
-          {#if amount > 0}
-            <QueryRenderer query={price}>
-              {#snippet children(price)}
-                Price in ETH: <span class="font-medium">{formatPrice(price, 18, 6)}</span>
+          {#if ethAmount > 0}
+            <QueryRenderer query={tokensToReceive}>
+              {#snippet children(tokens)}
+                You'll receive: <span class="font-medium">{formatPrice(tokens, 18, 6)}</span> $CLQ
               {/snippet}
             </QueryRenderer>
           {:else}
@@ -129,7 +123,7 @@ const mint = async () => {
           type="button"
           class="btn btn-primary"
           onclick={() => mint()}
-          disabled={amount <= 0 || mintMutation.isPending}
+          disabled={ethAmount <= 0 || mintMutation.isPending}
         >
           {#if mintMutation.isPending}
             <span class="loading loading-spinner loading-sm"></span>

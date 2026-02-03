@@ -34,14 +34,14 @@ describe("CrossLiquidVault - minting flow", () => {
     expect(balance).toHaveTextContent("0");
 
     // Price of 1 token not yet calculated
-    expect(screen.queryByText(/1.0101/)).toBeNull();
+    expect(screen.queryByText(/11.88/)).toBeNull();
 
-    const amountInput = screen.getByLabelText("Amount");
+    const amountInput = screen.getByLabelText("ETH Amount");
     await user.clear(amountInput);
-    await user.type(amountInput, "1");
+    await user.type(amountInput, "12");
 
     await waitFor(() => {
-      expect(screen.getByText(/1.0101/)).toBeInTheDocument();
+      expect(screen.getByText(/11.88/)).toBeInTheDocument();
     });
 
     const mintButton = screen.getByRole("button", { name: "Mint" });
