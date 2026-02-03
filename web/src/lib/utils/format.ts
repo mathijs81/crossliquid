@@ -22,3 +22,38 @@ export function formatBytes32StringHtml(
   }
   return `<span class="font-mono" title="${escapedContent}">${escapedContent}</span>`;
 }
+
+export function formatTokenAmount(
+  value: bigint | undefined | null,
+  decimals: number = 18,
+  displayDecimals: number = 4,
+): string {
+  if (value === undefined || value === null) return "—";
+
+  const formatted = Number(value) / 10 ** decimals;
+  return formatted.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: displayDecimals,
+  });
+}
+
+export function formatETH(
+  value: bigint | undefined | null,
+  displayDecimals: number = 4,
+): string {
+  return formatTokenAmount(value, 18, displayDecimals);
+}
+
+export function formatPrice(
+  value: bigint | undefined | null,
+  decimals: number = 18,
+  displayDecimals: number = 4,
+): string {
+  if (value === undefined || value === null) return "—";
+
+  const formatted = Number(value) / 10 ** decimals;
+  return formatted.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: displayDecimals,
+  });
+}

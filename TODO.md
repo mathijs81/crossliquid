@@ -6,7 +6,7 @@
   - [x] First commit
   - [ ] Actual deployment / getting from uniswap
 - [ ] UI: show current deployment in uniswap
-- [ ] Make everything proxies
+- [x] Make everything proxies
 - [ ] Working setup for simple uniswap v4 hook
   - [ ] Address mining works
   - [ ] Only allow our own liquidity

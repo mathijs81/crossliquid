@@ -3,7 +3,7 @@ import AddressInput from "$lib/components/inputs/AddressInput.svelte";
 import IntegerInput from "$lib/components/inputs/IntegerInput.svelte";
 import StringInput from "$lib/components/inputs/StringInput.svelte";
 import TransactionStatus from "$lib/components/TransactionStatus.svelte";
-import { useContractRead } from "$lib/query/contractReads.svelte";
+import { createReadQuery } from "$lib/query/contractReads.svelte";
 import { useContractWrite } from "$lib/query/contractWrites.svelte";
 import type { ContractName, WagmiChain } from "$lib/utils/types";
 import type { AbiFunction } from "viem";
@@ -45,7 +45,7 @@ let readArgs = $state<readonly unknown[]>([]);
 
 const readQuery = $derived(
   isReadFunction
-    ? useContractRead({
+    ? createReadQuery({
         contract: contractName,
         functionName: functionAbi.name,
         args: readArgs,

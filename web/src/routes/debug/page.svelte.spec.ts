@@ -7,7 +7,11 @@ describe("/+page.svelte", () => {
   it("should render contract function names", async () => {
     render(Page);
 
-    const contractFunctionNames = ["greeting", "premium", "totalCounter"];
+    const contractFunctionNames = [
+      "CONVERSION_RATE_MULTIPLIER",
+      "calcMintPrice",
+      "isVaultChain",
+    ];
     for (const functionName of contractFunctionNames) {
       await expect
         .element(page.getByText(functionName, { exact: true }))

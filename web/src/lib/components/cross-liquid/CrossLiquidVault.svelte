@@ -1,45 +1,32 @@
 <script lang="ts">
-import { readCrossLiquidVaultCalcMintPrice } from "$lib/contracts/generated";
-import { useContractRead } from "$lib/query/contractReads.svelte";
+import {
+  createReadQuery,
+  readVaultQuery,
+} from "$lib/query/contractReads.svelte";
 import { useContractWrite } from "$lib/query/contractWrites.svelte";
-import { config } from "$lib/wagmi/config";
-import { createConnection } from "$lib/web3/createConnection.svelte";
-import { createQuery } from "@tanstack/svelte-query";
-import { Debounced } from "runed";
-import { formatEther, formatUnits, parseUnits } from "viem";
-import TransactionStatus from "../TransactionStatus.svelte";
+import { formatETH, formatPrice } from "$lib/utils/format";
+import { toastError } from "$lib/utils/toast";
 import { vaultChain } from "$lib/wagmi/chains";
-
-// FIXME(mathijs): chain management is not good
-// FIXME(mathijs): handle centrally when wallet is not connected
+import { createConnection } from "$lib/web3/createConnection.svelte";
+import { Debounced } from "runed";
+import { parseUnits } from "viem";
+import QueryRenderer from "../QueryRenderer.svelte";
+import TransactionStatus from "../TransactionStatus.svelte";
 
 const connection = createConnection();
 
 let amount = $state(0);
-let amountWei = $derived(BigInt(parseUnits(amount.toString(), 18)));
+let amountWei = $derived(BigInt(parseUnits(amount?.toString() ?? "0", 18)));
 
-const calcMintPrice = async (wei: bigint) => {
-  const result = await readCrossLiquidVaultCalcMintPrice(config, {
-    args: [wei],
-  });
-  return result;
-};
+const debouncedAmountWei = new Debounced(() => amountWei, 250);
 
-let price = new Debounced(
-  () =>
-    createQuery(() => ({
-      queryKey: ["crossLiquidVault", "calcMintPrice", amountWei],
-      queryFn: async () => await calcMintPrice(amountWei),
-      staleTime: 60_000,
-    })),
-  250,
+let price = $derived(
+  readVaultQuery("calcMintPrice", [debouncedAmountWei?.current ?? 0n]),
 );
-
-let priceFormatted = $derived(formatUnits(price.current.data ?? 0n, 18));
 let hash = $state<`0x${string}` | undefined>(undefined);
 
 const balance = $derived(
-  useContractRead({
+  createReadQuery({
     contract: "crossLiquidVault",
     functionName: "balanceOf",
     args: [connection.address],
@@ -47,13 +34,7 @@ const balance = $derived(
     watch: true,
   }),
 );
-const conversionRate = $derived(
-  useContractRead({
-    contract: "crossLiquidVault",
-    functionName: "conversionRate",
-    chainId: vaultChain.id,
-  }),
-);
+const conversionRate = $derived(readVaultQuery("conversionRate"));
 
 const mintMutation = useContractWrite({
   contract: "crossLiquidVault",
@@ -65,10 +46,17 @@ const mintMutation = useContractWrite({
 });
 
 const mint = async () => {
-  const price = await calcMintPrice(amountWei);
+  while (debouncedAmountWei.pending || price.isLoading) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  if (price.isError) {
+    toastError("Failed to calculate price");
+    return;
+  }
+  const priceValue = price.data;
   await mintMutation.mutate({
     args: [amountWei],
-    value: price,
+    value: priceValue,
   });
 };
 </script>
@@ -81,19 +69,19 @@ const mint = async () => {
       <div class="stats stats-vertical sm:stats-horizontal shadow bg-base-200/50 w-full">
         <div class="stat place-items-center sm:place-items-start">
           <div class="stat-title">Balance</div>
-          <div class="stat-value text-2xl text-primary">
-            {#if balance.data !== undefined}
-              {formatEther(balance.data as bigint)}
-            {:else}
-              —
-            {/if}
+          <div class="stat-value text-2xl text-primary" data-testid="balance">
+            {formatETH(balance.data as bigint | undefined)} {#if balance.isLoading}*{/if}
           </div>
           <div class="stat-desc">vault tokens</div>
         </div>
         <div class="stat place-items-center sm:place-items-start">
           <div class="stat-title">Conversion rate</div>
           <div class="stat-value text-2xl">
-            {conversionRate.data?.toString() ?? "—"}
+            <QueryRenderer query={conversionRate}>
+              {#snippet children(conversionRate)}
+              1 $CLQ = <span class="font-medium">{formatPrice(conversionRate, 9, 2)}</span> ETH
+              {/snippet}
+            </QueryRenderer>
           </div>
         </div>
       </div>
@@ -105,7 +93,7 @@ const mint = async () => {
     <div class="card-body">
       <h2 class="card-title text-xl">Mint new tokens</h2>
       <p class="text-base-content/70 text-sm">
-        Enter the amount; price in ETH updates automatically.
+        Enter how many $CLQ tokens you want to mint.
       </p>
 
       <div class="form-control w-full max-w-xs">
@@ -125,11 +113,11 @@ const mint = async () => {
       <div class="flex flex-wrap items-center gap-3">
         <span class="text-base-content/80">
           {#if amount > 0}
-            {#if price.current.data !== 0n}
-              <span class="font-medium">{priceFormatted}</span> ETH
-            {:else}
-              <span class="loading loading-dots loading-sm text-primary"></span>
-            {/if}
+            <QueryRenderer query={price}>
+              {#snippet children(price)}
+                Price in ETH: <span class="font-medium">{formatPrice(price, 18, 6)}</span>
+              {/snippet}
+            </QueryRenderer>
           {:else}
             —
           {/if}

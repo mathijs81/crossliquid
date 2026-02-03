@@ -1,14 +1,19 @@
+import type { ContractName } from "$lib/contracts/deployedContracts";
+import {
+  crossLiquidVaultAbi,
+  crossLiquidVaultAddress,
+} from "$lib/contracts/generated.local";
 import type { WagmiChain } from "$lib/utils/types";
+import { vaultChainId } from "$lib/wagmi/chains";
 import { config } from "$lib/wagmi/config";
 import { createDeployedContractInfo } from "$lib/web3/createDeployedContractInfo.svelte";
 import { createQuery } from "@tanstack/svelte-query";
 import { readContractQueryOptions } from "@wagmi/core/query";
-import type { Abi } from "viem";
-import { getGlobalClient } from "./globalClient";
-import type { ContractName } from "$lib/contracts/deployedContracts";
+import type { Abi, ContractFunctionArgs, ContractFunctionName } from "viem";
 import { DEFAULT_WATCH_INTERVAL } from "./config";
+import { getGlobalClient } from "./globalClient";
 
-export interface UseContractReadOptions {
+export interface ReadQueryOptions {
   contract: `0x${string}` | ContractName;
   abi?: Abi;
   functionName: string;
@@ -25,7 +30,60 @@ export interface UseContractReadOptions {
   staleTime?: number;
 }
 
-export function useContractRead(options: UseContractReadOptions) {
+export function readVaultQuery<
+  functionName extends ContractFunctionName<
+    typeof crossLiquidVaultAbi,
+    "pure" | "view"
+  >,
+  const args extends ContractFunctionArgs<
+    typeof crossLiquidVaultAbi,
+    "pure" | "view",
+    functionName
+  >,
+>(functionName: functionName, args?: args) {
+  return createQuery(
+    () =>
+      readContractQueryOptions(config, {
+        address:
+          crossLiquidVaultAddress[
+            vaultChainId as keyof typeof crossLiquidVaultAddress
+          ],
+        abi: crossLiquidVaultAbi,
+        functionName,
+        args,
+        chainId: vaultChainId,
+        query: {
+          enabled: true,
+          refetchInterval: false,
+          staleTime: 0,
+        },
+      }),
+    getGlobalClient(),
+  );
+}
+
+// export function readAbiQuery<const abi extends Abi, functionName extends ContractFunctionName<abi, "pure" | "view">,
+//   const args extends ContractFunctionArgs<abi, "pure" | "view", functionName>>(
+//   address: `0x${string}`, abi: abi, functionName: functionName, args: args) {
+//   return createQuery(
+//     () =>
+//       readContractQueryOptions(config, {
+//         address,
+//         abi,
+//         functionName,
+//         args,
+//         chainId: vaultChainId,
+//         query: {
+//           enabled: true,
+//           refetchInterval: false,
+//           staleTime: 0,
+//         },
+//       }),
+//     getGlobalClient(),
+//   );
+// }
+
+export function createReadQuery(options: ReadQueryOptions) {
   let contractAddress: `0x${string}`;
   let contractAbi: Abi;
   if (

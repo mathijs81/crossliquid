@@ -81,7 +81,7 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuard, 
     function returnToVault(uint256 amount) external onlyOperatorOrOwner onlyVaultChain nonReentrant {
         if (address(this).balance < amount) revert InsufficientBalance();
 
-        (bool success, ) = payable(address(vault)).call{value: amount}("");
+        (bool success,) = payable(address(vault)).call{ value: amount }("");
         if (!success) revert TransferFailed();
 
         emit FundsReturnedToVault(amount);
@@ -91,10 +91,12 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuard, 
 
     /// @notice Deploy funds into a Uniswap v4 position
     /// @dev Implementation depends on Uniswap v4 hook and pool setup
-    function depositToUniswap(
-        address poolManager,
-        bytes calldata positionParams
-    ) external onlyOperatorOrOwner nonReentrant returns (bytes32 positionId) {
+    function depositToUniswap(address poolManager, bytes calldata positionParams)
+        external
+        onlyOperatorOrOwner
+        nonReentrant
+        returns (bytes32 positionId)
+    {
         // TODO(mathijs): Implement Uniswap v4 position creation
 
         positionId = bytes32(0); // Placeholder
@@ -103,11 +105,12 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuard, 
     }
 
     /// @notice Withdraw funds from a Uniswap v4 position
-    function withdrawFromUniswap(
-        address poolManager,
-        bytes32 positionId,
-        uint128 liquidityToRemove
-    ) external onlyOperatorOrOwner nonReentrant returns (uint256 amount0, uint256 amount1) {
+    function withdrawFromUniswap(address poolManager, bytes32 positionId, uint128 liquidityToRemove)
+        external
+        onlyOperatorOrOwner
+        nonReentrant
+        returns (uint256 amount0, uint256 amount1)
+    {
         // TODO(mathijs): Implement Uniswap v4 position withdrawal
 
         emit WithdrawnFromUniswap(0, positionId);
@@ -133,7 +136,7 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuard, 
     ) external onlyOperatorOrOwner nonReentrant {
         if (address(this).balance < amount) revert InsufficientBalance();
 
-        (bool success, ) = bridge.call{value: amount}(bridgeCallData);
+        (bool success,) = bridge.call{ value: amount }(bridgeCallData);
         if (!success) revert TransferFailed();
 
         emit BridgedToChain(bridge, destinationChainId, amount);
@@ -152,7 +155,7 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuard, 
         IERC20(token).safeIncreaseAllowance(bridge, amount);
 
         // Execute the bridge call
-        (bool success, ) = bridge.call(bridgeCallData);
+        (bool success,) = bridge.call(bridgeCallData);
         if (!success) revert TransferFailed();
 
         emit BridgedToChain(bridge, destinationChainId, amount);
@@ -176,7 +179,7 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuard, 
     /// @notice Emergency withdrawal of ETH (only owner)
     function emergencyWithdrawETH(address payable to, uint256 amount) external onlyOwner {
         if (address(this).balance < amount) revert InsufficientBalance();
-        (bool success, ) = to.call{value: amount}("");
+        (bool success,) = to.call{ value: amount }("");
         if (!success) revert TransferFailed();
     }
 
@@ -185,7 +188,7 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuard, 
         IERC20(token).safeTransfer(to, amount);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner { }
 
     // === Receive ETH ===
 

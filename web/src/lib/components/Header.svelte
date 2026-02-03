@@ -9,9 +9,11 @@ import NetworkMismatchAlert from "./NetworkMismatchAlert.svelte";
 
 const connection = createConnection();
 
-const balance = useBalance(connection.address as `0x${string}` | undefined, {
-  watch: true,
-});
+const balance = $derived(
+  useBalance(connection.address as `0x${string}` | undefined, {
+    watch: true,
+  }),
+);
 const blockNumber = useBlockNumber({ watch: true });
 
 const chainName = $derived(

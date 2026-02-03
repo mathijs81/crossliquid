@@ -5,6 +5,7 @@ import { createDeployedContractInfo } from "$lib/web3/createDeployedContractInfo
 import { txWatcher } from "$lib/web3/txWatcher.svelte";
 import { createMutation, useQueryClient } from "@tanstack/svelte-query";
 import type { Abi, TransactionReceipt } from "viem";
+import { getGlobalClient } from "./globalClient";
 
 export interface UseContractWriteOptions {
   contract: `0x${string}` | ContractName;
@@ -20,7 +21,7 @@ export interface UseContractWriteOptions {
 }
 
 export function useContractWrite(options: UseContractWriteOptions) {
-  const queryClient = useQueryClient();
+  const queryClient = getGlobalClient()?.() ?? useQueryClient();
 
   let contractAddress: `0x${string}`;
   let contractAbi: Abi;
@@ -56,65 +57,68 @@ export function useContractWrite(options: UseContractWriteOptions) {
     gas?: bigint;
   };
 
-  return createMutation(() => ({
-    mutationFn: async (variables: Variables) => {
-      const { writeContract } = await import("@wagmi/core");
-      const functionName = options.functionName || variables.functionName;
-      if (!functionName) {
-        throw new Error("Function name is required");
-      }
-      return writeContract(config, {
-        address: contractAddress,
-        abi: contractAbi,
-        functionName,
-        args: variables.args,
-        value: variables.value,
-        gas: variables.gas,
-      });
-    },
-    onMutate: async () => {
-      if (options.invalidateKeys) {
-        for (const key of options.invalidateKeys) {
-          await queryClient.cancelQueries({ queryKey: key });
+  return createMutation(
+    () => ({
+      mutationFn: async (variables: Variables) => {
+        const { writeContract } = await import("@wagmi/core");
+        const functionName = options.functionName || variables.functionName;
+        if (!functionName) {
+          throw new Error("Function name is required");
         }
-      }
-    },
-    onSuccess: async (hash: `0x${string}`, variables: Variables) => {
-      options.onSent?.(hash);
-
-      if (contractName || options.functionName) {
-        txWatcher.watch(hash, options.chainId, {
-          contractName,
-          functionName: variables.functionName,
+        return writeContract(config, {
+          address: contractAddress,
+          abi: contractAbi,
+          functionName,
+          args: variables.args,
+          value: variables.value,
+          gas: variables.gas,
         });
-      }
-
-      if (options.waitForConfirmation !== false) {
-        try {
-          const { waitForTransactionReceipt } = await import("@wagmi/core");
-          const receipt = await waitForTransactionReceipt(config, {
-            hash,
-            confirmations: options.confirmations ?? 1,
-          });
-
-          options.onConfirmed?.(receipt);
-
-          if (options.invalidateKeys) {
-            for (const key of options.invalidateKeys) {
-              queryClient.invalidateQueries({ queryKey: key });
-            }
+      },
+      onMutate: async () => {
+        if (options.invalidateKeys) {
+          for (const key of options.invalidateKeys) {
+            await queryClient.cancelQueries({ queryKey: key });
           }
-        } catch (error) {
-          options.onError?.(error as Error);
         }
-      } else if (options.invalidateKeys) {
-        for (const key of options.invalidateKeys) {
-          queryClient.invalidateQueries({ queryKey: key });
+      },
+      onSuccess: async (hash: `0x${string}`, variables: Variables) => {
+        options.onSent?.(hash);
+
+        if (contractName || options.functionName) {
+          txWatcher.watch(hash, options.chainId, {
+            contractName,
+            functionName: variables.functionName,
+          });
         }
-      }
-    },
-    onError: (error: Error) => {
-      options.onError?.(error);
-    },
-  }));
+
+        if (options.waitForConfirmation !== false) {
+          try {
+            const { waitForTransactionReceipt } = await import("@wagmi/core");
+            const receipt = await waitForTransactionReceipt(config, {
+              hash,
+              confirmations: options.confirmations ?? 1,
+            });
+
+            options.onConfirmed?.(receipt);
+
+            if (options.invalidateKeys) {
+              for (const key of options.invalidateKeys) {
+                queryClient.invalidateQueries({ queryKey: key });
+              }
+            }
+          } catch (error) {
+            options.onError?.(error as Error);
+          }
+        } else if (options.invalidateKeys) {
+          for (const key of options.invalidateKeys) {
+            queryClient.invalidateQueries({ queryKey: key });
+          }
+        }
+      },
+      onError: (error: Error) => {
+        options.onError?.(error);
+      },
+    }),
+    getGlobalClient(),
+  );
 }

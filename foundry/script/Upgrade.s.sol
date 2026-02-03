@@ -39,11 +39,11 @@ contract Upgrade is Script {
         vm.startBroadcast();
 
         if (upgradeVault && vaultProxy != address(0)) {
-            upgradeVaultImplementation(vaultProxy);
+            upgradeVaultImplementation(payable(vaultProxy));
         }
 
         if (upgradeManager && managerProxy != address(0)) {
-            upgradeManagerImplementation(managerProxy);
+            upgradeManagerImplementation(payable(managerProxy));
         }
 
         if (!upgradeVault && !upgradeManager) {
@@ -58,7 +58,7 @@ contract Upgrade is Script {
         console.log("=== Upgrade Complete ===");
     }
 
-    function upgradeVaultImplementation(address vaultProxy) internal {
+    function upgradeVaultImplementation(address payable vaultProxy) internal {
         console.log("Upgrading vault...");
         console.log("Vault proxy:", vaultProxy);
 
@@ -81,7 +81,7 @@ contract Upgrade is Script {
         console.log("");
     }
 
-    function upgradeManagerImplementation(address managerProxy) internal {
+    function upgradeManagerImplementation(address payable managerProxy) internal {
         console.log("Upgrading manager...");
         console.log("Manager proxy:", managerProxy);
 

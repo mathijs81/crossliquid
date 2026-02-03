@@ -11,7 +11,7 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 /// We keep this as a multiplier vs. oracle ETH price
 contract CrossLiquidVault is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     uint256 public constant CONVERSION_RATE_MULTIPLIER = 1e9;
-    uint256 public constant FEE_DIVISOR = 100000;
+    uint256 public constant FEE_DIVISOR = 100_000;
 
     uint256 public mintFee;
     uint256 public redeemFee;
@@ -37,11 +37,14 @@ contract CrossLiquidVault is Initializable, ERC20Upgradeable, OwnableUpgradeable
         conversionRate = CONVERSION_RATE_MULTIPLIER; // 1:1 default
     }
 
-    function mint(uint256 tokens) payable public {
+    function mint(uint256 tokens) public payable {
         uint256 fee = (msg.value * mintFee) / FEE_DIVISOR;
         uint256 valueAfterFee = msg.value - fee;
         require(valueAfterFee > 0, "Value must be greater than 0");
-        require(valueAfterFee == (tokens * conversionRate) / CONVERSION_RATE_MULTIPLIER, "Value must be equal to the conversion rate");
+        require(
+            valueAfterFee == (tokens * conversionRate) / CONVERSION_RATE_MULTIPLIER,
+            "Value must be equal to the conversion rate"
+        );
         _mint(msg.sender, tokens);
     }
 
@@ -49,7 +52,7 @@ contract CrossLiquidVault is Initializable, ERC20Upgradeable, OwnableUpgradeable
         _burn(msg.sender, amount);
         uint256 fee = (amount * redeemFee) / FEE_DIVISOR;
         uint256 payout = ((amount - fee) * conversionRate) / CONVERSION_RATE_MULTIPLIER;
-        (bool success, ) = payable(msg.sender).call{value: payout}("");
+        (bool success,) = payable(msg.sender).call{ value: payout }("");
         require(success, "Transfer failed");
     }
 
@@ -73,7 +76,7 @@ contract CrossLiquidVault is Initializable, ERC20Upgradeable, OwnableUpgradeable
         require(msg.sender == manager, "Only manager can withdraw");
         require(address(this).balance >= amount, "Insufficient balance");
 
-        (bool success, ) = payable(to).call{value: amount}("");
+        (bool success,) = payable(to).call{ value: amount }("");
         require(success, "Transfer failed");
 
         emit FundsWithdrawn(to, amount);
@@ -85,10 +88,10 @@ contract CrossLiquidVault is Initializable, ERC20Upgradeable, OwnableUpgradeable
         return tokenCost * FEE_DIVISOR / (FEE_DIVISOR - mintFee);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner { }
 
     /// Accept ETH from manager returning funds
-    receive() external payable {}
+    receive() external payable { }
 
     /// @dev Storage gap for future upgrades
     uint256[50] private __gap;

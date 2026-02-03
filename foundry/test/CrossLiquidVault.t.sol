@@ -13,7 +13,7 @@ contract CrossLiquidVaultTest is Test {
     address public manager;
 
     uint256 constant CONVERSION_RATE_MULTIPLIER = 1e9;
-    uint256 constant FEE_DIVISOR = 100000;
+    uint256 constant FEE_DIVISOR = 100_000;
 
     function setUp() public {
         owner = makeAddr("owner");
@@ -25,10 +25,7 @@ contract CrossLiquidVaultTest is Test {
         CrossLiquidVault vaultImpl = new CrossLiquidVault();
 
         // Deploy proxy
-        ERC1967Proxy proxy = new ERC1967Proxy(
-            address(vaultImpl),
-            abi.encodeCall(CrossLiquidVault.initialize, (owner))
-        );
+        ERC1967Proxy proxy = new ERC1967Proxy(address(vaultImpl), abi.encodeCall(CrossLiquidVault.initialize, (owner)));
 
         vault = CrossLiquidVault(payable(address(proxy)));
 
@@ -56,7 +53,7 @@ contract CrossLiquidVaultTest is Test {
         uint256 ethNeeded = (tokensToMint * FEE_DIVISOR) / (FEE_DIVISOR - 1000);
 
         vm.prank(user1);
-        vault.mint{value: ethNeeded}(tokensToMint);
+        vault.mint{ value: ethNeeded }(tokensToMint);
 
         assertEq(vault.balanceOf(user1), tokensToMint);
         assertEq(address(vault).balance, ethNeeded);
@@ -76,7 +73,7 @@ contract CrossLiquidVaultTest is Test {
         uint256 price = vault.calcMintPrice(tokensToMint);
 
         vm.prank(user1);
-        vault.mint{value: price}(tokensToMint);
+        vault.mint{ value: price }(tokensToMint);
 
         assertEq(vault.balanceOf(user1), tokensToMint);
     }
@@ -87,7 +84,7 @@ contract CrossLiquidVaultTest is Test {
         uint256 mintPrice = vault.calcMintPrice(tokensToMint);
 
         vm.prank(user1);
-        vault.mint{value: mintPrice}(tokensToMint);
+        vault.mint{ value: mintPrice }(tokensToMint);
 
         uint256 balanceBefore = user1.balance;
         uint256 tokensToRedeem = 5 ether;
@@ -131,13 +128,13 @@ contract CrossLiquidVaultTest is Test {
 
         uint256 tokensToMint = 1 ether;
         uint256 price = vault.calcMintPrice(tokensToMint);
-        assertEq(price, 1.571717171717171717 ether);
+        assertEq(price, 1.571_717_171_717_171_717 ether);
 
         vm.prank(user1);
-        vault.mint{value: price}(tokensToMint);
+        vault.mint{ value: price }(tokensToMint);
 
         assertEq(vault.balanceOf(user1), tokensToMint);
-        
+
         vm.prank(owner);
         vault.setConversionRate(CONVERSION_RATE_MULTIPLIER);
         vm.prank(user1);
@@ -145,7 +142,7 @@ contract CrossLiquidVaultTest is Test {
         tokensToMint = 10 ether;
         uint256 mintPrice = vault.calcMintPrice(tokensToMint);
 
-        vault.mint{value: mintPrice}(tokensToMint);
+        vault.mint{ value: mintPrice }(tokensToMint);
 
         // Change rate to 2:1 (tokens more valuable)
         vm.prank(owner);
@@ -194,7 +191,7 @@ contract CrossLiquidVaultTest is Test {
         assertEq(price, expected);
 
         vm.prank(user1);
-        vault.mint{value: price}(tokensToMint);
+        vault.mint{ value: price }(tokensToMint);
 
         assertEq(vault.balanceOf(user1), tokensToMint);
     }
@@ -206,12 +203,12 @@ contract CrossLiquidVaultTest is Test {
         // User1 mints
         uint256 price1 = vault.calcMintPrice(amount1);
         vm.prank(user1);
-        vault.mint{value: price1}(amount1);
+        vault.mint{ value: price1 }(amount1);
 
         // User2 mints
         uint256 price2 = vault.calcMintPrice(amount2);
         vm.prank(user2);
-        vault.mint{value: price2}(amount2);
+        vault.mint{ value: price2 }(amount2);
 
         assertEq(vault.balanceOf(user1), amount1);
         assertEq(vault.balanceOf(user2), amount2);
@@ -234,7 +231,7 @@ contract CrossLiquidVaultTest is Test {
         uint256 price = vault.calcMintPrice(tokensToMint);
 
         vm.prank(user1);
-        vault.mint{value: price}(tokensToMint);
+        vault.mint{ value: price }(tokensToMint);
 
         assertEq(vault.balanceOf(user1), tokensToMint);
 
@@ -254,7 +251,7 @@ contract CrossLiquidVaultTest is Test {
         uint256 calculatedPrice = vault.calcMintPrice(tokensToMint);
 
         vm.prank(user1);
-        vault.mint{value: calculatedPrice}(tokensToMint);
+        vault.mint{ value: calculatedPrice }(tokensToMint);
 
         assertEq(vault.balanceOf(user1), tokensToMint);
     }
@@ -286,7 +283,7 @@ contract CrossLiquidVaultTest is Test {
         uint256 tokensToMint = 10 ether;
         uint256 price = vault.calcMintPrice(tokensToMint);
         vm.prank(user1);
-        vault.mint{value: price}(tokensToMint);
+        vault.mint{ value: price }(tokensToMint);
 
         // Set manager
         vm.prank(owner);
@@ -309,7 +306,7 @@ contract CrossLiquidVaultTest is Test {
         uint256 tokensToMint = 10 ether;
         uint256 price = vault.calcMintPrice(tokensToMint);
         vm.prank(user1);
-        vault.mint{value: price}(tokensToMint);
+        vault.mint{ value: price }(tokensToMint);
 
         // Try to withdraw without being manager
         vm.prank(user1);
@@ -330,7 +327,7 @@ contract CrossLiquidVaultTest is Test {
         // Setup
         uint256 price = vault.calcMintPrice(10 ether);
         vm.prank(user1);
-        vault.mint{value: price}(10 ether);
+        vault.mint{ value: price }(10 ether);
 
         vm.prank(owner);
         vault.setManager(manager);
@@ -347,7 +344,7 @@ contract CrossLiquidVaultTest is Test {
         // Setup
         uint256 price = vault.calcMintPrice(20 ether);
         vm.prank(user1);
-        vault.mint{value: price}(20 ether);
+        vault.mint{ value: price }(20 ether);
 
         vm.prank(owner);
         vault.setManager(manager);

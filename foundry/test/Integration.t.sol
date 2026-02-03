@@ -25,25 +25,21 @@ contract IntegrationTest is Test {
 
         // Deploy vault with proxy
         CrossLiquidVault vaultImpl = new CrossLiquidVault();
-        ERC1967Proxy vaultProxy = new ERC1967Proxy(
-            address(vaultImpl),
-            abi.encodeCall(CrossLiquidVault.initialize, (owner))
-        );
+        ERC1967Proxy vaultProxy =
+            new ERC1967Proxy(address(vaultImpl), abi.encodeCall(CrossLiquidVault.initialize, (owner)));
         vault = CrossLiquidVault(payable(address(vaultProxy)));
 
         // Deploy Base manager with proxy
         PositionManager managerBaseImpl = new PositionManager();
         ERC1967Proxy managerBaseProxy = new ERC1967Proxy(
-            address(managerBaseImpl),
-            abi.encodeCall(PositionManager.initialize, (payable(address(vault)), owner))
+            address(managerBaseImpl), abi.encodeCall(PositionManager.initialize, (payable(address(vault)), owner))
         );
         managerBase = PositionManager(payable(address(managerBaseProxy)));
 
         // Deploy Optimism manager with proxy (no vault)
         PositionManager managerOptimismImpl = new PositionManager();
         ERC1967Proxy managerOptimismProxy = new ERC1967Proxy(
-            address(managerOptimismImpl),
-            abi.encodeCall(PositionManager.initialize, (payable(address(0)), owner))
+            address(managerOptimismImpl), abi.encodeCall(PositionManager.initialize, (payable(address(0)), owner))
         );
         managerOptimism = PositionManager(payable(address(managerOptimismProxy)));
 
@@ -62,11 +58,11 @@ contract IntegrationTest is Test {
         // 1. Users deposit to vault on Base
         uint256 price1 = vault.calcMintPrice(20 ether);
         vm.prank(user1);
-        vault.mint{value: price1}(20 ether);
+        vault.mint{ value: price1 }(20 ether);
 
         uint256 price2 = vault.calcMintPrice(15 ether);
         vm.prank(user2);
-        vault.mint{value: price2}(15 ether);
+        vault.mint{ value: price2 }(15 ether);
 
         uint256 totalDeposited = address(vault).balance;
         assertEq(vault.balanceOf(user1), 20 ether);
@@ -81,7 +77,7 @@ contract IntegrationTest is Test {
         address mockBridge = makeAddr("lifi-bridge");
         vm.deal(mockBridge, 10 ether);
         vm.prank(mockBridge);
-        managerOptimism.receiveFromBridge{value: 10 ether}();
+        managerOptimism.receiveFromBridge{ value: 10 ether }();
         assertEq(address(managerOptimism).balance, 10 ether);
 
         // 4. Simulate investment and profits on Optimism
@@ -108,7 +104,7 @@ contract IntegrationTest is Test {
         // Large deposit
         uint256 price = vault.calcMintPrice(100 ether);
         vm.prank(user1);
-        vault.mint{value: price}(100 ether);
+        vault.mint{ value: price }(100 ether);
 
         // Invest 95% (keep 5% reserve for redemptions)
         uint256 investAmount = (address(vault).balance * 95) / 100;
@@ -148,11 +144,11 @@ contract IntegrationTest is Test {
         // Multiple users deposit
         uint256 price1 = vault.calcMintPrice(10 ether);
         vm.prank(user1);
-        vault.mint{value: price1}(10 ether);
+        vault.mint{ value: price1 }(10 ether);
 
         uint256 price2 = vault.calcMintPrice(15 ether);
         vm.prank(user2);
-        vault.mint{value: price2}(15 ether);
+        vault.mint{ value: price2 }(15 ether);
 
         uint256 totalDeposited = address(vault).balance;
 
@@ -186,7 +182,7 @@ contract IntegrationTest is Test {
         // Setup: funds in various locations
         uint256 price = vault.calcMintPrice(50 ether);
         vm.prank(user1);
-        vault.mint{value: price}(50 ether);
+        vault.mint{ value: price }(50 ether);
 
         vm.prank(operator);
         managerBase.withdrawFromVault(30 ether);
@@ -215,7 +211,7 @@ contract IntegrationTest is Test {
         // Setup
         uint256 price = vault.calcMintPrice(10 ether);
         vm.prank(user1);
-        vault.mint{value: price}(10 ether);
+        vault.mint{ value: price }(10 ether);
 
         // Random user cannot manage vault
         vm.prank(user2);

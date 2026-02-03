@@ -20,17 +20,14 @@ contract PositionManagerTest is Test {
 
         // Deploy vault with proxy
         CrossLiquidVault vaultImpl = new CrossLiquidVault();
-        ERC1967Proxy vaultProxy = new ERC1967Proxy(
-            address(vaultImpl),
-            abi.encodeCall(CrossLiquidVault.initialize, (owner))
-        );
+        ERC1967Proxy vaultProxy =
+            new ERC1967Proxy(address(vaultImpl), abi.encodeCall(CrossLiquidVault.initialize, (owner)));
         vault = CrossLiquidVault(payable(address(vaultProxy)));
 
         // Deploy manager with proxy
         PositionManager managerImpl = new PositionManager();
         ERC1967Proxy managerProxy = new ERC1967Proxy(
-            address(managerImpl),
-            abi.encodeCall(PositionManager.initialize, (payable(address(vault)), owner))
+            address(managerImpl), abi.encodeCall(PositionManager.initialize, (payable(address(vault)), owner))
         );
         manager = PositionManager(payable(address(managerProxy)));
 
@@ -50,7 +47,7 @@ contract PositionManagerTest is Test {
         // User deposits to vault
         uint256 price = vault.calcMintPrice(10 ether);
         vm.prank(user1);
-        vault.mint{value: price}(10 ether);
+        vault.mint{ value: price }(10 ether);
 
         // Operator withdraws from vault
         vm.prank(operator);
@@ -60,7 +57,7 @@ contract PositionManagerTest is Test {
         // Simulate receiving funds from bridge (anyone can send)
         vm.deal(user1, 3 ether);
         vm.prank(user1);
-        manager.receiveFromBridge{value: 3 ether}();
+        manager.receiveFromBridge{ value: 3 ether }();
         assertEq(address(manager).balance, 8 ether);
 
         // Operator can manage Uniswap positions (placeholder calls)
@@ -88,7 +85,7 @@ contract PositionManagerTest is Test {
         vm.stopPrank();
 
         vm.prank(user1);
-        vault.mint{value: price}(10 ether);
+        vault.mint{ value: price }(10 ether);
 
         vm.startPrank(owner);
         manager.withdrawFromVault(6 ether);
@@ -113,8 +110,7 @@ contract PositionManagerTest is Test {
         // Deploy child chain manager (no vault)
         PositionManager childManagerImpl = new PositionManager();
         ERC1967Proxy childProxy = new ERC1967Proxy(
-            address(childManagerImpl),
-            abi.encodeCall(PositionManager.initialize, (payable(address(0)), owner))
+            address(childManagerImpl), abi.encodeCall(PositionManager.initialize, (payable(address(0)), owner))
         );
         PositionManager childManager = PositionManager(payable(address(childProxy)));
 
@@ -134,7 +130,7 @@ contract PositionManagerTest is Test {
 
         // Can receive funds and manage Uniswap on child chain
         vm.prank(user1);
-        childManager.receiveFromBridge{value: 1 ether}();
+        childManager.receiveFromBridge{ value: 1 ether }();
         assertEq(address(childManager).balance, 11 ether);
     }
 
@@ -145,7 +141,7 @@ contract PositionManagerTest is Test {
 
         uint256 price = vault.calcMintPrice(5 ether);
         vm.prank(user1);
-        vault.mint{value: price}(5 ether);
+        vault.mint{ value: price }(5 ether);
 
         // Random user cannot withdraw from vault
         vm.prank(user1);
