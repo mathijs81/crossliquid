@@ -45,14 +45,18 @@ contract DeployUniswapV4 is Script {
     uint24 constant FEE = 3000; // 0.3%
     int24 constant TICK_SPACING = 60;
 
+    uint24 STANDARD_PRICE = 2424;
+
     function run() public {
         address deployer = msg.sender;
         bool mintTokens = vm.envOr("MINT_TOKENS", false);
+        bool addOtherPool = !vm.envOr("NO_OTHER_POOL", false);
 
         console.log("=== Uniswap v4 Local Deployment ===");
         console.log("Deployer:", deployer);
         console.log("Chain ID:", block.chainid);
         console.log("Mint test tokens:", mintTokens);
+        console.log("Add other pool:", addOtherPool);
         console.log("");
 
         vm.startBroadcast();
@@ -75,7 +79,20 @@ contract DeployUniswapV4 is Script {
         console.log("Token0 (sorted):", Currency.unwrap(currency0));
         console.log("Token1 (sorted):", Currency.unwrap(currency1));
 
-        // 4. Create and initialize pool (no hook for now)
+        // if (addOtherPool) {
+        //     uint24 OTHER_FEE = 500; // 0.05%
+        //     PoolKey memory otherPoolKey = PoolKey({
+        //         currency0: currency0,
+        //         currency1: currency1,
+        //         fee: OTHER_FEE,
+        //         tickSpacing: 10,
+        //         hooks: IHooks(address(0))
+        //     });
+        //     // TODO: implement other pool initialization
+        // }
+
+
+        // 4. Create and initialize our pool (no hook for now)
         PoolKey memory poolKey = PoolKey({
             currency0: currency0,
             currency1: currency1,
@@ -110,6 +127,10 @@ contract DeployUniswapV4 is Script {
             console.log("Test tokens minted to deployer:");
             console.log("Token0:", 10_000_000, "(adjusted for decimals)");
             console.log("Token1:", 10_000, "(adjusted for decimals)");
+
+            console.log("");
+            console.log("Note: Initial liquidity should be added via PositionManager.depositToUniswap()");
+            console.log("      Scripts cannot easily implement IUnlockCallback due to Foundry limitations");
         }
 
         vm.stopBroadcast();
@@ -130,8 +151,30 @@ contract DeployUniswapV4 is Script {
         console.log("  2. Test liquidity operations with PositionManager");
         console.log("  3. Add hook contract in later phase");
         console.log("");
-        console.log("To add liquidity for testing:");
-        console.log("  - Approve tokens to PoolManager");
-        console.log("  - Call PositionManager.depositToUniswap()");
+        console.log("To add initial liquidity:");
+        console.log("  1. Deploy PositionManager");
+        console.log("  2. Transfer tokens to PositionManager");
+        console.log("  3. Call PositionManager.depositToUniswap() with appropriate parameters");
+
+        // Write relevant addresses to json file
+        string memory objectKey = "uniswapV4";
+        vm.serializeAddress(objectKey, "poolManager", address(poolManager));
+        vm.serializeAddress(objectKey, "usdc", address(usdc));
+        vm.serializeAddress(objectKey, "weth", address(weth));
+        vm.serializeAddress(objectKey, "token0", Currency.unwrap(currency0));
+        vm.serializeAddress(objectKey, "token1", Currency.unwrap(currency1));
+        string memory json = vm.serializeString(objectKey, "poolId", vm.toString(PoolId.unwrap(poolId)));
+
+        // Create directory structure and write to broadcast/uniswapContracts/{chainId}/deployedUniswap.json
+        string memory chainIdStr = vm.toString(block.chainid);
+        string memory outputDir = string.concat("broadcast/uniswapContracts/", chainIdStr);
+        string memory outputPath = string.concat(outputDir, "/deployedUniswap.json");
+
+        vm.createDir(outputDir, true);
+        vm.writeJson(json, outputPath);
+
+        console.log("");
+        console.log("Deployment data written to:", outputPath);
     }
 }
+
