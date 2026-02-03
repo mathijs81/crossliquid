@@ -14,7 +14,7 @@ We have an off-chain agent that determines where to redistribute the funds acros
 
 ## Components
 
-### 1. On-chain Vault (`CrossLiquidVault.sol`)
+### 1. On-chain Vault
 
 A simple contract on Base that accepts donations and hands out `$CLQ` tokens. Basic mechanism to allow gradual withdrawals (e.g. keep ~5% of funds always available on Base, when depleted, the agent will repatriate funds back from the LP positions into the vault).
 
@@ -28,7 +28,7 @@ A simple contract on Base that accepts donations and hands out `$CLQ` tokens. Ba
 
 - Fires events to see what's going on
 
-### 3. Off-chain agent (`agent/`)
+### 3. Off-chain agent
 
 - Monitor the pools on various chains, keep a "liquidity opportunity score" for each chain
 
@@ -36,7 +36,7 @@ A simple contract on Base that accepts donations and hands out `$CLQ` tokens. Ba
 
 - Uses LI.FI composer to execute changes
 
-### 4. Frontend (`web/`)
+### 4. Frontend
 
 - Svelte-based UI to deposit funds
 
@@ -78,13 +78,13 @@ These things would be great to have, but to keep this project feasible for ~1 we
 ## Other open questions
 
 - Li.fi composer doesn't support direct Uniswap LP'ing, how do I get the funds into the pool?
-  
-   --> We send funds between our PoolManager contracts on different chains and the offchain agent manages into/out of LP positions
 - Historic yield: how do we get this without building a historical yield database?
 
 ## Relevant links
 
 - [Composer (Composer & on-chain flow composition) - LI.FI](https://docs.li.fi/introduction/user-flows-and-examples/lifi-composer#key-benefits-of-li-fi-composer)
+
+
 
 Forked off [svelte-scaffold-eth: A modern starter template for building Ethereum dApps with SvelteKit 5, Foundry, and DaisyUI.](https://github.com/mathijs81/svelte-scaffold-eth)
 
