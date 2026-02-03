@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -13,7 +13,7 @@ import { CrossLiquidVault } from "./CrossLiquidVault.sol";
 /// Keeps funds, deploys them to uniswap, bridges funds to other chains.
 /// Deployed on all chains with same bytecode. On "parent chain", vault is set.
 /// On other chains, vault is address(0).
-contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuard, UUPSUpgradeable {
+contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTransient, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     // === State Variables ===

@@ -52,6 +52,11 @@ contract CrossLiquidVaultTest is Test {
         // msg.value = 10 ether * 100000 / 99000
         uint256 ethNeeded = (tokensToMint * FEE_DIVISOR) / (FEE_DIVISOR - 1000);
 
+        uint256 calculatedTokens = vault.calcTokensFromValue(ethNeeded);
+        uint256 calculatedEth = vault.calcMintPrice(tokensToMint);
+        assertEq(calculatedTokens, tokensToMint);
+        assertEq(calculatedEth, ethNeeded);
+
         vm.prank(user1);
         vault.mint{ value: ethNeeded }(tokensToMint);
 
@@ -72,10 +77,106 @@ contract CrossLiquidVaultTest is Test {
         uint256 tokensToMint = 5 ether;
         uint256 price = vault.calcMintPrice(tokensToMint);
 
+        uint256 calculatedTokens = vault.calcTokensFromValue(price);
+        uint256 calculatedPrice = vault.calcMintPrice(calculatedTokens);
+        assertEq(calculatedTokens, tokensToMint);
+        assertEq(calculatedPrice, price);
+
         vm.prank(user1);
         vault.mint{ value: price }(tokensToMint);
 
         assertEq(vault.balanceOf(user1), tokensToMint);
+    }
+
+    function testMintWithOnlyEth() public {
+        uint256 ethSpend = 2.34 ether;
+        uint256 expectedTokens = ethSpend - (ethSpend / 100);
+        uint256 expectedPrice = vault.calcMintPrice(expectedTokens);
+        assertEq(expectedPrice, ethSpend);
+        vm.prank(user1);
+        uint256 balanceEthBefore = user1.balance;
+        vault.mint{ value: ethSpend }();
+        assertEq(vault.balanceOf(user1), expectedTokens);
+        assertEq(user1.balance, balanceEthBefore - ethSpend);
+    }
+
+    function testCalcTokensFromValueWithDifferentFees() public {
+        // Set mint fee to 2%
+        vm.prank(owner);
+        vault.setFees(2000, 1000);
+
+        // At 1:1 rate with 2% fee, 10 ETH should give 9.8 tokens
+        uint256 ethSent = 10 ether;
+        uint256 tokens = vault.calcTokensFromValue(ethSent);
+
+        // fee = 10 * 2000 / 100000 = 0.2 ETH
+        // valueAfterFee = 9.8 ETH
+        // tokens = 9.8 * 1e9 / 1e9 = 9.8 tokens
+        uint256 expected = 9.8 ether;
+        assertEq(tokens, expected);
+    }
+
+    function testMintAutoWithZeroValue() public {
+        // Should revert with zero value
+        vm.prank(user1);
+        vm.expectRevert("Value must be greater than 0");
+        vault.mint{ value: 0 }();
+    }
+
+    function testMintAutoMultipleTimes() public {
+        // First mint
+        vm.prank(user1);
+        vault.mint{ value: 10 ether }();
+        assertEq(vault.balanceOf(user1), 9.9 ether);
+
+        // Second mint
+        vm.prank(user1);
+        vault.mint{ value: 5 ether }();
+        assertEq(vault.balanceOf(user1), 9.9 ether + 4.95 ether);
+    }
+
+    function testMintAutoWithHighConversionRate() public {
+        // Set conversion rate to 1.5:1 (1 token = 1.5 ETH)
+        vm.prank(owner);
+        vault.setConversionRate((1500 * CONVERSION_RATE_MULTIPLIER) / 1000);
+
+        uint256 ethSent = 15 ether;
+        uint256 expectedTokens = vault.calcTokensFromValue(ethSent);
+        assertEq(expectedTokens, 9.9 ether);
+        vm.prank(user1);
+        vault.mint{ value: ethSent }();
+
+        // fee = 15 * 1000 / 100000 = 0.15 ETH
+        // valueAfterFee = 14.85 ETH
+        // tokens = 14.85 * 1e9 / 1.5e9 = 9.9 tokens
+        uint256 expected = 9.9 ether;
+        assertEq(vault.balanceOf(user1), expected);
+    }
+
+    function testFuzzMintAuto(uint96 amount) public {
+        vm.assume(amount > 0.01 ether && amount < 100 ether);
+
+        uint256 ethSent = uint256(amount);
+        uint256 expectedTokens = vault.calcTokensFromValue(ethSent);
+
+        vm.prank(user1);
+        vault.mint{ value: ethSent }();
+
+        assertEq(vault.balanceOf(user1), expectedTokens);
+    }
+
+    function testFuzzCalcTokensFromValue(uint96 amount) public view {
+        vm.assume(amount > 0.01 ether && amount < 100 ether);
+
+        uint256 ethSent = uint256(amount);
+        uint256 tokens = vault.calcTokensFromValue(ethSent);
+
+        // Manually calculate expected
+        uint256 fee = (ethSent * 1000) / FEE_DIVISOR;
+        uint256 valueAfterFee = ethSent - fee;
+        uint256 expected = (valueAfterFee * CONVERSION_RATE_MULTIPLIER) / CONVERSION_RATE_MULTIPLIER;
+
+        assertEq(tokens, expected);
     }
 
     function testRedeemTokens() public {
@@ -129,6 +230,9 @@ contract CrossLiquidVaultTest is Test {
         uint256 tokensToMint = 1 ether;
         uint256 price = vault.calcMintPrice(tokensToMint);
         assertEq(price, 1.571_717_171_717_171_717 ether);
+
+        uint256 calculatedTokens = vault.calcTokensFromValue(price);
+        assertEq(calculatedTokens, tokensToMint);
 
         vm.prank(user1);
         vault.mint{ value: price }(tokensToMint);
