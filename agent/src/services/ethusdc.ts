@@ -1,14 +1,13 @@
 import { formatUnits, parseEther } from "viem";
-import { chains, UNIV4_CONTRACTS } from "../config";
+import {
+  chains,
+  DEFAULT_POOL_KEYS,
+  ETHUSDC_POOLS,
+  ETHUSDC_ZERO_FOR_ONE,
+  type PoolKey,
+  UNIV4_CONTRACTS,
+} from "../config";
 import { logger } from "../logger";
-
-export interface PoolKey {
-  currency0: `0x${string}`;
-  currency1: `0x${string}`;
-  fee: number;
-  tickSpacing: number;
-  hooks: `0x${string}`;
-}
 
 export interface EthUsdcPoolData {
   poolId: string;
@@ -106,33 +105,6 @@ const POOL_MANAGER_ABI = [
   },
 ] as const;
 
-const ETHUSDC_POOLS: Record<number, string[]> = {
-  8453: [],
-  10: [],
-};
-
-const DEFAULT_POOL_KEYS: Record<number, PoolKey> = {
-  8453: {
-    currency0: "0x0000000000000000000000000000000000000000",
-    currency1: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    fee: 500,
-    tickSpacing: 10,
-    hooks: "0x0000000000000000000000000000000000000000",
-  },
-  10: {
-    currency0: "0x0000000000000000000000000000000000000000",
-    currency1: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
-    fee: 500,
-    tickSpacing: 10,
-    hooks: "0x0000000000000000000000000000000000000000",
-  },
-};
-
-const zeroForOne: Record<number, boolean> = {
-  8453: true,
-  10: true,
-};
-
 export async function simulateEthToUsdcSwap(
   chainId: number,
   poolKey?: PoolKey,
@@ -164,7 +136,7 @@ export async function simulateEthToUsdcSwap(
       address: contracts.quoter,
       abi: QUOTER_ABI,
       functionName: "quoteExactInputSingle",
-      args: [{ poolKey: effectivePoolKey, zeroForOne: zeroForOne[chainId], exactAmount: ethAmount, hookData: "0x" }],
+      args: [{ poolKey: effectivePoolKey, zeroForOne: ETHUSDC_ZERO_FOR_ONE[chainId], exactAmount: ethAmount, hookData: "0x" }],
     });
 
     return result[0];//(await result).result[0];

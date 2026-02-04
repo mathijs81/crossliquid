@@ -1,6 +1,6 @@
-import { type Chain, createPublicClient, http, type PublicClient } from "viem";
-import { base, mainnet, optimism } from "viem/chains";
-import { logger } from "./logger";
+import type { PublicClient } from "viem";
+import { initializeChains } from "./utils/chain";
+import { validateAddress, validatePrivateKey } from "./utils/validation";
 
 export type Environment = "development" | "production" | "testnet";
 
@@ -23,6 +23,14 @@ export interface UniV4Contracts {
   usdc: `0x${string}`;
 }
 
+export interface PoolKey {
+  currency0: `0x${string}`;
+  currency1: `0x${string}`;
+  fee: number;
+  tickSpacing: number;
+  hooks: `0x${string}`;
+}
+
 // https://docs.uniswap.org/contracts/v4/deployments
 export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
   8453: {
@@ -41,101 +49,32 @@ export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
   },
 };
 
-const createClient = (chain: Chain, rpcUrl?: string) => {
-  return createPublicClient({
-    chain,
-    transport: rpcUrl ? http(rpcUrl) : http(),
-  });
+export const ETHUSDC_POOLS: Record<number, string[]> = {
+  8453: [],
+  10: [],
 };
 
-const getRpcUrl = (chainId: number): string => {
-  const envVars: Record<number, string> = {
-    [base.id]: process.env.RPC_BASE || "",
-    [optimism.id]: process.env.RPC_OPTIMISM || "",
-    [mainnet.id]: process.env.RPC_MAINNET || "",
-  };
-  return envVars[chainId] || "";
-};
+export const DEFAULT_POOL_KEYS: Record<number, PoolKey> = Object.fromEntries(
+  Object.keys(UNIV4_CONTRACTS).map((chainId) => {
+    const id = Number(chainId);
+    return [
+      id,
+      {
+        currency0: "0x0000000000000000000000000000000000000000",
+        currency1: UNIV4_CONTRACTS[id].usdc,
+        fee: 500,
+        tickSpacing: 10,
+        hooks: "0x0000000000000000000000000000000000000000",
+      },
+    ];
+  }),
+);
 
-export const chains: Map<number, ChainConfig> = new Map();
+export const ETHUSDC_ZERO_FOR_ONE: Record<number, boolean> = Object.fromEntries(
+  Object.keys(UNIV4_CONTRACTS).map((chainId) => [Number(chainId), true]),
+);
 
-const initializeChains = () => {
-  if (ENVIRONMENT === "development") {
-    logger.info(
-      "Running in development mode - chains disabled (use local setup if needed)",
-    );
-    return;
-  }
-
-  chains.set(base.id, {
-    chainId: base.id,
-    chainName: base.name,
-    rpcUrl: getRpcUrl(base.id),
-    publicClient: createClient(base, getRpcUrl(base.id)),
-  });
-
-  chains.set(optimism.id, {
-    chainId: optimism.id,
-    chainName: optimism.name,
-    rpcUrl: getRpcUrl(optimism.id),
-    publicClient: createClient(optimism, getRpcUrl(optimism.id)),
-  });
-
-  chains.set(mainnet.id, {
-    chainId: mainnet.id,
-    chainName: mainnet.name,
-    rpcUrl: getRpcUrl(mainnet.id),
-    publicClient: createClient(mainnet, getRpcUrl(mainnet.id)),
-  });
-
-  logger.info(
-    { environment: ENVIRONMENT, chains: Array.from(chains.keys()) },
-    "Chains initialized",
-  );
-};
-
-initializeChains();
-
-const validatePrivateKey = (
-  key: string | undefined,
-): `0x${string}` | undefined => {
-  if (!key) {
-    return undefined;
-  }
-
-  if (!key.startsWith("0x") || key.length !== 66) {
-    logger.error(
-      { keyLength: key.length, hasPrefix: key.startsWith("0x") },
-      "Invalid private key format - must be 0x followed by 64 hex characters",
-    );
-    throw new Error("VAULT_PRIVATE_KEY is invalid");
-  }
-
-  if (!/^0x[0-9a-fA-F]{64}$/.test(key)) {
-    logger.error("Private key contains invalid characters");
-    throw new Error("VAULT_PRIVATE_KEY contains invalid hex characters");
-  }
-
-  return key as `0x${string}`;
-};
-
-const validateAddress = (
-  address: string | undefined,
-): `0x${string}` | undefined => {
-  if (!address) {
-    return undefined;
-  }
-
-  if (!address.startsWith("0x") || address.length !== 42) {
-    logger.error(
-      { addressLength: address.length },
-      "Invalid address format - must be 0x followed by 40 hex characters",
-    );
-    throw new Error("Invalid address format");
-  }
-
-  return address as `0x${string}`;
-};
+export const chains: Map<number, ChainConfig> = initializeChains(ENVIRONMENT);
 
 export const agentConfig = {
   intervalMs: Number.parseInt(process.env.AGENT_INTERVAL_MS || "30000", 10),
