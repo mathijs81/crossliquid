@@ -69,18 +69,40 @@ const destinations = $derived(
 ) as [Component, string, string, boolean][];
 </script>
 
-<div class="navbar bg-base-100 shadow-lg">
-  <div>
+<div class="navbar bg-base-100 shadow-sm">
+  <div class="navbar-start">
+    <div class="dropdown">
+      <div tabindex="0" role="button" class="btn btn-ghost btn-circle lg:hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+      </div>
+      <ul tabindex="-1" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
+        {#each destinations as [Icon, name, href, active] (name)}
+          <li>
+            <a href={href} class:menu-active={active}>
+              <Icon class="h-5 w-5" /> {name}
+            </a>
+          </li>
+        {/each}
+      </ul>
+    </div>
     <a href="/" class="btn btn-ghost text-xl text-primary"><ShuffleAngularIcon class="h-6 w-6" /> CrossLiquid</a>
   </div>
-  <div class="flex gap-3 flex-1">
-    {#each destinations as [Icon, name, href, active] (name)}
-      <a href={href} class="btn btn-ghost" class:btn-active={active}><Icon class="h-6 w-6" /> <span>{name}</span></a>
-    {/each}
+  <div class="navbar-center hidden lg:flex">
+    <ul class="menu menu-horizontal px-1 gap-1">
+      {#each destinations as [Icon, name, href, active] (name)}
+        <li>
+          <a href={href} class="btn btn-ghost gap-2" class:btn-active={active}>
+            <Icon class="h-5 w-5" /> <span>{name}</span>
+          </a>
+        </li>
+      {/each}
+    </ul>
   </div>
-  <div class="flex gap-3 items-baseline">
+  <div class="navbar-end gap-2 me-2">
     {#if chainName}
-      <div class="flex items-baseline gap-1.5 text-sm">
+      <div class="hidden sm:flex items-baseline gap-1.5 text-sm">
         <span class="opacity-70">{chainName}</span>
         <span class="font-mono text-xs opacity-50">
           #{blockNumber.data ? blockNumber.data.toLocaleString() : '...'}
@@ -102,7 +124,7 @@ const destinations = $derived(
         </ul>
       </div>
     {:else}
-      <button class="btn btn-sm btn-primary" onclick={connectWallet} disabled={isConnecting}>
+      <button class="btn btn-primary" onclick={connectWallet} disabled={isConnecting}>
         {isConnecting ? "Connecting..." : "Connect Wallet"}
       </button>
     {/if}
