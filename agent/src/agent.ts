@@ -1,5 +1,5 @@
 import { type Chain, createPublicClient, http, type PublicClient } from "viem";
-import { base, mainnet, optimism } from "viem/chains";
+import { base, mainnet, optimism, unichain } from "viem/chains";
 import { logger } from "./logger";
 import { calculateLOS } from "./services/los";
 import { getTargetDistribution } from "./services/los";
@@ -60,6 +60,7 @@ class Agent {
       { chain: base, rpcUrl: process.env.RPC_BASE },
       { chain: optimism, rpcUrl: process.env.RPC_OPTIMISM },
       { chain: mainnet, rpcUrl: process.env.RPC_MAINNET },
+      { chain: unichain, rpcUrl: process.env.RPC_UNICHAIN },
     ];
 
     for (const { chain, rpcUrl } of chainList) {

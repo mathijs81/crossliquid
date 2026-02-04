@@ -222,7 +222,6 @@ function getTimeSince(date: Date): string {
 										</td>
 										<td class="text-right font-mono text-lg">
 											{formatPrice(stat.latestPrice)}
-											({formatPrice(stat.latestPoolPrice)})
 										</td>
 										<td
 											class="text-right font-mono {getPriceChangeColor(

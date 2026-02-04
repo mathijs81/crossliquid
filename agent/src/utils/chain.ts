@@ -1,5 +1,5 @@
 import { type Chain, createPublicClient, http, type PublicClient } from "viem";
-import { base, mainnet, optimism } from "viem/chains";
+import { base, mainnet, optimism, unichain } from "viem/chains";
 import type { ChainConfig, Environment } from "../config";
 import { logger } from "../logger";
 
@@ -15,6 +15,7 @@ export const getRpcUrl = (chainId: number): string => {
     [base.id]: process.env.RPC_BASE || "",
     [optimism.id]: process.env.RPC_OPTIMISM || "",
     [mainnet.id]: process.env.RPC_MAINNET || "",
+    [unichain.id]: process.env.RPC_UNICHAIN || "",
   };
   return envVars[chainId] || "";
 };
@@ -50,6 +51,13 @@ export const initializeChains = (
     chainName: mainnet.name,
     rpcUrl: getRpcUrl(mainnet.id),
     publicClient: createClient(mainnet, getRpcUrl(mainnet.id)),
+  });
+
+  chains.set(unichain.id, {
+    chainId: unichain.id,
+    chainName: unichain.name,
+    rpcUrl: getRpcUrl(unichain.id),
+    publicClient: createClient(unichain, getRpcUrl(unichain.id)),
   });
 
   logger.info(

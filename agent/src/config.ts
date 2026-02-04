@@ -58,11 +58,20 @@ export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
     weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     usdc: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
   },
+  130: {
+    poolManager: "0x1f98400000000000000000000000000000000004",
+    positionManager: "0x4529a01c7a0410167c5740c487a8de60232617bf",
+    quoter: "0x333e3c607b141b18ff6de9f258db6e77fe7491e0",
+    stateView: "0x86e8631a016f9068c3f085faf484ee3f5fdee8f2",
+    weth: "0x4200000000000000000000000000000000000006",
+    usdc: "0x078D782b760474a361dDA0AF3839290b0EF57AD6",
+  },
 };
 
 export const ETHUSDC_POOLS: Record<number, string[]> = {
   8453: [],
   10: [],
+  130: [],
 };
 
 export const DEFAULT_POOL_KEYS: Record<number, PoolKey> = Object.fromEntries(
