@@ -6,6 +6,7 @@ import { getTargetDistribution } from "./services/los";
 import { getPoolState } from "./services/pool";
 import { getVaultState } from "./services/vault";
 import { collectEthUsdcData, type EthUsdcData } from "./services/ethusdc";
+import { db, initializeDatabase, closeDatabase } from "./services/database";
 
 export interface AgentStats {
   status: "running" | "stopped";
@@ -51,6 +52,7 @@ class Agent {
   constructor() {
     this.initializeClients();
     this.initializeChainStats();
+    initializeDatabase();
   }
 
   private initializeClients(): void {
@@ -176,6 +178,12 @@ class Agent {
         try {
           const data = await collectEthUsdcData(chainId);
           this.stats.ethUsdcData[String(chainId)] = data;
+
+          db.insertExchangeRate({
+            timestamp: data.swapSimulation.timestamp,
+            chainId,
+            usdcOutput: data.swapSimulation.usdcOutput,
+          });
         } catch (error) {
           logger.error(
             {
@@ -257,6 +265,7 @@ class Agent {
       this.intervalId = null;
     }
 
+    closeDatabase();
     logger.info("Agent stopped");
   }
 

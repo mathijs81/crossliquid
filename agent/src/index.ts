@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { agent } from "./agent";
 import { logger } from "./logger";
+import { db } from "./services/database";
 
 const fastify = Fastify({
   loggerInstance: logger,
@@ -14,6 +15,15 @@ fastify.get("/health", async () => {
 // Stats endpoint
 fastify.get("/stats", async () => {
   return agent.getStats();
+});
+
+// Exchange rates endpoint
+fastify.get("/rates", async (request) => {
+  const { chainId, limit } = request.query as { chainId?: string; limit?: string };
+  const parsedChainId = chainId ? Number.parseInt(chainId, 10) : undefined;
+  const parsedLimit = limit ? Number.parseInt(limit, 10) : 100;
+
+  return db.getRecentRates(parsedChainId, parsedLimit);
 });
 
 // Start server

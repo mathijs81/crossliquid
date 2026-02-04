@@ -47,6 +47,13 @@ export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
     weth: "0x4200000000000000000000000000000000000006",
     usdc: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
   },
+  1: {
+    poolManager: "0x000000000004444c5dc75cB358380D2e3dE08A90",
+    positionManager: "0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e",
+    quoter: "0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203",
+    weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    usdc: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  }
 };
 
 export const ETHUSDC_POOLS: Record<number, string[]> = {
