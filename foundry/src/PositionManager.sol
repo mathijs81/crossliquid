@@ -16,6 +16,7 @@ import { BalanceDelta } from "v4-core/types/BalanceDelta.sol";
 import { PoolId, PoolIdLibrary } from "v4-core/types/PoolId.sol";
 import { StateLibrary } from "v4-core/libraries/StateLibrary.sol";
 import { UniswapUtil } from "./UniswapUtil.sol";
+import { ModifyLiquidityParams } from "v4-core/types/PoolOperation.sol";
 
 /// PositionManager for CrossLiquid
 /// Keeps funds, deploys them to uniswap, bridges funds to other chains.
@@ -245,7 +246,7 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTr
 
         (BalanceDelta delta,) = poolManager.modifyLiquidity(
             addData.key,
-            IPoolManager.ModifyLiquidityParams({
+            ModifyLiquidityParams({
                 tickLower: addData.tickLower,
                 tickUpper: addData.tickUpper,
                 liquidityDelta: int256(uint256(liquidity)),
@@ -280,7 +281,7 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTr
 
         (BalanceDelta delta,) = poolManager.modifyLiquidity(
             removeData.key,
-            IPoolManager.ModifyLiquidityParams({
+            ModifyLiquidityParams({
                 tickLower: removeData.tickLower,
                 tickUpper: removeData.tickUpper,
                 liquidityDelta: -int256(uint256(removeData.liquidity)),

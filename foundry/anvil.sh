@@ -69,7 +69,7 @@ fi
 
 # Start anvil
 echo -e "${YELLOW}⏳${NC} Starting Anvil..."
-anvil > ./anvil.log 2>&1 &
+anvil --code-size-limit 40000 > ./anvil.log 2>&1 &
 
 # Wait for anvil to be ready (max 10 seconds)
 COUNTER=0
