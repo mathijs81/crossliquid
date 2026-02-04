@@ -79,6 +79,16 @@ while [ $COUNTER -lt 10 ]; do
     echo
     echo "Available test accounts (with 10000 ETH each):"
     echo "Run 'tail -f anvil.log' to see live logs"
+
+    cd "$(dirname "${BASH_SOURCE[0]}")"
+    echo "Deploying PERMIT2 code"
+    cast rpc anvil_setCode 0x000000000022D473030F116dDEE9F6B43aC78BA3 "$(cat Permit2.code)"
+    echo "PERMIT2 deployed"
+
+    sleep 2
+    echo "Trying to query it"
+    cast call 0x000000000022D473030F116dDEE9F6B43aC78BA3 "DOMAIN_SEPARATOR()"
+    echo "OK"
     exit 0
   fi
   sleep 1

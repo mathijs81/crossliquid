@@ -152,12 +152,13 @@ contract DeployUniswapV4 is Script, Deployers {
 
     // Override _etch to use anvil RPC
     function _etch(address target, bytes memory bytecode) internal override {
-        if (block.chainid == 31337) {
-            vm.rpc("anvil_setCode", string.concat('["', vm.toString(target), '",', '"', vm.toString(bytecode), '"]'));
-            //vm.etch(target, bytecode);
-        } else {
-            revert("Etch not supported on this chain");
-        }
+        // if (block.chainid == 31337) {
+        //     vm.rpc("anvil_setCode", string.concat('["', vm.toString(target), '",', '"', vm.toString(bytecode), '"]'));
+        //     //vm.etch(target, bytecode);
+        // } else {
+
+            revert("Permit2 should be injected from the commandline!");
+        // }
     }
 
     function addInitialLiquidity(
