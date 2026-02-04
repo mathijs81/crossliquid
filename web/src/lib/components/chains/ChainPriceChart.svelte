@@ -2,14 +2,19 @@
 import type { ECharts } from "echarts";
 import * as echarts from "echarts";
 import { onMount } from "svelte";
-import type { ExchangeRate } from "$lib/types/exchangeRate";
+import {
+  convertSqrtPriceX96ToPrice,
+  type ExchangeRate,
+  type PoolPrice,
+} from "$lib/types/exchangeRate";
 
 interface Props {
   data: ExchangeRate[];
+  poolPrices: PoolPrice[];
   color: string;
 }
 
-let { data, color }: Props = $props();
+let { data, poolPrices, color }: Props = $props();
 
 let chartContainer: HTMLDivElement;
 let chart: ECharts | null = $state(null);
@@ -32,11 +37,19 @@ $effect(() => {
   const sortedData = [...data].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
   );
+  // ECharts time axis expects [timestamp, value] with numeric time (ms)
+  const series = sortedData.map((d) => [
+    new Date(d.timestamp).getTime(),
+    parseFloat(d.usdcOutput),
+  ]);
 
-  const values = sortedData.map((d) => parseFloat(d.usdcOutput));
-  const timestamps = sortedData.map((d) =>
-    new Date(d.timestamp).toLocaleTimeString(),
+  const sortedPoolPrices = [...poolPrices].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
   );
+  const poolPriceSeries = sortedPoolPrices.map((p) => [
+    new Date(p.timestamp).getTime(),
+    convertSqrtPriceX96ToPrice(p.sqrtPriceX96),
+  ]);
 
   chart.setOption({
     grid: {
@@ -46,8 +59,7 @@ $effect(() => {
       bottom: 5,
     },
     xAxis: {
-      type: "category",
-      data: timestamps,
+      type: "time",
       show: false,
     },
     yAxis: {
@@ -58,8 +70,26 @@ $effect(() => {
     series: [
       {
         type: "line",
-        data: values,
-        smooth: true,
+        name: "Test exchange rate",
+        data: series,
+        smooth: false,
+        symbol: "none",
+        lineStyle: {
+          color: "#888888",
+          width: 2,
+        },
+        // areaStyle: {
+        //   color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+        //     { offset: 0, color: `${color}40` },
+        //     { offset: 1, color: `${color}08` },
+        //   ]),
+        // },
+      },
+      {
+        type: "line",
+        name: "Pool Price",
+        data: poolPriceSeries,
+        smooth: false,
         symbol: "none",
         lineStyle: {
           color: color,
@@ -78,7 +108,16 @@ $effect(() => {
       // biome-ignore lint/suspicious/noExplicitAny: ECharts types are heavy, not worth importing
       formatter: (params: any) => {
         const point = params[0];
-        return `${point.name}<br/>$${point.value.toFixed(6)}`;
+        const [time, _] = point.data as [number, number];
+        const timeStr = new Date(time).toLocaleTimeString();
+        const lines = params.map(
+          (p: { seriesName: string; data: [number, number] }) => {
+            const val = p.data[1];
+            const label = p.seriesName || "Rate";
+            return `${label}: $${Number(val).toFixed(6)}`;
+          },
+        );
+        return `${timeStr}<br/>${lines.join("<br/>")}`;
       },
     },
   });

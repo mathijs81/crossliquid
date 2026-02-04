@@ -1,4 +1,4 @@
-import { formatUnits, parseEther } from "viem";
+import { encodeAbiParameters, formatUnits, keccak256, parseEther } from "viem";
 import {
   chains,
   DEFAULT_POOL_KEYS,
@@ -8,6 +8,10 @@ import {
   UNIV4_CONTRACTS,
 } from "../config";
 import { logger } from "../logger";
+import { poolAbi } from "../abi/Pool";
+import { poolManagerAbi } from "../abi/PoolManager";
+import { quoterAbi } from "../abi/Quoter";
+import { stateViewAbi } from "../abi/StateView";
 
 export interface EthUsdcPoolData {
   poolId: string;
@@ -17,6 +21,14 @@ export interface EthUsdcPoolData {
   tick: number;
 }
 
+export interface EthUsdcPoolPrice {
+  poolAddress: `0x${string}`;
+  sqrtPriceX96: bigint;
+  tick: number;
+  liquidity: bigint;
+  fee: number;
+}
+
 export interface EthUsdcData {
   swapSimulation: {
     ethInput: string;
@@ -24,86 +36,9 @@ export interface EthUsdcData {
     poolKey: PoolKey;
     timestamp: string;
   };
+  poolPrice: EthUsdcPoolPrice;
   topPools: EthUsdcPoolData[];
 }
-
-const QUOTER_ABI = [
-  {
-    inputs: [
-      {
-        components: [
-          {
-            components: [
-              {
-                internalType: "Currency",
-                name: "currency0",
-                type: "address",
-              },
-              {
-                internalType: "Currency",
-                name: "currency1",
-                type: "address",
-              },
-              { internalType: "uint24", name: "fee", type: "uint24" },
-              {
-                internalType: "int24",
-                name: "tickSpacing",
-                type: "int24",
-              },
-              {
-                internalType: "contract IHooks",
-                name: "hooks",
-                type: "address",
-              },
-            ],
-            internalType: "struct PoolKey",
-            name: "poolKey",
-            type: "tuple",
-          },
-          { internalType: "bool", name: "zeroForOne", type: "bool" },
-          {
-            internalType: "uint128",
-            name: "exactAmount",
-            type: "uint128",
-          },
-          { internalType: "bytes", name: "hookData", type: "bytes" },
-        ],
-        internalType: "struct IV4Quoter.QuoteExactSingleParams",
-        name: "params",
-        type: "tuple",
-      },
-    ],
-    name: "quoteExactInputSingle",
-    outputs: [
-      { internalType: "uint256", name: "amountOut", type: "uint256" },
-      { internalType: "uint256", name: "gasEstimate", type: "uint256" },
-    ],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-] as const;
-
-const POOL_MANAGER_ABI = [
-  {
-    inputs: [{ name: "id", type: "bytes32" }],
-    name: "getSlot0",
-    outputs: [
-      { name: "sqrtPriceX96", type: "uint160" },
-      { name: "tick", type: "int24" },
-      { name: "protocolFee", type: "uint24" },
-      { name: "lpFee", type: "uint24" },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ name: "id", type: "bytes32" }],
-    name: "getLiquidity",
-    outputs: [{ name: "liquidity", type: "uint128" }],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const;
 
 export async function simulateEthToUsdcSwap(
   chainId: number,
@@ -125,16 +60,10 @@ export async function simulateEthToUsdcSwap(
     throw new Error(`No default pool key for chain ${chainId}`);
   }
 
-  /*
-          PoolKey poolKey;
-        bool zeroForOne;
-        uint128 exactAmount;
-        bytes hookData;
-  */
   try {
     const result = await config.publicClient.readContract({
       address: contracts.quoter,
-      abi: QUOTER_ABI,
+      abi: quoterAbi,
       functionName: "quoteExactInputSingle",
       args: [
         {
@@ -146,7 +75,7 @@ export async function simulateEthToUsdcSwap(
       ],
     });
 
-    return result[0]; //(await result).result[0];
+    return result[0];
   } catch (error) {
     logger.error(
       {
@@ -179,13 +108,13 @@ export async function getTopEthUsdcPools(
       const [slot0, liquidity] = await Promise.all([
         config.publicClient.readContract({
           address: contracts.poolManager,
-          abi: POOL_MANAGER_ABI,
+          abi: poolManagerAbi,
           functionName: "getSlot0",
           args: [poolId as `0x${string}`],
         }),
         config.publicClient.readContract({
           address: contracts.poolManager,
-          abi: POOL_MANAGER_ABI,
+          abi: poolManagerAbi,
           functionName: "getLiquidity",
           args: [poolId as `0x${string}`],
         }),
@@ -215,6 +144,79 @@ export async function getTopEthUsdcPools(
   }
 }
 
+export async function getEthUsdcPoolPrice(
+  chainId: number,
+  poolKey?: PoolKey,
+): Promise<EthUsdcPoolPrice | null> {
+  const config = chains.get(chainId);
+  if (!config) {
+    throw new Error(`Chain ${chainId} not initialized`);
+  }
+
+  const contracts = UNIV4_CONTRACTS[chainId];
+  if (!contracts) {
+    throw new Error(`UniV4 contracts not configured for chain ${chainId}`);
+  }
+
+  const effectivePoolKey = poolKey || DEFAULT_POOL_KEYS[chainId];
+  if (!effectivePoolKey) {
+    throw new Error(`No default pool key for chain ${chainId}`);
+  }
+
+  try {
+    const poolId = keccak256(
+      encodeAbiParameters(
+        [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+        [
+          effectivePoolKey.currency0,
+          effectivePoolKey.currency1,
+          effectivePoolKey.fee,
+          effectivePoolKey.tickSpacing,
+          effectivePoolKey.hooks,
+        ],
+      ),
+    );
+
+    const [slot0, liquidity] = await Promise.all([
+      config.publicClient.readContract({
+        address: contracts.stateView,
+        abi: stateViewAbi,
+        functionName: "getSlot0",
+        args: [poolId],
+      }),
+      config.publicClient.readContract({
+        address: contracts.stateView,
+        abi: stateViewAbi,
+        functionName: "getLiquidity",
+        args: [poolId],
+      }),
+    ]);
+
+    return {
+      poolAddress: contracts.poolManager,
+      sqrtPriceX96: slot0[0],
+      tick: slot0[1],
+      liquidity,
+      fee: slot0[3],
+    };
+  } catch (error) {
+    logger.error(
+      {
+        chainId,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "Failed to fetch ETH-USDC pool price from StateView",
+    );
+    return null;
+  }
+}
+
 export async function collectEthUsdcData(
   chainId: number,
 ): Promise<EthUsdcData> {
@@ -223,12 +225,13 @@ export async function collectEthUsdcData(
     throw new Error(`No default pool key for chain ${chainId}`);
   }
 
-  const [usdcOutput, topPools] = await Promise.all([
+  const [usdcOutput, topPools, poolPrice] = await Promise.all([
     simulateEthToUsdcSwap(chainId, poolKey),
     getTopEthUsdcPools(chainId),
+    getEthUsdcPoolPrice(chainId, poolKey),
   ]);
 
-  logger.info({ chainId, usdcOutput, topPools }, "Collected ETH-USDC data");
+  logger.info({ chainId, usdcOutput, topPools, poolPrice }, "Collected ETH-USDC data");
 
   return {
     swapSimulation: {
@@ -237,6 +240,7 @@ export async function collectEthUsdcData(
       poolKey,
       timestamp: new Date().toISOString(),
     },
+    poolPrice: poolPrice!,
     topPools,
   };
 }

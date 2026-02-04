@@ -1,10 +1,13 @@
 <script lang="ts">
-import { createQuery } from "@tanstack/svelte-query";
-import { groupBy } from "es-toolkit";
+import { createQueries, createQuery } from "@tanstack/svelte-query";
+import { groupBy, zip } from "es-toolkit";
 import QueryRenderer from "../QueryRenderer.svelte";
 import ChainPriceChart from "./ChainPriceChart.svelte";
-import type { ExchangeRate } from "$lib/types/exchangeRate";
-import { CHAIN_INFO } from "$lib/types/exchangeRate";
+import type { ExchangeRate, PoolPrice } from "$lib/types/exchangeRate";
+import {
+  CHAIN_INFO,
+  convertSqrtPriceX96ToPrice,
+} from "$lib/types/exchangeRate";
 import { getGlobalClient } from "$lib/query/globalClient";
 import { onMount } from "svelte";
 
@@ -12,9 +15,24 @@ const ratesQuery = createQuery(
   () => ({
     queryKey: ["exchangeRates"],
     queryFn: async (): Promise<ExchangeRate[]> => {
-      const response = await fetch(`/api/rates?limit=100`);
+      const response = await fetch(`/api/rates?limit=360`);
       if (!response.ok) {
         throw new Error("Failed to fetch exchange rates");
+      }
+      return response.json();
+    },
+    refetchInterval: 10000, // Refresh every 10 seconds
+  }),
+  getGlobalClient(),
+);
+
+const poolPricesQuery = createQuery(
+  () => ({
+    queryKey: ["poolPrices"],
+    queryFn: async (): Promise<PoolPrice[]> => {
+      const response = await fetch(`/api/pool-prices?limit=360`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch pool prices");
       }
       return response.json();
     },
@@ -28,6 +46,7 @@ interface ChainStats {
   name: string;
   color: string;
   latestPrice: number;
+  latestPoolPrice: number;
   data: ExchangeRate[];
   priceChange: number;
   priceChangePercent: number;
@@ -35,35 +54,69 @@ interface ChainStats {
   maxPrice: number;
   lastUpdated: Date;
   dataPoints: number;
+  poolPrices: PoolPrice[];
 }
 
-function calculateStats(data: ExchangeRate[]): ChainStats[] {
+function calculateStats(
+  data: ExchangeRate[],
+  poolPrices: PoolPrice[],
+): ChainStats[] {
+  if (!data || !poolPrices) {
+    return [];
+  }
   const grouped = groupBy(data, (rate) => rate.chainId);
+  const groupedPoolPrices = groupBy(poolPrices, (price) => price.chainId);
 
-  return Object.entries(grouped)
-    .map(([chainIdStr, rates]) => {
+  const allKeys = new Set([
+    ...Object.keys(grouped),
+    ...Object.keys(groupedPoolPrices),
+  ]);
+
+  return Array.from(allKeys)
+    .map((key) => {
+      const chainIdStr = key;
       const chainId = Number(chainIdStr);
+      const poolPrices = groupedPoolPrices[chainId] || [];
+      const rates = grouped[chainId] || [];
+
       const chainInfo = CHAIN_INFO[chainId] || {
         id: chainId,
         name: `Chain ${chainId}`,
         color: "#888888",
       };
 
-      const sortedRates = [...rates].sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-      );
+      interface Price {
+        timestamp: number;
+        price: number;
+      }
+      const prices = poolPrices
+        .map(
+          (pp) =>
+            ({
+              timestamp: new Date(pp.timestamp).getTime(),
+              price: convertSqrtPriceX96ToPrice(pp.sqrtPriceX96),
+            }) as Price,
+        )
+        .sort((a, b) => b.timestamp - a.timestamp);
 
-      const latestRate = sortedRates[0];
-      const oldestRate = sortedRates[sortedRates.length - 1];
+      const sortedRates = rates
+        .map((r: ExchangeRate) => ({
+          ...r,
+          usdcOutput: String(Number(r.usdcOutput) * 10),
+        }))
+        .sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        );
+      const priceValues = prices.map((x) => x.price);
 
-      const latestPrice = parseFloat(latestRate.usdcOutput);
-      const oldestPrice = parseFloat(oldestRate.usdcOutput);
+      //   const latestRate = sortedRates[0];
+      //   const oldestRate = sortedRates[sortedRates.length - 1];
 
-      const prices = sortedRates.map((r) => parseFloat(r.usdcOutput));
-      const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
-      const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
-
+      const latestPrice = priceValues[0];
+      const oldestPrice = priceValues[priceValues.length - 1];
+      const minPrice = prices.length > 0 ? Math.min(...priceValues) : 0;
+      const maxPrice = prices.length > 0 ? Math.max(...priceValues) : 0;
       const priceChange = latestPrice - oldestPrice;
       const priceChangePercent =
         oldestPrice !== 0 ? (priceChange / oldestPrice) * 100 : 0;
@@ -73,12 +126,17 @@ function calculateStats(data: ExchangeRate[]): ChainStats[] {
         name: chainInfo.name,
         color: chainInfo.color,
         latestPrice,
+        latestPoolPrice:
+          poolPrices.length > 0
+            ? convertSqrtPriceX96ToPrice(poolPrices[0].sqrtPriceX96)
+            : 0,
         data: sortedRates.reverse(), // Reverse for chronological order
+        poolPrices: poolPrices.reverse(),
         priceChange,
         priceChangePercent,
         minPrice,
         maxPrice,
-        lastUpdated: new Date(latestRate.timestamp),
+        lastUpdated: new Date(prices[0].timestamp),
         dataPoints: rates.length,
       };
     })
@@ -131,7 +189,7 @@ function getTimeSince(date: Date): string {
 
 		<QueryRenderer query={ratesQuery}>
 			{#snippet children(data)}
-				{@const chainStats = calculateStats(data as ExchangeRate[])}
+				{@const chainStats = calculateStats(data as ExchangeRate[], poolPricesQuery.data as PoolPrice[])}
 
 				{#if chainStats.length === 0}
 					<div class="alert alert-info">
@@ -164,6 +222,7 @@ function getTimeSince(date: Date): string {
 										</td>
 										<td class="text-right font-mono text-lg">
 											{formatPrice(stat.latestPrice)}
+											({formatPrice(stat.latestPoolPrice)})
 										</td>
 										<td
 											class="text-right font-mono {getPriceChangeColor(
@@ -183,6 +242,7 @@ function getTimeSince(date: Date): string {
 												<div class="w-[200px] h-[50px]">
 													<ChainPriceChart
 														data={stat.data}
+														poolPrices={stat.poolPrices}
 														color={stat.color}
 													/>
 												</div>

@@ -31,7 +31,7 @@ interface RetryConfig {
 }
 
 const RETRY_CONFIG: RetryConfig = {
-  maxAttempts: 3,
+  maxAttempts: 1,
   baseDelayMs: 1000,
   maxDelayMs: 10000,
 };
@@ -169,12 +169,14 @@ class Agent {
     }
 
     try {
+      logger.info("Starting loop");
       await this.updateChainStats();
 
       const losScores = await calculateLOS();
       const _targetDistribution = getTargetDistribution(losScores);
 
       for (const [chainId] of this.clients) {
+        logger.info(`starting chain ${chainId}`);
         try {
           const data = await collectEthUsdcData(chainId);
           this.stats.ethUsdcData[String(chainId)] = data;
@@ -183,6 +185,16 @@ class Agent {
             timestamp: data.swapSimulation.timestamp,
             chainId,
             usdcOutput: data.swapSimulation.usdcOutput,
+          });
+
+          db.insertPoolPrice({
+            timestamp: data.swapSimulation.timestamp,
+            chainId,
+            poolAddress: data.poolPrice.poolAddress,
+            sqrtPriceX96: data.poolPrice.sqrtPriceX96.toString(),
+            tick: data.poolPrice.tick,
+            liquidity: data.poolPrice.liquidity.toString(),
+            fee: data.poolPrice.fee,
           });
         } catch (error) {
           logger.error(

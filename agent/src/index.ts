@@ -29,6 +29,14 @@ fastify.get("/rates", async (request) => {
   return db.getRecentRates(parsedChainId, parsedLimit);
 });
 
+fastify.get("/pool-prices", async (request) => {
+  const { limit } = request.query as {
+    limit?: string;
+  };
+  const parsedLimit = limit ? Number.parseInt(limit, 10) : 256;
+  return db.getRecentPoolPrices(parsedLimit);
+});
+
 // Start server
 const start = async () => {
   try {
