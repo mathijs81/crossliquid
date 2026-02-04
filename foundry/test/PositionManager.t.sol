@@ -181,11 +181,11 @@ contract PositionManagerTest is Test {
         });
         vm.prank(user1);
         vm.expectRevert(PositionManager.NotOperatorOrOwner.selector);
-        manager.depositToUniswap(address(0), mockKey, -887220, 887220, 0, 0, 0, 0);
+        manager.depositToUniswap(address(0), mockKey, -887_220, 887_220, 0, 0, 0, 0);
 
         vm.prank(user1);
         vm.expectRevert(PositionManager.NotOperatorOrOwner.selector);
-        manager.withdrawFromUniswap(address(0), mockKey, -887220, 887220, 0, 0, 0);
+        manager.withdrawFromUniswap(address(0), mockKey, -887_220, 887_220, 0, 0, 0);
 
         // Random user cannot set operator
         vm.prank(user1);

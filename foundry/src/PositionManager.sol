@@ -22,7 +22,13 @@ import { ModifyLiquidityParams } from "v4-core/types/PoolOperation.sol";
 /// Keeps funds, deploys them to uniswap, bridges funds to other chains.
 /// Deployed on all chains with same bytecode. On "parent chain", vault is set.
 /// On other chains, vault is address(0).
-contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTransient, UUPSUpgradeable, IUnlockCallback {
+contract PositionManager is
+    Initializable,
+    OwnableUpgradeable,
+    ReentrancyGuardTransient,
+    UUPSUpgradeable,
+    IUnlockCallback
+{
     using SafeERC20 for IERC20;
     using CurrencyLibrary for Currency;
     using PoolIdLibrary for PoolKey;
@@ -139,9 +145,7 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTr
         uint256 amount1Desired,
         uint256 amount0Min,
         uint256 amount1Min
-    ) external onlyOperatorOrOwner nonReentrant
-        returns (uint128 liquidityAdded, uint256 amount0, uint256 amount1)
-    {
+    ) external onlyOperatorOrOwner nonReentrant returns (uint128 liquidityAdded, uint256 amount0, uint256 amount1) {
         IPoolManager poolManager = IPoolManager(poolManagerAddress);
 
         IERC20(Currency.unwrap(poolKey.currency0)).safeIncreaseAllowance(poolManagerAddress, amount0Desired);
@@ -149,13 +153,15 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTr
 
         CallbackData memory cbData = CallbackData({
             action: CallbackAction.ADD_LIQUIDITY,
-            data: abi.encode(AddLiquidityCallbackData({
-                key: poolKey,
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                amount0Desired: amount0Desired,
-                amount1Desired: amount1Desired
-            }))
+            data: abi.encode(
+                AddLiquidityCallbackData({
+                    key: poolKey,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    amount0Desired: amount0Desired,
+                    amount1Desired: amount1Desired
+                })
+            )
         });
 
         bytes memory result = poolManager.unlock(abi.encode(cbData));
@@ -163,13 +169,8 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTr
 
         if (amount0 < amount0Min || amount1 < amount1Min) revert SlippageExceeded();
 
-        bytes32 positionId = keccak256(abi.encodePacked(
-            poolKey.toId(),
-            address(this),
-            tickLower,
-            tickUpper,
-            bytes32(0)
-        ));
+        bytes32 positionId =
+            keccak256(abi.encodePacked(poolKey.toId(), address(this), tickLower, tickUpper, bytes32(0)));
 
         emit DepositedToUniswap(amount0 + amount1, positionId);
     }
@@ -182,20 +183,16 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTr
         uint128 liquidity,
         uint256 amount0Min,
         uint256 amount1Min
-    ) external onlyOperatorOrOwner nonReentrant
-        returns (uint256 amount0, uint256 amount1)
-    {
+    ) external onlyOperatorOrOwner nonReentrant returns (uint256 amount0, uint256 amount1) {
         IPoolManager poolManager = IPoolManager(poolManagerAddress);
 
         CallbackData memory cbData = CallbackData({
             action: CallbackAction.REMOVE_LIQUIDITY,
-            data: abi.encode(RemoveLiquidityCallbackData({
-                key: poolKey,
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                liquidity: liquidity,
-                salt: bytes32(0)
-            }))
+            data: abi.encode(
+                RemoveLiquidityCallbackData({
+                    key: poolKey, tickLower: tickLower, tickUpper: tickUpper, liquidity: liquidity, salt: bytes32(0)
+                })
+            )
         });
 
         bytes memory result = poolManager.unlock(abi.encode(cbData));
@@ -203,13 +200,8 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTr
 
         if (amount0 < amount0Min || amount1 < amount1Min) revert SlippageExceeded();
 
-        bytes32 positionId = keccak256(abi.encodePacked(
-            poolKey.toId(),
-            address(this),
-            tickLower,
-            tickUpper,
-            bytes32(0)
-        ));
+        bytes32 positionId =
+            keccak256(abi.encodePacked(poolKey.toId(), address(this), tickLower, tickUpper, bytes32(0)));
 
         emit WithdrawnFromUniswap(amount0 + amount1, positionId);
     }
@@ -228,20 +220,13 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTr
         }
     }
 
-    function _handleAddLiquidity(
-        IPoolManager poolManager,
-        bytes memory data
-    ) internal returns (bytes memory) {
+    function _handleAddLiquidity(IPoolManager poolManager, bytes memory data) internal returns (bytes memory) {
         AddLiquidityCallbackData memory addData = abi.decode(data, (AddLiquidityCallbackData));
 
         (uint160 sqrtPriceX96,,,) = poolManager.getSlot0(addData.key.toId());
 
         uint128 liquidity = UniswapUtil.getLiquidityForAmounts(
-            sqrtPriceX96,
-            addData.tickLower,
-            addData.tickUpper,
-            addData.amount0Desired,
-            addData.amount1Desired
+            sqrtPriceX96, addData.tickLower, addData.tickUpper, addData.amount0Desired, addData.amount1Desired
         );
 
         (BalanceDelta delta,) = poolManager.modifyLiquidity(
@@ -273,10 +258,7 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTr
         return abi.encode(liquidity, amount0Used, amount1Used);
     }
 
-    function _handleRemoveLiquidity(
-        IPoolManager poolManager,
-        bytes memory data
-    ) internal returns (bytes memory) {
+    function _handleRemoveLiquidity(IPoolManager poolManager, bytes memory data) internal returns (bytes memory) {
         RemoveLiquidityCallbackData memory removeData = abi.decode(data, (RemoveLiquidityCallbackData));
 
         (BalanceDelta delta,) = poolManager.modifyLiquidity(
@@ -308,11 +290,7 @@ contract PositionManager is Initializable, OwnableUpgradeable, ReentrancyGuardTr
         return abi.encode(amount0Received, amount1Received);
     }
 
-    function _settle(
-        IPoolManager poolManager,
-        Currency currency,
-        uint256 amount
-    ) internal {
+    function _settle(IPoolManager poolManager, Currency currency, uint256 amount) internal {
         poolManager.sync(currency);
         IERC20(Currency.unwrap(currency)).safeTransfer(address(poolManager), amount);
         poolManager.settle();

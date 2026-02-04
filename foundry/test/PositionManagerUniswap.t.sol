@@ -93,7 +93,7 @@ contract PositionManagerUniswapTest is Test {
         // 4. Initialize the pool (sets starting price)
         // sqrtPriceX96 = sqrt(price) * 2^96
         // For 1:1 price ratio: sqrt(1) * 2^96 = 2^96
-        uint160 sqrtPriceX96 = 79228162514264337593543950336; // ~1:1 price
+        uint160 sqrtPriceX96 = 79_228_162_514_264_337_593_543_950_336; // ~1:1 price
 
         vm.prank(owner);
         poolManager.initialize(poolKey, sqrtPriceX96);
@@ -121,7 +121,7 @@ contract PositionManagerUniswapTest is Test {
 
         // 6. Mint tokens to manager for testing
         token0.mint(address(manager), 1_000_000 * 10 ** 6); // 1M USDC
-        token1.mint(address(manager), 1_000 * 10 ** 18); // 1K WETH
+        token1.mint(address(manager), 1000 * 10 ** 18); // 1K WETH
     }
 
     function testUniswapV4Setup() public view {
@@ -131,7 +131,7 @@ contract PositionManagerUniswapTest is Test {
 
         // Verify tokens
         assertEq(token0.balanceOf(address(manager)), 1_000_000 * 10 ** 6);
-        assertEq(token1.balanceOf(address(manager)), 1_000 * 10 ** 18);
+        assertEq(token1.balanceOf(address(manager)), 1000 * 10 ** 18);
 
         // Verify pool key
         assertEq(Currency.unwrap(poolKey.currency0), address(token0));
@@ -145,8 +145,8 @@ contract PositionManagerUniswapTest is Test {
         // This demonstrates what your PositionManager.depositToUniswap() will need to do:
 
         // 1. Define tick range for liquidity (full range for simplicity)
-        int24 tickLower = -887220; // Min tick for tick spacing 60
-        int24 tickUpper = 887220; // Max tick for tick spacing 60
+        int24 tickLower = -887_220; // Min tick for tick spacing 60
+        int24 tickUpper = 887_220; // Max tick for tick spacing 60
 
         // 2. Calculate liquidity amount from token amounts
         // For full range, we can add equal value of both tokens
@@ -194,8 +194,8 @@ contract PositionManagerUniswapTest is Test {
             abi.encodePacked(
                 poolId, // Pool identifier
                 address(manager), // Position owner
-                int24(-887220), // Tick lower
-                int24(887220), // Tick upper
+                int24(-887_220), // Tick lower
+                int24(887_220), // Tick upper
                 bytes32(0) // Salt for multiple positions in same range
             )
         );

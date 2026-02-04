@@ -15,35 +15,21 @@ library UniswapUtil {
         uint160 sqrtPriceAX96 = TickMath.getSqrtPriceAtTick(tickLower);
         uint160 sqrtPriceBX96 = TickMath.getSqrtPriceAtTick(tickUpper);
 
-        return LiquidityAmounts.getLiquidityForAmounts(
-            sqrtPriceX96,
-            sqrtPriceAX96,
-            sqrtPriceBX96,
-            amount0,
-            amount1
-        );
+        return LiquidityAmounts.getLiquidityForAmounts(sqrtPriceX96, sqrtPriceAX96, sqrtPriceBX96, amount0, amount1);
     }
 
-    function getAmountsForLiquidity(
-        uint160 sqrtPriceX96,
-        int24 tickLower,
-        int24 tickUpper,
-        uint128 liquidity
-    ) public pure returns (uint256 amount0, uint256 amount1) {
+    function getAmountsForLiquidity(uint160 sqrtPriceX96, int24 tickLower, int24 tickUpper, uint128 liquidity)
+        public
+        pure
+        returns (uint256 amount0, uint256 amount1)
+    {
         uint160 sqrtPriceAX96 = TickMath.getSqrtPriceAtTick(tickLower);
         uint160 sqrtPriceBX96 = TickMath.getSqrtPriceAtTick(tickUpper);
 
-        return LiquidityAmounts.getAmountsForLiquidity(
-            sqrtPriceX96,
-            sqrtPriceAX96,
-            sqrtPriceBX96,
-            liquidity
-        );
+        return LiquidityAmounts.getAmountsForLiquidity(sqrtPriceX96, sqrtPriceAX96, sqrtPriceBX96, liquidity);
     }
 
-    function getFullRangeTicks(int24 tickSpacing)
-        public pure returns (int24 tickLower, int24 tickUpper)
-    {
+    function getFullRangeTicks(int24 tickSpacing) public pure returns (int24 tickLower, int24 tickUpper) {
         tickLower = TickMath.minUsableTick(tickSpacing);
         tickUpper = TickMath.maxUsableTick(tickSpacing);
     }

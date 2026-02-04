@@ -33,7 +33,7 @@ contract DeployUniswapV4 is Script, Deployers {
     // Initial price: 1 ETH = 2324 USDC
     // sqrt(2324 USDC / 1 ETH) = sqrt(2324e6 / 1e18) = sqrt(2.324e-9)
     // sqrtPriceX96 = sqrt(2.324e-9) * 2^96 ≈ 3.819e24
-    uint160 constant SQRT_PRICE_ETH_USDC = 3819373515508547128207358464;
+    uint160 constant SQRT_PRICE_ETH_USDC = 3_819_373_515_508_547_128_207_358_464;
 
     function run() public {
         address deployer = msg.sender;
@@ -50,7 +50,7 @@ contract DeployUniswapV4 is Script, Deployers {
         deployArtifacts();
         vm.label(address(permit2), "Permit2");
         vm.label(address(poolManager), "PoolManager");
-        vm.label(address(positionManager), "PositionManager");        
+        vm.label(address(positionManager), "PositionManager");
         vm.label(address(swapRouter), "V4SwapRouter");
         vm.label(address(usdc), "USDC");
         vm.label(address(weth), "WETH");
@@ -59,6 +59,7 @@ contract DeployUniswapV4 is Script, Deployers {
         console.log("Infrastructure deployed:");
         console.log("  PoolManager:", address(poolManager));
         console.log("  PositionManager:", address(positionManager));
+        console.log("  SwapRouter:", address(swapRouter));
         console.log("  USDC:", address(usdc));
         console.log("  WETH:", address(weth));
         console.log("");
@@ -157,7 +158,7 @@ contract DeployUniswapV4 is Script, Deployers {
         //     //vm.etch(target, bytecode);
         // } else {
 
-            revert("Permit2 should be injected from the commandline!");
+        revert("Permit2 should be injected from the commandline!");
         // }
     }
 
@@ -186,10 +187,7 @@ contract DeployUniswapV4 is Script, Deployers {
 
         // Encode actions: MINT_POSITION, SETTLE_PAIR, SWEEP (ETH), SWEEP (USDC)
         bytes memory actions = abi.encodePacked(
-            uint8(Actions.MINT_POSITION),
-            uint8(Actions.SETTLE_PAIR),
-            uint8(Actions.SWEEP),
-            uint8(Actions.SWEEP)
+            uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR), uint8(Actions.SWEEP), uint8(Actions.SWEEP)
         );
 
         bytes[] memory params = new bytes[](4);
@@ -199,10 +197,7 @@ contract DeployUniswapV4 is Script, Deployers {
         params[3] = abi.encode(poolKey.currency1, recipient); // SWEEP excess USDC
 
         // Send ETH value with the call for native ETH settlement
-        positionManager.modifyLiquidities{ value: ethAmount }(
-            abi.encode(actions, params),
-            block.timestamp + 60
-        );
+        positionManager.modifyLiquidities{ value: ethAmount }(abi.encode(actions, params), block.timestamp + 60);
 
         console.log("  Added liquidity:");
         console.log("    ETH:", ethAmount / 1e18, "ETH");

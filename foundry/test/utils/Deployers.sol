@@ -10,8 +10,8 @@ import { Permit2Deployer } from "hookmate/artifacts/Permit2.sol";
 import { V4PoolManagerDeployer } from "hookmate/artifacts/V4PoolManager.sol";
 import { V4PositionManagerDeployer } from "hookmate/artifacts/V4PositionManager.sol";
 import { AddressConstants } from "hookmate/constants/AddressConstants.sol";
-import {V4RouterDeployer} from "hookmate/artifacts/V4Router.sol";
-import {IUniswapV4Router04} from "hookmate/interfaces/router/IUniswapV4Router04.sol";
+import { V4RouterDeployer } from "hookmate/artifacts/V4Router.sol";
+import { IUniswapV4Router04 } from "hookmate/interfaces/router/IUniswapV4Router04.sol";
 
 /**
  * @title Deployers
@@ -55,7 +55,12 @@ abstract contract Deployers {
     }
 
     function deployPoolManager() internal virtual {
-        if (block.chainid == 31337) {
+        if (block.chainid == 31_337) {
+            if (address(0x0D9BAf34817Fccd3b3068768E5d20542B66424A5).code.length > 0) {
+                // Already deployed
+                poolManager = IPoolManager(address(0x0D9BAf34817Fccd3b3068768E5d20542B66424A5));
+                return;
+            }
             // Deploy new PoolManager on Anvil
             poolManager = IPoolManager(V4PoolManagerDeployer.deploy(address(0x4444)));
         } else {
@@ -65,7 +70,7 @@ abstract contract Deployers {
     }
 
     function deployPositionManager() internal virtual {
-        if (block.chainid == 31337) {
+        if (block.chainid == 31_337) {
             // Deploy new PositionManager on Anvil
             positionManager = IPositionManager(
                 V4PositionManagerDeployer.deploy(
@@ -82,8 +87,14 @@ abstract contract Deployers {
             positionManager = IPositionManager(AddressConstants.getPositionManagerAddress(block.chainid));
         }
     }
+
     function deployRouter() internal virtual {
-        if (block.chainid == 31337) {
+        if (block.chainid == 31_337) {
+            if (address(0xB61598fa7E856D43384A8fcBBAbF2Aa6aa044FfC).code.length > 0) {
+                // Already deployed
+                swapRouter = IUniswapV4Router04(payable(address(0xB61598fa7E856D43384A8fcBBAbF2Aa6aa044FfC)));
+                return;
+            }
             swapRouter = IUniswapV4Router04(payable(V4RouterDeployer.deploy(address(poolManager), address(permit2))));
         } else {
             swapRouter = IUniswapV4Router04(payable(AddressConstants.getV4SwapRouterAddress(block.chainid)));
