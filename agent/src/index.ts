@@ -19,7 +19,10 @@ fastify.get("/stats", async () => {
 
 // Exchange rates endpoint
 fastify.get("/rates", async (request) => {
-  const { chainId, limit } = request.query as { chainId?: string; limit?: string };
+  const { chainId, limit } = request.query as {
+    chainId?: string;
+    limit?: string;
+  };
   const parsedChainId = chainId ? Number.parseInt(chainId, 10) : undefined;
   const parsedLimit = limit ? Number.parseInt(limit, 10) : 100;
 

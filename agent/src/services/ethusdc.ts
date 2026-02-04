@@ -29,58 +29,58 @@ export interface EthUsdcData {
 
 const QUOTER_ABI = [
   {
-    "inputs": [
+    inputs: [
       {
-        "components": [
+        components: [
           {
-            "components": [
+            components: [
               {
-                "internalType": "Currency",
-                "name": "currency0",
-                "type": "address"
+                internalType: "Currency",
+                name: "currency0",
+                type: "address",
               },
               {
-                "internalType": "Currency",
-                "name": "currency1",
-                "type": "address"
+                internalType: "Currency",
+                name: "currency1",
+                type: "address",
               },
-              { "internalType": "uint24", "name": "fee", "type": "uint24" },
+              { internalType: "uint24", name: "fee", type: "uint24" },
               {
-                "internalType": "int24",
-                "name": "tickSpacing",
-                "type": "int24"
+                internalType: "int24",
+                name: "tickSpacing",
+                type: "int24",
               },
               {
-                "internalType": "contract IHooks",
-                "name": "hooks",
-                "type": "address"
-              }
+                internalType: "contract IHooks",
+                name: "hooks",
+                type: "address",
+              },
             ],
-            "internalType": "struct PoolKey",
-            "name": "poolKey",
-            "type": "tuple"
+            internalType: "struct PoolKey",
+            name: "poolKey",
+            type: "tuple",
           },
-          { "internalType": "bool", "name": "zeroForOne", "type": "bool" },
+          { internalType: "bool", name: "zeroForOne", type: "bool" },
           {
-            "internalType": "uint128",
-            "name": "exactAmount",
-            "type": "uint128"
+            internalType: "uint128",
+            name: "exactAmount",
+            type: "uint128",
           },
-          { "internalType": "bytes", "name": "hookData", "type": "bytes" }
+          { internalType: "bytes", name: "hookData", type: "bytes" },
         ],
-        "internalType": "struct IV4Quoter.QuoteExactSingleParams",
-        "name": "params",
-        "type": "tuple"
-      }
+        internalType: "struct IV4Quoter.QuoteExactSingleParams",
+        name: "params",
+        type: "tuple",
+      },
     ],
-    "name": "quoteExactInputSingle",
-    "outputs": [
-      { "internalType": "uint256", "name": "amountOut", "type": "uint256" },
-      { "internalType": "uint256", "name": "gasEstimate", "type": "uint256" }
+    name: "quoteExactInputSingle",
+    outputs: [
+      { internalType: "uint256", name: "amountOut", type: "uint256" },
+      { internalType: "uint256", name: "gasEstimate", type: "uint256" },
     ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ] as const;
 
 const POOL_MANAGER_ABI = [
@@ -136,10 +136,17 @@ export async function simulateEthToUsdcSwap(
       address: contracts.quoter,
       abi: QUOTER_ABI,
       functionName: "quoteExactInputSingle",
-      args: [{ poolKey: effectivePoolKey, zeroForOne: ETHUSDC_ZERO_FOR_ONE[chainId], exactAmount: ethAmount, hookData: "0x" }],
+      args: [
+        {
+          poolKey: effectivePoolKey,
+          zeroForOne: ETHUSDC_ZERO_FOR_ONE[chainId],
+          exactAmount: ethAmount,
+          hookData: "0x",
+        },
+      ],
     });
 
-    return result[0];//(await result).result[0];
+    return result[0]; //(await result).result[0];
   } catch (error) {
     logger.error(
       {

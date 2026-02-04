@@ -1,0 +1,270 @@
+import {
+  type PublicClient,
+  type WalletClient,
+  type Address,
+  type Hash,
+  parseEther,
+  parseUnits,
+  formatEther,
+  formatUnits,
+} from "viem";
+import { logger } from "../logger";
+import { executeContractWrite } from "../utils/contract";
+
+export enum FeeTier {
+  LOWEST = 100, // 0.01%, tickSpacing 1
+  LOW = 500, // 0.05%, tickSpacing 10
+  MEDIUM = 3000, // 0.3%, tickSpacing 60
+  HIGH = 10000, // 1%, tickSpacing 200
+}
+
+export interface PoolKey {
+  currency0: Address;
+  currency1: Address;
+  fee: number;
+  tickSpacing: number;
+  hooks: Address;
+}
+
+export interface SwapParams {
+  poolManagerAddress: Address;
+  poolKey: PoolKey;
+  zeroForOne: boolean;
+  amountSpecified: bigint;
+  sqrtPriceLimitX96?: bigint;
+}
+
+const MIN_SQRT_PRICE = 4295128739n;
+const MAX_SQRT_PRICE = 1461446703485210103287273052203988822378723970342n;
+const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
+
+const FEE_TIER_TO_TICK_SPACING: Record<FeeTier, number> = {
+  [FeeTier.LOWEST]: 1,
+  [FeeTier.LOW]: 10,
+  [FeeTier.MEDIUM]: 60,
+  [FeeTier.HIGH]: 200,
+};
+
+export function createEthUsdcPoolKey(
+  usdcAddress: Address,
+  feeTier: FeeTier = FeeTier.LOW,
+): PoolKey {
+  return {
+    currency0: ZERO_ADDRESS,
+    currency1: usdcAddress,
+    fee: feeTier,
+    tickSpacing: FEE_TIER_TO_TICK_SPACING[feeTier],
+    hooks: ZERO_ADDRESS,
+  };
+}
+
+const POOL_MANAGER_ABI = [
+  {
+    type: "function",
+    name: "swap",
+    inputs: [
+      {
+        name: "key",
+        type: "tuple",
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+      },
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "zeroForOne", type: "bool" },
+          { name: "amountSpecified", type: "int256" },
+          { name: "sqrtPriceLimitX96", type: "uint160" },
+        ],
+      },
+      { name: "hookData", type: "bytes" },
+    ],
+    outputs: [{ name: "delta", type: "int256" }],
+    stateMutability: "payable",
+  },
+] as const;
+
+const ERC20_ABI = [
+  {
+    type: "function",
+    name: "balanceOf",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "approve",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+  },
+] as const;
+
+export class SwapService {
+  constructor(
+    private publicClient: PublicClient,
+    private walletClient: WalletClient,
+  ) {}
+
+  async swapEthForUsdc(
+    poolManagerAddress: Address,
+    usdcAddress: Address,
+    ethAmount: bigint,
+    feeTier: FeeTier = FeeTier.LOW,
+  ): Promise<{ hash: Hash; usdcReceived: bigint }> {
+    logger.info({ ethAmount: formatEther(ethAmount) }, "Swapping ETH for USDC");
+
+    const poolKey = createEthUsdcPoolKey(usdcAddress, feeTier);
+
+    const { result, hash } = await executeContractWrite(
+      this.publicClient,
+      this.walletClient,
+      {
+        address: poolManagerAddress,
+        abi: POOL_MANAGER_ABI,
+        functionName: "swap",
+        args: [
+          poolKey,
+          {
+            zeroForOne: true,
+            amountSpecified: ethAmount,
+            sqrtPriceLimitX96: MIN_SQRT_PRICE,
+          },
+          "0x",
+        ],
+        account: this.walletClient.account!,
+        value: ethAmount,
+      },
+    );
+
+    const delta = result;
+    const usdcReceived = delta < 0n ? -delta : delta;
+
+    logger.info(
+      { hash, usdcReceived: formatUnits(usdcReceived, 6) },
+      "ETH to USDC swap successful",
+    );
+
+    return {
+      hash,
+      usdcReceived,
+    };
+  }
+
+  async swapUsdcForEth(
+    poolManagerAddress: Address,
+    usdcAddress: Address,
+    usdcAmount: bigint,
+    feeTier: FeeTier = FeeTier.LOW,
+  ): Promise<{ hash: Hash; ethReceived: bigint }> {
+    logger.info(
+      { usdcAmount: formatUnits(usdcAmount, 6) },
+      "Swapping USDC for ETH",
+    );
+
+    const { hash: approvalHash } = await executeContractWrite(
+      this.publicClient,
+      this.walletClient,
+      {
+        address: usdcAddress,
+        abi: ERC20_ABI,
+        functionName: "approve",
+        args: [poolManagerAddress, usdcAmount],
+      },
+    );
+
+    logger.info({ hash: approvalHash }, "USDC approved for swap");
+
+    const poolKey = createEthUsdcPoolKey(usdcAddress, feeTier);
+
+    const { result, hash } = await executeContractWrite(
+      this.publicClient,
+      this.walletClient,
+      {
+        address: poolManagerAddress,
+        abi: POOL_MANAGER_ABI,
+        functionName: "swap",
+        args: [
+          poolKey,
+          {
+            zeroForOne: false,
+            amountSpecified: usdcAmount,
+            sqrtPriceLimitX96: MAX_SQRT_PRICE,
+          },
+          "0x",
+        ],
+        account: this.walletClient.account!,
+      },
+    );
+
+    const delta = result;
+    const ethReceived = delta < 0n ? -delta : delta;
+
+    logger.info(
+      { hash, ethReceived: formatEther(ethReceived) },
+      "USDC to ETH swap successful",
+    );
+
+    return {
+      hash,
+      ethReceived,
+    };
+  }
+
+  async getBalance(
+    tokenAddress: Address,
+    accountAddress: Address,
+  ): Promise<bigint> {
+    if (tokenAddress === "0x0000000000000000000000000000000000000000") {
+      return await this.publicClient.getBalance({ address: accountAddress });
+    }
+
+    return await this.publicClient.readContract({
+      address: tokenAddress,
+      abi: ERC20_ABI,
+      functionName: "balanceOf",
+      args: [accountAddress],
+    });
+  }
+}
+
+export interface BalancedAmounts {
+  amount0: bigint;
+  amount1: bigint;
+  needsSwap: boolean;
+  swapZeroForOne?: boolean;
+  swapAmount?: bigint;
+}
+
+export function calculateBalancedAmounts(
+  currentPrice: bigint,
+  tickLower: number,
+  tickUpper: number,
+  availableAmount0: bigint,
+  availableAmount1: bigint,
+): BalancedAmounts {
+  // This is a simplified calculation
+  // In a real implementation, you would use Uniswap's math libraries
+  // to calculate the exact ratio needed based on the tick range
+
+  const ratio = 0.5;
+  const targetAmount0 =
+    (availableAmount0 * BigInt(Math.floor(ratio * 100))) / 100n;
+  const targetAmount1 = availableAmount1;
+
+  return {
+    amount0: targetAmount0,
+    amount1: targetAmount1,
+    needsSwap: false,
+  };
+}

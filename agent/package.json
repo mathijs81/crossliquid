@@ -8,6 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "cli": "tsx src/cli.ts",
     "format": "biome format --write",
     "lint": "biome lint --write",
     "fix": "biome lint --write && biome format --write",

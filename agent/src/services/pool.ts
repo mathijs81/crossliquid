@@ -108,3 +108,55 @@ export const calculatePoolYield = async (
 
   return yields;
 };
+
+const POOL_MANAGER_ABI = [
+  {
+    type: "function",
+    name: "getSlot0",
+    inputs: [{ name: "poolId", type: "bytes32" }],
+    outputs: [
+      { name: "sqrtPriceX96", type: "uint160" },
+      { name: "tick", type: "int24" },
+      { name: "protocolFee", type: "uint24" },
+      { name: "lpFee", type: "uint24" },
+    ],
+    stateMutability: "view",
+  },
+] as const;
+
+export const getPoolCurrentTick = async (
+  chainId: number,
+  poolManagerAddress: `0x${string}`,
+  poolId?: `0x${string}`,
+): Promise<number | null> => {
+  const config = chains.get(chainId);
+  if (!config) {
+    return null;
+  }
+
+  try {
+    const client = config.publicClient;
+    const poolIdToUse =
+      poolId ||
+      ("0x10b70c84751672cc05d94bbe01241052e28fb05cd92fa17677324b936a155e7a" as `0x${string}`);
+
+    const slot0 = await client.readContract({
+      address: poolManagerAddress,
+      abi: POOL_MANAGER_ABI,
+      functionName: "getSlot0",
+      args: [poolIdToUse],
+    });
+
+    return Number(slot0[1]);
+  } catch (error) {
+    logger.error(
+      {
+        chainId,
+        poolManagerAddress,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "Failed to fetch current tick",
+    );
+    return null;
+  }
+};

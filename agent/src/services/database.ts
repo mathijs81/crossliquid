@@ -38,7 +38,10 @@ class DatabaseService {
     `);
 
     stmt.run(record.timestamp, record.chainId, record.usdcOutput);
-    logger.debug({ chainId: record.chainId, usdcOutput: record.usdcOutput }, "Exchange rate inserted");
+    logger.debug(
+      { chainId: record.chainId, usdcOutput: record.usdcOutput },
+      "Exchange rate inserted",
+    );
   }
 
   getRecentRates(chainId?: number, limit = 100): ExchangeRateRecord[] {

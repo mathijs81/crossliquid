@@ -78,7 +78,51 @@ These things would be great to have, but to keep this project feasible for ~1 we
 ## Other open questions
 
 - Li.fi composer doesn't support direct Uniswap LP'ing, how do I get the funds into the pool?
+  - **Answer:** The PositionManager contract manages liquidity directly. The agent uses PositionManager to add/remove liquidity, and li.fi is only used for bridging funds between chains.
 - Historic yield: how do we get this without building a historical yield database?
+
+## Position Management
+
+The agent now includes services and CLI tools for managing Uniswap V4 positions:
+
+### Services
+
+- **positionManager.ts** - Add/remove liquidity via PositionManager contract
+- **swap.ts** - Swap ETH ↔ USDC to balance positions before adding liquidity
+- **pool.ts** - Query pool state (tick, price, liquidity)
+
+### CLI Tool
+
+Manually manage positions without running the full agent loop:
+
+```bash
+cd agent
+
+# List all positions
+pnpm cli list-positions
+
+# Add liquidity (0.5 ETH + 1000 USDC)
+pnpm cli add-liquidity --eth 0.5 --usdc 1000
+
+# Remove liquidity
+pnpm cli remove-liquidity --position-id 0 --amount 100
+```
+
+Required environment variables (see `.env.example`):
+- `POSITION_MANAGER_ADDRESS` - PositionManager contract address
+- `POOL_MANAGER_ADDRESS` - Uniswap V4 PoolManager address
+- `USDC_ADDRESS` - USDC token address
+- `OPERATOR_PRIVATE_KEY` - Private key for transactions
+- `CHAIN_ID` - Chain to operate on (31337 for local)
+
+### Swapping for Balanced Positions
+
+Since Uniswap V4 requires both tokens in the correct ratio:
+- If you only have ETH, swap ~50% to USDC before adding liquidity
+- If you only have USDC, swap ~50% to ETH
+- The swap service handles this automatically based on the current pool price and tick range
+
+See `IMPLEMENTATION_SUMMARY.md` for detailed integration guide.
 
 ## Relevant links
 

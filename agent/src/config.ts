@@ -53,7 +53,7 @@ export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
     quoter: "0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203",
     weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     usdc: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-  }
+  },
 };
 
 export const ETHUSDC_POOLS: Record<number, string[]> = {
