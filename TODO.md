@@ -4,7 +4,7 @@
 - [x] UI: deposit funds into vault
 - [ ] Manager that can get funds from contract, deploy to uniswap
   - [x] First commit
-  - [ ] Actual deployment / getting from uniswap
+  - [x] Actual deployment / getting from uniswap
 - [ ] UI: show current deployment in uniswap
 - [x] Make everything proxies
 - [ ] Working setup for simple uniswap v4 hook
