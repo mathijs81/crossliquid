@@ -42,10 +42,32 @@ contract PositionManager is
 
     address public operator;
 
+    struct Position {
+        address poolManager;
+        PoolKey poolKey;
+        int24 tickLower;
+        int24 tickUpper;
+        uint128 liquidity;
+        uint256 amount0;
+        uint256 amount1;
+        uint256 timestamp;
+    }
+
+    mapping(bytes32 => Position) public positions;
+    bytes32[] public positionIds;
+
     event FundsWithdrawnFromVault(uint256 amount);
     event FundsReturnedToVault(uint256 amount);
-    event DepositedToUniswap(uint256 amount, bytes32 positionId);
-    event WithdrawnFromUniswap(uint256 amount, bytes32 positionId);
+    event DepositedToUniswap(
+        bytes32 indexed positionId,
+        address indexed poolManager,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 liquidity,
+        uint256 amount0,
+        uint256 amount1
+    );
+    event WithdrawnFromUniswap(bytes32 indexed positionId, uint128 liquidityRemoved, uint256 amount0, uint256 amount1);
     event BridgedToChain(address bridge, uint256 destinationChainId, uint256 amount);
     event ReceivedFromBridge(address sender, uint256 amount);
     event OperatorUpdated(address indexed oldOperator, address indexed newOperator);
@@ -59,6 +81,8 @@ contract PositionManager is
     error InvalidCaller();
     error SlippageExceeded();
     error InvalidAction();
+    error PositionNotFound();
+    error PositionAlreadyExists();
 
     // === Modifiers ===
 
@@ -146,11 +170,25 @@ contract PositionManager is
         uint256 amount0Min,
         uint256 amount1Min
     ) external onlyOperatorOrOwner nonReentrant returns (uint128 liquidityAdded, uint256 amount0, uint256 amount1) {
-        IPoolManager poolManager = IPoolManager(poolManagerAddress);
-
         IERC20(Currency.unwrap(poolKey.currency0)).safeIncreaseAllowance(poolManagerAddress, amount0Desired);
         IERC20(Currency.unwrap(poolKey.currency1)).safeIncreaseAllowance(poolManagerAddress, amount1Desired);
 
+        (liquidityAdded, amount0, amount1) =
+            _addLiquidityToPool(poolManagerAddress, poolKey, tickLower, tickUpper, amount0Desired, amount1Desired);
+
+        if (amount0 < amount0Min || amount1 < amount1Min) revert SlippageExceeded();
+
+        _storePosition(poolManagerAddress, poolKey, tickLower, tickUpper, liquidityAdded, amount0, amount1);
+    }
+
+    function _addLiquidityToPool(
+        address poolManagerAddress,
+        PoolKey calldata poolKey,
+        int24 tickLower,
+        int24 tickUpper,
+        uint256 amount0Desired,
+        uint256 amount1Desired
+    ) internal returns (uint128 liquidityAdded, uint256 amount0, uint256 amount1) {
         CallbackData memory cbData = CallbackData({
             action: CallbackAction.ADD_LIQUIDITY,
             data: abi.encode(
@@ -164,15 +202,42 @@ contract PositionManager is
             )
         });
 
-        bytes memory result = poolManager.unlock(abi.encode(cbData));
+        bytes memory result = IPoolManager(poolManagerAddress).unlock(abi.encode(cbData));
         (liquidityAdded, amount0, amount1) = abi.decode(result, (uint128, uint256, uint256));
+    }
 
-        if (amount0 < amount0Min || amount1 < amount1Min) revert SlippageExceeded();
+    function _storePosition(
+        address poolManagerAddress,
+        PoolKey calldata poolKey,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 liquidityAdded,
+        uint256 amount0,
+        uint256 amount1
+    ) internal {
+        bytes32 positionId = keccak256(
+            abi.encodePacked(poolKey.toId(), address(this), tickLower, tickUpper, bytes32(0))
+        );
 
-        bytes32 positionId =
-            keccak256(abi.encodePacked(poolKey.toId(), address(this), tickLower, tickUpper, bytes32(0)));
+        if (positions[positionId].timestamp == 0) {
+            positions[positionId] = Position({
+                poolManager: poolManagerAddress,
+                poolKey: poolKey,
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                liquidity: liquidityAdded,
+                amount0: amount0,
+                amount1: amount1,
+                timestamp: block.timestamp
+            });
+            positionIds.push(positionId);
+        } else {
+            positions[positionId].liquidity += liquidityAdded;
+            positions[positionId].amount0 += amount0;
+            positions[positionId].amount1 += amount1;
+        }
 
-        emit DepositedToUniswap(amount0 + amount1, positionId);
+        emit DepositedToUniswap(positionId, poolManagerAddress, tickLower, tickUpper, liquidityAdded, amount0, amount1);
     }
 
     function withdrawFromUniswap(
@@ -184,6 +249,12 @@ contract PositionManager is
         uint256 amount0Min,
         uint256 amount1Min
     ) external onlyOperatorOrOwner nonReentrant returns (uint256 amount0, uint256 amount1) {
+        bytes32 positionId = keccak256(
+            abi.encodePacked(poolKey.toId(), address(this), tickLower, tickUpper, bytes32(0))
+        );
+
+        if (positions[positionId].timestamp == 0) revert PositionNotFound();
+
         IPoolManager poolManager = IPoolManager(poolManagerAddress);
 
         CallbackData memory cbData = CallbackData({
@@ -200,10 +271,14 @@ contract PositionManager is
 
         if (amount0 < amount0Min || amount1 < amount1Min) revert SlippageExceeded();
 
-        bytes32 positionId =
-            keccak256(abi.encodePacked(poolKey.toId(), address(this), tickLower, tickUpper, bytes32(0)));
+        if (positions[positionId].liquidity >= liquidity) {
+            positions[positionId].liquidity -= liquidity;
+            if (positions[positionId].liquidity == 0) {
+                _removePosition(positionId);
+            }
+        }
 
-        emit WithdrawnFromUniswap(amount0 + amount1, positionId);
+        emit WithdrawnFromUniswap(positionId, liquidity, amount0, amount1);
     }
 
     function unlockCallback(bytes calldata rawData) external returns (bytes memory) {
@@ -294,6 +369,79 @@ contract PositionManager is
         poolManager.sync(currency);
         IERC20(Currency.unwrap(currency)).safeTransfer(address(poolManager), amount);
         poolManager.settle();
+    }
+
+    function _removePosition(bytes32 positionId) internal {
+        delete positions[positionId];
+
+        for (uint256 i = 0; i < positionIds.length; i++) {
+            if (positionIds[i] == positionId) {
+                positionIds[i] = positionIds[positionIds.length - 1];
+                positionIds.pop();
+                break;
+            }
+        }
+    }
+
+    // === View Functions ===
+
+    function getPositionCount() external view returns (uint256) {
+        return positionIds.length;
+    }
+
+    function getAllPositionIds() external view returns (bytes32[] memory) {
+        return positionIds;
+    }
+
+    function getPosition(bytes32 positionId) external view returns (Position memory) {
+        if (positions[positionId].timestamp == 0) revert PositionNotFound();
+        return positions[positionId];
+    }
+
+    function getPositionWithPoolState(bytes32 positionId)
+        external
+        view
+        returns (Position memory position, int24 currentTick, uint160 sqrtPriceX96, bool inRange)
+    {
+        if (positions[positionId].timestamp == 0) revert PositionNotFound();
+        position = positions[positionId];
+
+        IPoolManager poolManager = IPoolManager(position.poolManager);
+        PoolId poolId = position.poolKey.toId();
+
+        (sqrtPriceX96, currentTick,,) = poolManager.getSlot0(poolId);
+        inRange = currentTick >= position.tickLower && currentTick < position.tickUpper;
+    }
+
+    function getAllPositionsWithPoolState()
+        external
+        view
+        returns (
+            bytes32[] memory ids,
+            Position[] memory positionList,
+            int24[] memory currentTicks,
+            bool[] memory inRangeList
+        )
+    {
+        uint256 count = positionIds.length;
+        ids = new bytes32[](count);
+        positionList = new Position[](count);
+        currentTicks = new int24[](count);
+        inRangeList = new bool[](count);
+
+        for (uint256 i = 0; i < count; i++) {
+            bytes32 positionId = positionIds[i];
+            Position memory position = positions[positionId];
+
+            IPoolManager poolManager = IPoolManager(position.poolManager);
+            PoolId poolId = position.poolKey.toId();
+            (uint160 sqrtPriceX96, int24 currentTick,,) = poolManager.getSlot0(poolId);
+
+            ids[i] = positionId;
+            positionList[i] = position;
+            currentTicks[i] = currentTick;
+            inRangeList[i] = currentTick >= position.tickLower && currentTick < position.tickUpper;
+        }
     }
 
     // === Bridge Integration (All chains) ===

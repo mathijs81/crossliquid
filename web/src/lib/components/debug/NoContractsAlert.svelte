@@ -1,6 +1,6 @@
 <script lang="ts">
 import { vaultChainId } from "$lib/wagmi/chains";
-import InfoIcon from "phosphor-svelte/lib/InfoIcon";
+import Alert from "../atoms/Alert.svelte";
 
 interface Props {
   chainId: number;
@@ -9,7 +9,6 @@ interface Props {
 let { chainId }: Props = $props();
 </script>
 
-<div class="alert alert-info">
-  <InfoIcon class="shrink-0 w-6 h-6" />
+<Alert variant="info">
   <span>No contracts deployed on chain {chainId}. {#if chainId === vaultChainId}Run `pnpm -C foundry deploy:anvil` to deploy contracts.{/if}</span>
-</div>
+</Alert>

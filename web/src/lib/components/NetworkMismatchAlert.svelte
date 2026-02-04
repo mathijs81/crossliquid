@@ -1,6 +1,6 @@
 <script lang="ts">
 import { switchChain } from "@wagmi/core";
-import WarningIcon from "phosphor-svelte/lib/WarningIcon";
+import Alert from "./atoms/Alert.svelte";
 import { config } from "$lib/wagmi/config";
 import { createConnection } from "$lib/web3/createConnection.svelte";
 import { vaultChain, vaultChainId } from "$lib/wagmi/chains";
@@ -28,22 +28,25 @@ async function handleSwitchChain() {
 </script>
 
 {#if connection.isWrongChain}
-  <div class="alert alert-warning mx-4 mt-2">
-    <WarningIcon class="shrink-0 h-6 w-6" />
-    <span>
-      You are connected to the wrong network. Please switch to {vaultChain.name}.
-    </span>
-    <button
-      class="btn btn-sm btn-primary"
-      onclick={handleSwitchChain}
-      disabled={isSwitchingChain}
-    >
-      {isSwitchingChain ? "Switching..." : "Switch Network"}
-    </button>
+  <div class="mx-4 mt-2">
+    <Alert variant="warning">
+      <span>
+        You are connected to the wrong network. Please switch to {vaultChain.name}.
+      </span>
+      <button
+        class="btn btn-sm btn-primary"
+        onclick={handleSwitchChain}
+        disabled={isSwitchingChain}
+      >
+        {isSwitchingChain ? "Switching..." : "Switch Network"}
+      </button>
+    </Alert>
   </div>
   {#if switchError}
-    <div class="alert alert-error mx-4 mt-2">
-      <span>{switchError}</span>
+    <div class="mx-4 mt-2">
+      <Alert variant="error">
+        <span>{switchError}</span>
+      </Alert>
     </div>
   {/if}
 {/if}

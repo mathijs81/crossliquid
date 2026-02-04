@@ -1,13 +1,12 @@
 <script lang="ts">
-import WarningIcon from "phosphor-svelte/lib/WarningIcon";
+import Alert from "./atoms/Alert.svelte";
 import { createConnection } from "$lib/web3/createConnection.svelte";
 
 const connection = createConnection();
 </script>
 
 {#if !connection.isConnected}
-  <div class="alert alert-warning">
-    <WarningIcon class="shrink-0 h-6 w-6" />
+  <Alert variant="warning">
     <span>Please connect your wallet to interact with contracts</span>
-  </div>
+  </Alert>
 {/if}

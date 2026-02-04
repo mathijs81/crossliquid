@@ -9,6 +9,7 @@ import NetworkMismatchAlert from "./NetworkMismatchAlert.svelte";
 import ShuffleAngularIcon from "phosphor-svelte/lib/ShuffleAngularIcon";
 import PiggyBankIcon from "phosphor-svelte/lib/PiggyBankIcon";
 import BugIcon from "phosphor-svelte/lib/BugIcon";
+import ChartLineIcon from "phosphor-svelte/lib/ChartLineIcon";
 import type { Component } from "svelte";
 
 const connection = createConnection();
@@ -52,8 +53,8 @@ async function disconnectWallet() {
 
 const baseDestinations = [
   [PiggyBankIcon, "Deposit to Vault", "/cross-liquid"],
+  [ChartLineIcon, "Position Stats", "/stats"],
   [BugIcon, "Debug", "/debug"],
-  // Add your other destinations here
 ] as const;
 
 const destinations = $derived(
