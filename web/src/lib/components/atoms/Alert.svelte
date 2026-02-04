@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Component } from "svelte";
+import type { Component, Snippet } from "svelte";
 import InfoIcon from "phosphor-svelte/lib/InfoIcon";
 import CheckCircleIcon from "phosphor-svelte/lib/CheckCircleIcon";
 import WarningIcon from "phosphor-svelte/lib/WarningIcon";
@@ -8,7 +8,7 @@ import XCircleIcon from "phosphor-svelte/lib/XCircleIcon";
 interface Props {
   variant?: "info" | "success" | "warning" | "error";
   icon?: Component;
-  children?: any;
+  children?: Snippet;
 }
 
 let { variant = "info", icon, children }: Props = $props();
@@ -20,6 +20,7 @@ const defaultIcons = {
   error: XCircleIcon,
 };
 
+// svelte-ignore state_referenced_locally
 const Icon = icon ?? defaultIcons[variant];
 </script>
 
