@@ -1,17 +1,15 @@
 import {
-  type PublicClient,
-  type WalletClient,
   type Address,
-  type Hash,
-  parseEther,
-  parseUnits,
   formatEther,
   formatUnits,
+  type Hash,
+  type PublicClient,
+  type WalletClient,
 } from "viem";
+import { erc20Abi } from "../abi/ERC20";
+import { poolManagerAbi } from "../abi/PoolManager";
 import { logger } from "../logger";
 import { executeContractWrite } from "../utils/contract";
-import { poolManagerAbi } from "../abi/PoolManager";
-import { erc20Abi } from "../abi/ERC20";
 
 export enum FeeTier {
   LOWEST = 100, // 0.01%, tickSpacing 1

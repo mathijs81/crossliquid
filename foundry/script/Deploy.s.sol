@@ -118,6 +118,21 @@ contract Deploy is Script {
             "1. Deploy to child chains with: CHILD_CHAIN=true forge script script/Deploy.s.sol --rpc-url <chain>"
         );
         console.log("2. Manager proxy will be at same address:", managerProxy);
+
+        // 6. Write json deployment file
+        // TODO(mathijs): take a better directory name than "uniswapContracts", needs to be adjusted in agent/
+        // and foundry.toml permissions
+        string memory chainIdStr = vm.toString(block.chainid);
+        string memory outputDir = string.concat("broadcast/uniswapContracts/", chainIdStr);
+        string memory outputPath = string.concat(outputDir, "/deployedCrossLiquid.json");
+
+        vm.createDir(outputDir, true);
+
+        string memory objectKey = "crossLiquid";
+        vm.serializeAddress(objectKey, "vault", address(vaultProxy));
+        string memory json = vm.serializeAddress(objectKey, "manager", address(managerProxy));
+
+        vm.writeJson(json, outputPath);
     }
 
     function deployChildChain(bytes32 managerSalt) internal {

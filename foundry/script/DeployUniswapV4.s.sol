@@ -135,7 +135,7 @@ contract DeployUniswapV4 is Script, Deployers {
         vm.serializeAddress(objectKey, "poolManager", address(poolManager));
         vm.serializeAddress(objectKey, "positionManager", address(positionManager));
         vm.serializeAddress(objectKey, "permit2", address(permit2));
-        vm.serializeAddress(objectKey, "eth", address(0));
+        vm.serializeAddress(objectKey, "weth", address(weth));
         vm.serializeAddress(objectKey, "usdc", address(usdc));
         vm.serializeString(objectKey, "mainPoolId", vm.toString(PoolId.unwrap(mainPoolId)));
         vm.serializeString(objectKey, "mainPoolFee", "0.05%");

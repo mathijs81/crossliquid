@@ -1,5 +1,5 @@
 import { type Chain, createPublicClient, http, type PublicClient } from "viem";
-import { base, mainnet, optimism, unichain } from "viem/chains";
+import { base, foundry, mainnet, optimism, unichain } from "viem/chains";
 import type { ChainConfig, Environment } from "../config";
 import { logger } from "../logger";
 
@@ -16,6 +16,7 @@ export const getRpcUrl = (chainId: number): string => {
     [optimism.id]: process.env.RPC_OPTIMISM || "",
     [mainnet.id]: process.env.RPC_MAINNET || "",
     [unichain.id]: process.env.RPC_UNICHAIN || "",
+    [foundry.id]: process.env.RPC_FOUNDRY || "",
   };
   return envVars[chainId] || "";
 };
@@ -26,9 +27,12 @@ export const initializeChains = (
   const chains = new Map<number, ChainConfig>();
 
   if (environment === "development") {
-    logger.info(
-      "Running in development mode - chains disabled (use local setup if needed)",
-    );
+    chains.set(foundry.id, {
+      chainId: foundry.id,
+      chainName: foundry.name,
+      rpcUrl: getRpcUrl(foundry.id),
+      publicClient: createClient(foundry, getRpcUrl(foundry.id)),
+    });
     return chains;
   }
 

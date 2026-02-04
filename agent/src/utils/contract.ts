@@ -1,5 +1,7 @@
 import type {
   Abi,
+  Account,
+  Address,
   ContractFunctionArgs,
   ContractFunctionName,
   ContractFunctionReturnType,
@@ -7,10 +9,7 @@ import type {
   PublicClient,
   TransactionReceipt,
   WalletClient,
-  Address,
   WriteContractParameters,
-  Account,
-  ExtractAbiFunctionForArgs,
 } from "viem";
 
 export type ContractCallParams<

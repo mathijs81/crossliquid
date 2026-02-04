@@ -1,17 +1,15 @@
 import { encodeAbiParameters, formatUnits, keccak256, parseEther } from "viem";
+import { poolManagerAbi } from "../abi/PoolManager";
+import { quoterAbi } from "../abi/Quoter";
+import { stateViewAbi } from "../abi/StateView";
 import {
   chains,
   DEFAULT_POOL_KEYS,
   ETHUSDC_POOLS,
-  ETHUSDC_ZERO_FOR_ONE,
   type PoolKey,
   UNIV4_CONTRACTS,
 } from "../config";
 import { logger } from "../logger";
-import { poolAbi } from "../abi/Pool";
-import { poolManagerAbi } from "../abi/PoolManager";
-import { quoterAbi } from "../abi/Quoter";
-import { stateViewAbi } from "../abi/StateView";
 
 export interface EthUsdcPoolData {
   poolId: string;
@@ -68,7 +66,7 @@ export async function simulateEthToUsdcSwap(
       args: [
         {
           poolKey: effectivePoolKey,
-          zeroForOne: ETHUSDC_ZERO_FOR_ONE[chainId],
+          zeroForOne: true,
           exactAmount: ethAmount,
           hookData: "0x",
         },
@@ -231,7 +229,10 @@ export async function collectEthUsdcData(
     getEthUsdcPoolPrice(chainId, poolKey),
   ]);
 
-  logger.info({ chainId, usdcOutput, topPools, poolPrice }, "Collected ETH-USDC data");
+  logger.info(
+    { chainId, usdcOutput, topPools, poolPrice },
+    "Collected ETH-USDC data",
+  );
 
   return {
     swapSimulation: {

@@ -1,22 +1,9 @@
-import {
-  type PublicClient,
-  type WalletClient,
-  type Address,
-  type Hash,
-  parseEther,
-  formatEther,
-  formatUnits,
-  parseUnits,
-  createWalletClient,
-  http,
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { foundry } from "viem/chains";
-import { logger } from "../logger";
-import { chains } from "../config";
-import { type PoolKey, createEthUsdcPoolKey, FeeTier } from "./swap";
-import { executeContractWrite } from "../utils/contract";
+import type { Address, Hash, PublicClient, WalletClient } from "viem";
 import { positionManagerAbi } from "../abi/PositionManager";
+import { chains, createAgentWalletClient } from "../config";
+import { logger } from "../logger";
+import { executeContractWrite } from "../utils/contract";
+import type { PoolKey } from "./swap";
 
 export type { PoolKey };
 
@@ -57,11 +44,7 @@ export class PositionManagerService {
   private walletClient?: WalletClient;
   private positionManagerAddress: Address;
 
-  constructor(
-    chainId: number,
-    positionManagerAddress: Address,
-    privateKey?: `0x${string}`,
-  ) {
+  constructor(chainId: number, positionManagerAddress: Address) {
     const chainConfig = chains.get(chainId);
     if (!chainConfig) {
       throw new Error(`No chain config for chain ${chainId}`);
@@ -69,15 +52,7 @@ export class PositionManagerService {
 
     this.publicClient = chainConfig.publicClient;
     this.positionManagerAddress = positionManagerAddress;
-
-    if (privateKey) {
-      const account = privateKeyToAccount(privateKey);
-      this.walletClient = createWalletClient({
-        account,
-        chain: chainId === 31337 ? foundry : this.publicClient.chain!,
-        transport: http(chainConfig.rpcUrl),
-      });
-    }
+    this.walletClient = createAgentWalletClient(chainId);
   }
 
   async getAllPositions(): Promise<{

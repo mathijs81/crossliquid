@@ -1,27 +1,30 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env -S tsx --env-file=.env
 
 import { parseArgs } from "node:util";
 import {
+  formatEther,
+  formatUnits,
   parseEther,
   parseUnits,
   type Address,
-  formatEther,
-  formatUnits,
 } from "viem";
+import { agentConfig, createAgentWalletClient } from "./config";
 import { logger } from "./logger";
+import { getPoolCurrentTick } from "./services/pool";
 import {
-  PositionManagerService,
   calculateTickRange,
   formatPosition,
-  type PoolKey,
+  PositionManagerService,
 } from "./services/positionManager";
-import { getPoolCurrentTick } from "./services/pool";
 import { createEthUsdcPoolKey, FeeTier } from "./services/swap";
+import { syncVault } from "./actions/vaultSync";
 
 const COMMANDS = {
   "list-positions": "List all positions",
   "add-liquidity": "Add liquidity to a pool",
   "remove-liquidity": "Remove liquidity from a pool",
+  "sync-vault":
+    "Sync funds between the $CLQ vault and the pool manager on Base",
   help: "Show this help message",
 } as const;
 
@@ -217,34 +220,26 @@ async function main() {
   const privateKey = process.env.OPERATOR_PRIVATE_KEY as
     | `0x${string}`
     | undefined;
-  const chainId = Number.parseInt(process.env.CHAIN_ID || "31337", 10);
 
+  // TODO: handle this stuff somewhere else
   if (!positionManagerAddress) {
     console.error("POSITION_MANAGER_ADDRESS environment variable is required");
     process.exit(1);
   }
 
-  if (!poolManagerAddress && command !== "list-positions") {
+  if (!poolManagerAddress) {
     console.error("POOL_MANAGER_ADDRESS environment variable is required");
     process.exit(1);
   }
 
-  if (!usdcAddress && command !== "list-positions") {
+  if (!usdcAddress) {
     console.error("USDC_ADDRESS environment variable is required");
     process.exit(1);
   }
 
-  if (!privateKey && command !== "list-positions") {
-    console.error(
-      "OPERATOR_PRIVATE_KEY environment variable is required for write operations",
-    );
-    process.exit(1);
-  }
-
   const service = new PositionManagerService(
-    chainId,
+    agentConfig.vaultChainId,
     positionManagerAddress,
-    privateKey,
   );
 
   try {
@@ -273,8 +268,8 @@ async function main() {
         await addLiquidity(service, {
           eth: values.eth,
           usdc: values.usdc,
-          poolManager: poolManagerAddress!,
-          usdcAddress: usdcAddress!,
+          poolManager: poolManagerAddress,
+          usdcAddress,
           tickLower: values["tick-lower"]
             ? Number(values["tick-lower"])
             : undefined,
@@ -305,6 +300,20 @@ async function main() {
           poolManager: poolManagerAddress!,
           usdcAddress: usdcAddress!,
         });
+        break;
+      }
+
+      case "sync-vault": {
+        const { values } = parseArgs({
+          args: args.slice(1),
+          options: {
+            "dry-run": { type: "boolean", default: false },
+          },
+        });
+        await syncVault(
+          createAgentWalletClient(agentConfig.vaultChainId),
+          values["dry-run"] as boolean,
+        );
         break;
       }
 

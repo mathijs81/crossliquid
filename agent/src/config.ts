@@ -1,6 +1,9 @@
-import type { PublicClient } from "viem";
+import { createWalletClient, http, type PublicClient } from "viem";
 import { initializeChains } from "./utils/chain";
 import { validateAddress, validatePrivateKey } from "./utils/validation";
+import { type Address, privateKeyToAccount } from "viem/accounts";
+import { readOurDeployment, readUniswapDeployments } from "./dev/dev-config";
+import { logger } from "./logger";
 
 export type Environment = "development" | "production" | "testnet";
 
@@ -66,6 +69,19 @@ export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
     weth: "0x4200000000000000000000000000000000000006",
     usdc: "0x078D782b760474a361dDA0AF3839290b0EF57AD6",
   },
+  31337: {
+    poolManager: "0x0000000000000000000000000000000000000000",
+    positionManager: "0x0000000000000000000000000000000000000000",
+    stateView: "0x0000000000000000000000000000000000000000",
+    quoter: "0x0000000000000000000000000000000000000000",
+    weth: "0x0000000000000000000000000000000000000000",
+    usdc: "0x0000000000000000000000000000000000000000",
+    ...(() => {
+      if (ENVIRONMENT === "development") {
+        return readUniswapDeployments();
+      } else return {};
+    })(),
+  },
 };
 
 export const ETHUSDC_POOLS: Record<number, string[]> = {
@@ -90,10 +106,6 @@ export const DEFAULT_POOL_KEYS: Record<number, PoolKey> = Object.fromEntries(
   }),
 );
 
-export const ETHUSDC_ZERO_FOR_ONE: Record<number, boolean> = Object.fromEntries(
-  Object.keys(UNIV4_CONTRACTS).map((chainId) => [Number(chainId), true]),
-);
-
 export const chains: Map<number, ChainConfig> = initializeChains(ENVIRONMENT);
 
 export const agentConfig = {
@@ -103,4 +115,43 @@ export const agentConfig = {
   lifiRouterAddress: validateAddress(process.env.LIFI_ROUTER_ADDRESS),
   vaultPrivateKey: validatePrivateKey(process.env.VAULT_PRIVATE_KEY),
   alertWebhookUrl: process.env.ALERT_WEBHOOK_URL,
+  vaultChainId: Number.parseInt(process.env.CHAIN_ID || "8453", 10),
 };
+
+export const createAgentWalletClient = (
+  chainId: number = agentConfig.vaultChainId,
+) => {
+  const privateKey = agentConfig.vaultPrivateKey;
+  if (!privateKey) {
+    throw new Error("VAULT_PRIVATE_KEY is not set");
+  }
+  const publicClient = chains.get(chainId)?.publicClient;
+  if (!publicClient) {
+    throw new Error(`No public client for chain ${chainId}`);
+  }
+  const account = privateKeyToAccount(privateKey);
+  return createWalletClient({
+    account,
+    chain: publicClient.chain!,
+    transport: http(),
+  });
+};
+
+function getOurAddresses() {
+  let addresses = {
+    vault: "0x0000000000000000000000000000000000000000" as Address,
+    manager: "0x0000000000000000000000000000000000000000" as Address,
+  };
+
+  if (ENVIRONMENT === "development") {
+    addresses = readOurDeployment();
+  } else if (ENVIRONMENT === "production") {
+    logger.warn(
+      "Warning: production addresses of vault/manager not supported yet",
+    );
+  }
+
+  return addresses;
+}
+
+export const OUR_ADDRESSES = getOurAddresses();
