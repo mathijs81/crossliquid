@@ -10,6 +10,8 @@ import {
 } from "viem";
 import { logger } from "../logger";
 import { executeContractWrite } from "../utils/contract";
+import { poolManagerAbi } from "../abi/PoolManager";
+import { erc20Abi } from "../abi/ERC20";
 
 export enum FeeTier {
   LOWEST = 100, // 0.01%, tickSpacing 1
@@ -58,58 +60,6 @@ export function createEthUsdcPoolKey(
   };
 }
 
-const POOL_MANAGER_ABI = [
-  {
-    type: "function",
-    name: "swap",
-    inputs: [
-      {
-        name: "key",
-        type: "tuple",
-        components: [
-          { name: "currency0", type: "address" },
-          { name: "currency1", type: "address" },
-          { name: "fee", type: "uint24" },
-          { name: "tickSpacing", type: "int24" },
-          { name: "hooks", type: "address" },
-        ],
-      },
-      {
-        name: "params",
-        type: "tuple",
-        components: [
-          { name: "zeroForOne", type: "bool" },
-          { name: "amountSpecified", type: "int256" },
-          { name: "sqrtPriceLimitX96", type: "uint160" },
-        ],
-      },
-      { name: "hookData", type: "bytes" },
-    ],
-    outputs: [{ name: "delta", type: "int256" }],
-    stateMutability: "payable",
-  },
-] as const;
-
-const ERC20_ABI = [
-  {
-    type: "function",
-    name: "balanceOf",
-    inputs: [{ name: "account", type: "address" }],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "approve",
-    inputs: [
-      { name: "spender", type: "address" },
-      { name: "amount", type: "uint256" },
-    ],
-    outputs: [{ name: "", type: "bool" }],
-    stateMutability: "nonpayable",
-  },
-] as const;
-
 export class SwapService {
   constructor(
     private publicClient: PublicClient,
@@ -131,7 +81,7 @@ export class SwapService {
       this.walletClient,
       {
         address: poolManagerAddress,
-        abi: POOL_MANAGER_ABI,
+        abi: poolManagerAbi,
         functionName: "swap",
         args: [
           poolKey,
@@ -177,7 +127,7 @@ export class SwapService {
       this.walletClient,
       {
         address: usdcAddress,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         functionName: "approve",
         args: [poolManagerAddress, usdcAmount],
       },
@@ -192,7 +142,7 @@ export class SwapService {
       this.walletClient,
       {
         address: poolManagerAddress,
-        abi: POOL_MANAGER_ABI,
+        abi: poolManagerAbi,
         functionName: "swap",
         args: [
           poolKey,
@@ -231,7 +181,7 @@ export class SwapService {
 
     return await this.publicClient.readContract({
       address: tokenAddress,
-      abi: ERC20_ABI,
+      abi: erc20Abi,
       functionName: "balanceOf",
       args: [accountAddress],
     });

@@ -20,6 +20,7 @@
 
 **Nice to have**
 
+- [ ] Autogenerate ABIs used in agent
 - [ ] "scheduled" redeem. If you have more than 3% of the total earnings it's cumbersome to redeem small amounts at a time and wait for the 'brain' to replenish the liquid vault
 
 ## Later (to make more production ready)

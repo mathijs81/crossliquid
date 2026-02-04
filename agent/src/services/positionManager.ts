@@ -16,6 +16,7 @@ import { logger } from "../logger";
 import { chains } from "../config";
 import { type PoolKey, createEthUsdcPoolKey, FeeTier } from "./swap";
 import { executeContractWrite } from "../utils/contract";
+import { positionManagerAbi } from "../abi/PositionManager";
 
 export type { PoolKey };
 
@@ -50,116 +51,6 @@ export interface RemoveLiquidityParams {
   amount0Min: bigint;
   amount1Min: bigint;
 }
-
-const POSITION_MANAGER_ABI = [
-  {
-    type: "function",
-    name: "depositToUniswap",
-    inputs: [
-      { name: "poolManagerAddress", type: "address" },
-      {
-        name: "poolKey",
-        type: "tuple",
-        components: [
-          { name: "currency0", type: "address" },
-          { name: "currency1", type: "address" },
-          { name: "fee", type: "uint24" },
-          { name: "tickSpacing", type: "int24" },
-          { name: "hooks", type: "address" },
-        ],
-      },
-      { name: "tickLower", type: "int24" },
-      { name: "tickUpper", type: "int24" },
-      { name: "amount0Desired", type: "uint256" },
-      { name: "amount1Desired", type: "uint256" },
-      { name: "amount0Min", type: "uint256" },
-      { name: "amount1Min", type: "uint256" },
-    ],
-    outputs: [
-      { name: "liquidityAdded", type: "uint128" },
-      { name: "amount0", type: "uint256" },
-      { name: "amount1", type: "uint256" },
-    ],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "withdrawFromUniswap",
-    inputs: [
-      { name: "poolManagerAddress", type: "address" },
-      {
-        name: "poolKey",
-        type: "tuple",
-        components: [
-          { name: "currency0", type: "address" },
-          { name: "currency1", type: "address" },
-          { name: "fee", type: "uint24" },
-          { name: "tickSpacing", type: "int24" },
-          { name: "hooks", type: "address" },
-        ],
-      },
-      { name: "tickLower", type: "int24" },
-      { name: "tickUpper", type: "int24" },
-      { name: "liquidity", type: "uint128" },
-      { name: "amount0Min", type: "uint256" },
-      { name: "amount1Min", type: "uint256" },
-    ],
-    outputs: [
-      { name: "amount0", type: "uint256" },
-      { name: "amount1", type: "uint256" },
-    ],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "getAllPositionsWithPoolState",
-    inputs: [],
-    outputs: [
-      { name: "ids", type: "bytes32[]" },
-      {
-        name: "positionList",
-        type: "tuple[]",
-        components: [
-          { name: "poolManager", type: "address" },
-          {
-            name: "poolKey",
-            type: "tuple",
-            components: [
-              { name: "currency0", type: "address" },
-              { name: "currency1", type: "address" },
-              { name: "fee", type: "uint24" },
-              { name: "tickSpacing", type: "int24" },
-              { name: "hooks", type: "address" },
-            ],
-          },
-          { name: "tickLower", type: "int24" },
-          { name: "tickUpper", type: "int24" },
-          { name: "liquidity", type: "uint128" },
-          { name: "amount0", type: "uint256" },
-          { name: "amount1", type: "uint256" },
-          { name: "timestamp", type: "uint256" },
-        ],
-      },
-      { name: "currentTicks", type: "int24[]" },
-      { name: "inRangeList", type: "bool[]" },
-    ],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "withdrawFromVault",
-    inputs: [{ name: "amount", type: "uint256" }],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-  {
-    type: "function",
-    name: "returnToVault",
-    inputs: [{ name: "amount", type: "uint256" }],
-    outputs: [],
-    stateMutability: "nonpayable",
-  },
-] as const;
 
 export class PositionManagerService {
   private publicClient: PublicClient;
@@ -197,7 +88,7 @@ export class PositionManagerService {
   }> {
     const result = await this.publicClient.readContract({
       address: this.positionManagerAddress,
-      abi: POSITION_MANAGER_ABI,
+      abi: positionManagerAbi,
       functionName: "getAllPositionsWithPoolState",
     });
 
@@ -233,7 +124,7 @@ export class PositionManagerService {
       this.walletClient,
       {
         address: this.positionManagerAddress,
-        abi: POSITION_MANAGER_ABI,
+        abi: positionManagerAbi,
         functionName: "depositToUniswap",
         args: [
           params.poolManagerAddress,
@@ -285,7 +176,7 @@ export class PositionManagerService {
       this.walletClient,
       {
         address: this.positionManagerAddress,
-        abi: POSITION_MANAGER_ABI,
+        abi: positionManagerAbi,
         functionName: "withdrawFromUniswap",
         args: [
           params.poolManagerAddress,

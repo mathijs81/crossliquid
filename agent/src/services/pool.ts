@@ -1,37 +1,7 @@
 import { chains } from "../config";
 import { logger } from "../logger";
-
-const POOL_ABI = [
-  {
-    inputs: [],
-    name: "slot0",
-    outputs: [
-      { name: "sqrtPriceX96", type: "uint160" },
-      { name: "tick", type: "int24" },
-      { name: "observationIndex", type: "uint16" },
-      { name: "observationCardinality", type: "uint16" },
-      { name: "observationCardinalityNext", type: "uint16" },
-      { name: "feeProtocol", type: "uint8" },
-      { name: "unlocked", type: "bool" },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "liquidity",
-    outputs: [{ name: "", type: "uint128" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "fee",
-    outputs: [{ name: "", type: "uint24" }],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const;
+import { poolAbi } from "../abi/Pool";
+import { poolManagerAbi } from "../abi/PoolManager";
 
 export interface PoolState {
   chainId: number;
@@ -57,17 +27,17 @@ export const getPoolState = async (
     const [slot0, liquidity, fee] = await Promise.all([
       client.readContract({
         address: poolAddress,
-        abi: POOL_ABI,
+        abi: poolAbi,
         functionName: "slot0",
       }),
       client.readContract({
         address: poolAddress,
-        abi: POOL_ABI,
+        abi: poolAbi,
         functionName: "liquidity",
       }),
       client.readContract({
         address: poolAddress,
-        abi: POOL_ABI,
+        abi: poolAbi,
         functionName: "fee",
       }),
     ]);
@@ -109,21 +79,6 @@ export const calculatePoolYield = async (
   return yields;
 };
 
-const POOL_MANAGER_ABI = [
-  {
-    type: "function",
-    name: "getSlot0",
-    inputs: [{ name: "poolId", type: "bytes32" }],
-    outputs: [
-      { name: "sqrtPriceX96", type: "uint160" },
-      { name: "tick", type: "int24" },
-      { name: "protocolFee", type: "uint24" },
-      { name: "lpFee", type: "uint24" },
-    ],
-    stateMutability: "view",
-  },
-] as const;
-
 export const getPoolCurrentTick = async (
   chainId: number,
   poolManagerAddress: `0x${string}`,
@@ -142,7 +97,7 @@ export const getPoolCurrentTick = async (
 
     const slot0 = await client.readContract({
       address: poolManagerAddress,
-      abi: POOL_MANAGER_ABI,
+      abi: poolManagerAbi,
       functionName: "getSlot0",
       args: [poolIdToUse],
     });
