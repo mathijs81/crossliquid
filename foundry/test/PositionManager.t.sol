@@ -169,7 +169,7 @@ contract PositionManagerTest is Test {
         // Random user cannot bridge
         vm.prank(user1);
         vm.expectRevert(PositionManager.NotOperatorOrOwner.selector);
-        manager.bridgeToChain(address(0), 10, address(manager), 1 ether, "");
+        manager.bridgeToChain(address(0), 10, 1 ether, "");
 
         // Random user cannot manage Uniswap
         PoolKey memory mockKey = PoolKey({
@@ -212,7 +212,7 @@ contract PositionManagerTest is Test {
         // Cannot bridge more than balance
         vm.prank(owner);
         vm.expectRevert(PositionManager.InsufficientBalance.selector);
-        manager.bridgeToChain(address(0), 10, address(manager), 2 ether, "");
+        manager.bridgeToChain(address(0), 10, 2 ether, "");
 
         // Cannot emergency withdraw more than balance
         vm.prank(owner);

@@ -9,6 +9,7 @@ import {
   agentConfig,
   chains,
   createAgentWalletClient,
+  OUR_ADDRESSES,
   UNIV4_CONTRACTS,
 } from "./config";
 import { logger } from "./logger";
@@ -264,11 +265,12 @@ async function main() {
             amount: { type: "string" },
             "token-in": { type: "string" },
             "token-out": { type: "string" },
-            "exact-out": { type: "boolean", default: false },
             "slippage-bps": { type: "string" },
             "deadline-seconds": { type: "string" },
             recipient: { type: "string" },
             "quote-only": { type: "boolean", default: false },
+            "for-manager": { type: "boolean", default: false },
+            "dry-run-production": { type: "boolean", default: false },
           },
         });
 
@@ -277,7 +279,6 @@ async function main() {
           process.exit(1);
         }
 
-        const tradeType = values["exact-out"] ? "EXACT_OUTPUT" : "EXACT_INPUT";
         const slippageBps = values["slippage-bps"]
           ? Number(values["slippage-bps"])
           : 50;
@@ -329,16 +330,28 @@ async function main() {
           throw new Error("Recipient address is required");
         }
 
-        await swapTokens(swapService, publicClient, {
+        const positionManagerAddress = OUR_ADDRESSES.manager;
+        const dryRunProduction = values["dry-run-production"] as boolean;
+
+        // dry-run-production implies quote-only
+        const quoteOnly = (values["quote-only"] as boolean) || dryRunProduction;
+
+        if (dryRunProduction) {
+          console.log("\n🧪 Dry-run production mode: simulating production chain behavior\n");
+        }
+
+        await swapTokens(swapService, publicClient, walletClient, {
           chainId: chain,
           tokenIn,
           tokenOut,
-          amount: values.amount,
-          tradeType,
+          amountIn: values.amount,
           slippageBps,
           recipient,
           deadlineSeconds,
-          quoteOnly: values["quote-only"] as boolean,
+          quoteOnly,
+          forManager: values["for-manager"] as boolean,
+          positionManagerAddress,
+          useProductionRouting: dryRunProduction,
         });
         break;
       }

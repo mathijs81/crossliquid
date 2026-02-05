@@ -25,8 +25,8 @@ export interface UniV4Contracts {
   quoter: `0x${string}`;
   weth: `0x${string}`;
   usdc: `0x${string}`;
-  permit2?: `0x${string}`;
-  universalRouter?: `0x${string}`;
+  universalRouter: `0x${string}`;
+  v4Router?: `0x${string}`; // IUniswapV4Router04 for local chains
 }
 
 export interface PoolKey {
@@ -49,6 +49,7 @@ export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
     quoter: "0x0d5e0F971ED27FBfF6c2837bf31316121532048D",
     weth: "0x4200000000000000000000000000000000000006",
     usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    universalRouter: "0x6ff5693b99212da76ad316178a184ab56d299b43",
   },
   10: {
     poolManager: "0x9a13F98Cb987694C9F086b1F5eB990EeA8264Ec3",
@@ -57,6 +58,7 @@ export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
     quoter: "0x1f3131A13296FB91C90870043742C3CDBFF1A8d7",
     weth: "0x4200000000000000000000000000000000000006",
     usdc: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+    universalRouter: "0x851116d9223fabed8e56c0e6b8ad0c31d98b3507",
   },
   1: {
     poolManager: "0x000000000004444c5dc75cB358380D2e3dE08A90",
@@ -65,6 +67,7 @@ export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
     quoter: "0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203",
     weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     usdc: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    universalRouter: "0x66a9893cc07d91d95644aedd05d03f95e1dba8af",
   },
   130: {
     poolManager: "0x1f98400000000000000000000000000000000004",
@@ -73,6 +76,7 @@ export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
     stateView: "0x86e8631a016f9068c3f085faf484ee3f5fdee8f2",
     weth: "0x4200000000000000000000000000000000000006",
     usdc: "0x078D782b760474a361dDA0AF3839290b0EF57AD6",
+    universalRouter: "0xef740bf23acae26f6492b10de645d6b98dc8eaf3",
   },
   31337: {
     poolManager: "0x0000000000000000000000000000000000000000",
@@ -81,6 +85,7 @@ export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
     quoter: "0x0000000000000000000000000000000000000000",
     weth: "0x0000000000000000000000000000000000000000",
     usdc: "0x0000000000000000000000000000000000000000",
+    universalRouter: "0x0000000000000000000000000000000000000000",
     ...(() => {
       if (ENVIRONMENT === "development") {
         return readUniswapDeployments();

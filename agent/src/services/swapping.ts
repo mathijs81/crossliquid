@@ -11,6 +11,7 @@ import {
   type PublicClient,
   type WalletClient,
 } from "viem";
+import { iUniswapV4Router04Abi } from "../abi/IUniswapV4Router04";
 import { permit2Abi } from "../abi/Permit2";
 import { stateViewAbi } from "../abi/StateView";
 import { universalRouterAbi } from "../abi/UniversalRouter";
@@ -26,30 +27,29 @@ const MAX_UINT48 = 2 ** 48 - 1;
 const MAX_UINT160 = (1n << 160n) - 1n;
 const MAX_UINT128 = (1n << 128n) - 1n;
 const SLIPPAGE_DENOMINATOR = 10_000n;
-const PERMIT2_ADDRESS_MAINNET: Address =
+const PERMIT2_ADDRESS: Address =
   "0x000000000022D473030F116dDEE9F6B43aC78BA3";
 
-export type SwapTradeType = "EXACT_INPUT" | "EXACT_OUTPUT";
 export type QuoteSource = "local" | "routing-api";
 
 export interface SwapQuoteRequest {
   chainId: number;
   tokenIn: Address;
   tokenOut: Address;
-  amount: bigint;
-  tradeType?: SwapTradeType;
+  amountIn: bigint;
   slippageBps?: number;
   recipient: Address;
   hookData?: Hex;
   poolKey?: PoolKey;
   deadlineSeconds?: number;
+  forManager?: boolean; // If true, generate calldata for PositionManager execution
+  useProductionRouting?: boolean; // If true, force routing API even on local chains
 }
 
 export interface SwapQuoteResult {
   chainId: number;
   tokenIn: Address;
   tokenOut: Address;
-  tradeType: SwapTradeType;
   amountIn: bigint;
   amountOut: bigint;
   slippageBps: number;
@@ -88,14 +88,14 @@ export class SwappingService {
   ) {}
 
   async quoteSwap(request: SwapQuoteRequest): Promise<SwapQuoteResult> {
-    const tradeType = request.tradeType ?? "EXACT_INPUT";
     const slippageBps = request.slippageBps ?? 50;
 
-    if (this.chainId === 31337) {
-      return this.quoteLocal({ ...request, tradeType, slippageBps });
+    // Use routing API if explicitly requested or if on production chain
+    if (request.useProductionRouting || this.chainId !== 31337) {
+      return this.quoteRoutingApi({ ...request, slippageBps });
     }
 
-    return this.quoteRoutingApi({ ...request, tradeType, slippageBps });
+    return this.quoteLocal({ ...request, slippageBps });
   }
 
   buildExecutionPlan(
@@ -116,13 +116,9 @@ export class SwappingService {
       const routerAddress =
         quote.routing.to ?? this.resolveUniversalRouterAddress();
       const value = quote.routing.value ?? 0n;
-      const slippageBps = BigInt(quote.slippageBps);
       const approvalAmount = this.isNativeCurrency(quote.tokenIn)
         ? 0n
-        : quote.tradeType === "EXACT_INPUT"
-          ? quote.amountIn
-          : (quote.amountIn * (SLIPPAGE_DENOMINATOR + slippageBps)) /
-            SLIPPAGE_DENOMINATOR;
+        : quote.amountIn;
 
       return {
         chainId: this.chainId,
@@ -132,8 +128,7 @@ export class SwappingService {
         deadline,
         tokenIn: quote.tokenIn,
         approvalAmount,
-        amountIn:
-          quote.tradeType === "EXACT_INPUT" ? quote.amountIn : approvalAmount,
+        amountIn: quote.amountIn,
         amountOut: quote.amountOut,
         quoteSource: quote.quoteSource,
       };
@@ -151,34 +146,64 @@ export class SwappingService {
     const amountOutMinimum =
       (quote.amountOut * (SLIPPAGE_DENOMINATOR - slippageBps)) /
       SLIPPAGE_DENOMINATOR;
-    const amountInMaximum =
-      (quote.amountIn * (SLIPPAGE_DENOMINATOR + slippageBps)) /
-      SLIPPAGE_DENOMINATOR;
 
-    const planner = new V4Planner();
     const hookData = quote.hookData ?? "0x";
 
-    if (quote.tradeType === "EXACT_INPUT") {
-      planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
-        {
-          poolKey: quote.poolKey,
-          zeroForOne: quote.zeroForOne,
-          amountIn: quote.amountIn.toString(),
-          amountOutMinimum: amountOutMinimum.toString(),
+    // For local chains, use IUniswapV4Router04 instead of UniversalRouter
+    if (this.chainId === 31337) {
+      const routerAddress = this.contracts.v4Router ?? this.contracts.universalRouter;
+      if (!routerAddress) {
+        throw new Error("No v4Router or universalRouter configured for local chain");
+      }
+
+      // Router04 uses negative amountSpecified for exact input
+      const amountSpecified = -BigInt(quote.amountIn.toString());
+
+      const data = encodeFunctionData({
+        abi: iUniswapV4Router04Abi,
+        functionName: "swap",
+        args: [
+          amountSpecified,
+          amountOutMinimum,
+          quote.zeroForOne,
+          quote.poolKey,
           hookData,
-        },
-      ]);
-    } else {
-      planner.addAction(Actions.SWAP_EXACT_OUT_SINGLE, [
-        {
-          poolKey: quote.poolKey,
-          zeroForOne: quote.zeroForOne,
-          amountOut: quote.amountOut.toString(),
-          amountInMaximum: amountInMaximum.toString(),
-          hookData,
-        },
-      ]);
+          quote.recipient,
+          deadline,
+        ],
+      });
+
+      const value = this.isNativeCurrency(quote.tokenIn) ? quote.amountIn : 0n;
+      const approvalAmount = this.isNativeCurrency(quote.tokenIn)
+        ? 0n
+        : quote.amountIn;
+
+      return {
+        chainId: this.chainId,
+        to: routerAddress,
+        data,
+        value,
+        deadline,
+        tokenIn: quote.tokenIn,
+        approvalAmount,
+        amountIn: quote.amountIn,
+        amountOut: quote.amountOut,
+        quoteSource: quote.quoteSource,
+      };
     }
+
+    // For production chains, use UniversalRouter with V4Planner
+    const planner = new V4Planner();
+
+    planner.addAction(Actions.SWAP_EXACT_IN_SINGLE, [
+      {
+        poolKey: quote.poolKey,
+        zeroForOne: quote.zeroForOne,
+        amountIn: quote.amountIn.toString(),
+        amountOutMinimum: amountOutMinimum.toString(),
+        hookData,
+      },
+    ]);
 
     planner.addAction(Actions.SETTLE, [
       this.currencyAddressFor(quote.tokenIn),
@@ -201,17 +226,10 @@ export class SwappingService {
       args: [commands, inputs, deadline],
     });
 
-    const value = this.isNativeCurrency(quote.tokenIn)
-      ? quote.tradeType === "EXACT_INPUT"
-        ? quote.amountIn
-        : amountInMaximum
-      : 0n;
-
+    const value = this.isNativeCurrency(quote.tokenIn) ? quote.amountIn : 0n;
     const approvalAmount = this.isNativeCurrency(quote.tokenIn)
       ? 0n
-      : quote.tradeType === "EXACT_INPUT"
-        ? quote.amountIn
-        : amountInMaximum;
+      : quote.amountIn;
 
     return {
       chainId: this.chainId,
@@ -221,7 +239,7 @@ export class SwappingService {
       deadline,
       tokenIn: quote.tokenIn,
       approvalAmount,
-      amountIn: quote.tradeType === "EXACT_INPUT" ? quote.amountIn : amountInMaximum,
+      amountIn: quote.amountIn,
       amountOut: quote.amountOut,
       quoteSource: quote.quoteSource,
     };
@@ -250,7 +268,7 @@ export class SwappingService {
   }
 
   private async quoteLocal(
-    request: SwapQuoteRequest & { tradeType: SwapTradeType; slippageBps: number },
+    request: SwapQuoteRequest & { slippageBps: number },
   ): Promise<SwapQuoteResult> {
     const { poolKey, zeroForOne } = this.resolvePoolKey(request);
     const poolId = createPoolId(poolKey);
@@ -281,65 +299,31 @@ export class SwappingService {
       "Fetched local pool state",
     );
 
-    if (request.amount > MAX_UINT128) {
+    if (request.amountIn > MAX_UINT128) {
       throw new Error("Amount exceeds uint128 for local quoting");
-    }
-
-    if (request.tradeType === "EXACT_INPUT") {
-      const { result } = await this.publicClient.simulateContract({
-        address: this.contracts.quoter,
-        abi: v4QuoterAbi,
-        functionName: "quoteExactInputSingle",
-        args: [
-          {
-            poolKey,
-            zeroForOne,
-            exactAmount: request.amount,
-            hookData,
-          },
-        ],
-      });
-      const [amountOut, gasEstimate] = result;
-
-      return {
-        chainId: this.chainId,
-        tokenIn: request.tokenIn,
-        tokenOut: request.tokenOut,
-        tradeType: request.tradeType,
-        amountIn: request.amount,
-        amountOut: BigInt(amountOut),
-        slippageBps: request.slippageBps,
-        recipient: request.recipient,
-        quoteSource: "local",
-        gasEstimate: BigInt(gasEstimate),
-        poolKey,
-        zeroForOne,
-        hookData,
-      };
     }
 
     const { result } = await this.publicClient.simulateContract({
       address: this.contracts.quoter,
       abi: v4QuoterAbi,
-      functionName: "quoteExactOutputSingle",
+      functionName: "quoteExactInputSingle",
       args: [
         {
           poolKey,
           zeroForOne,
-          exactAmount: request.amount,
+          exactAmount: request.amountIn,
           hookData,
         },
       ],
     });
-    const [amountIn, gasEstimate] = result;
+    const [amountOut, gasEstimate] = result;
 
     return {
       chainId: this.chainId,
       tokenIn: request.tokenIn,
       tokenOut: request.tokenOut,
-      tradeType: request.tradeType,
-      amountIn: BigInt(amountIn),
-      amountOut: request.amount,
+      amountIn: request.amountIn,
+      amountOut: BigInt(amountOut),
       slippageBps: request.slippageBps,
       recipient: request.recipient,
       quoteSource: "local",
@@ -351,7 +335,7 @@ export class SwappingService {
   }
 
   private async quoteRoutingApi(
-    request: SwapQuoteRequest & { tradeType: SwapTradeType; slippageBps: number },
+    request: SwapQuoteRequest & { slippageBps: number },
   ): Promise<SwapQuoteResult> {
     const apiUrl = "https://api.uniswap.org/v1/quote";
     const deadlineSeconds =
@@ -364,8 +348,8 @@ export class SwappingService {
       tokenOutChainId: request.chainId,
       tokenIn: request.tokenIn,
       tokenOut: request.tokenOut,
-      amount: request.amount.toString(),
-      type: request.tradeType,
+      amount: request.amountIn.toString(),
+      type: "EXACT_INPUT",
       recipient: request.recipient,
       slippageTolerance,
       deadline,
@@ -392,26 +376,17 @@ export class SwappingService {
 
     const payload = await response.json();
     const routing = this.extractRoutingCalldata(payload);
-    const quoteAmount =
-      request.tradeType === "EXACT_INPUT"
-        ? this.extractQuoteAmount(payload, "amountOut")
-        : this.extractQuoteAmount(payload, "amountIn");
+    const amountOut = this.extractQuoteAmount(payload, "amountOut");
 
-    if (quoteAmount === null) {
-      throw new Error("Routing API response missing quote amount");
+    if (amountOut === null) {
+      throw new Error("Routing API response missing amountOut");
     }
-
-    const amountIn =
-      request.tradeType === "EXACT_INPUT" ? request.amount : quoteAmount;
-    const amountOut =
-      request.tradeType === "EXACT_INPUT" ? quoteAmount : request.amount;
 
     return {
       chainId: this.chainId,
       tokenIn: request.tokenIn,
       tokenOut: request.tokenOut,
-      tradeType: request.tradeType,
-      amountIn,
+      amountIn: request.amountIn,
       amountOut,
       slippageBps: request.slippageBps,
       recipient: request.recipient,
@@ -462,18 +437,6 @@ export class SwappingService {
     ) as Address;
   }
 
-  private resolvePermit2Address(): Address {
-    if (this.chainId === 31337) {
-      const local = this.contracts.permit2 ?? process.env.PERMIT2_ADDRESS;
-      if (!local) {
-        throw new Error("PERMIT2_ADDRESS is not set for local chain");
-      }
-      return local as Address;
-    }
-
-    return PERMIT2_ADDRESS_MAINNET;
-  }
-
   private isNativeCurrency(token: Address): boolean {
     return token.toLowerCase() === ZERO_ADDRESS;
   }
@@ -495,7 +458,7 @@ export class SwappingService {
       throw new Error("Approval amount exceeds uint160");
     }
 
-    const permit2 = this.resolvePermit2Address();
+    const permit2 = PERMIT2_ADDRESS;
     const spender = this.resolveUniversalRouterAddress();
     const nowSeconds = Math.floor(Date.now() / 1000);
 

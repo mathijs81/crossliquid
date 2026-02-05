@@ -1,27 +1,30 @@
-import { formatUnits, parseUnits, type Address, type PublicClient } from "viem";
+import { formatUnits, parseUnits, type Address, type PublicClient, type WalletClient } from "viem";
 import { eRC20Abi } from "../abi/ERC20";
 import { logger } from "../logger";
-import {
-  type SwapQuoteRequest,
-  type SwapTradeType,
+import type {
+  SwapQuoteRequest,
   SwappingService,
 } from "../services/swapping";
+import { executeAsManager } from "../utils/executeAsManager";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 
 export async function swapTokens(
   service: SwappingService,
   publicClient: PublicClient,
+  walletClient: WalletClient,
   options: {
     chainId: number;
     tokenIn: Address;
     tokenOut: Address;
-    amount: string;
-    tradeType: SwapTradeType;
+    amountIn: string;
     slippageBps: number;
     recipient: Address;
     deadlineSeconds: number;
     quoteOnly: boolean;
+    forManager: boolean;
+    positionManagerAddress: Address;
+    useProductionRouting?: boolean;
   },
 ) {
   const [tokenInDecimals, tokenOutDecimals] = await Promise.all([
@@ -29,19 +32,18 @@ export async function swapTokens(
     getTokenDecimals(publicClient, options.tokenOut),
   ]);
 
-  const amountDecimals =
-    options.tradeType === "EXACT_INPUT" ? tokenInDecimals : tokenOutDecimals;
-  const parsedAmount = parseUnits(options.amount, amountDecimals);
+  const parsedAmountIn = parseUnits(options.amountIn, tokenInDecimals);
 
   const quoteRequest: SwapQuoteRequest = {
     chainId: options.chainId,
     tokenIn: options.tokenIn,
     tokenOut: options.tokenOut,
-    amount: parsedAmount,
-    tradeType: options.tradeType,
+    amountIn: parsedAmountIn,
     slippageBps: options.slippageBps,
     recipient: options.recipient,
     deadlineSeconds: options.deadlineSeconds,
+    forManager: options.forManager,
+    useProductionRouting: options.useProductionRouting,
   };
 
   logger.info(
@@ -49,8 +51,9 @@ export async function swapTokens(
       chainId: options.chainId,
       tokenIn: options.tokenIn,
       tokenOut: options.tokenOut,
-      amount: parsedAmount.toString(),
-      tradeType: options.tradeType,
+      amountIn: parsedAmountIn.toString(),
+      forManager: options.forManager,
+      useProductionRouting: options.useProductionRouting,
     },
     "Requesting swap quote",
   );
@@ -61,6 +64,7 @@ export async function swapTokens(
 
   console.log("\n✓ Quote ready");
   console.log(`Source: ${quote.quoteSource}`);
+  console.log(`Execution Mode: ${options.forManager ? "via PositionManager" : "direct from wallet"}`);
   console.log(`Amount In: ${formattedAmountIn}`);
   console.log(`Amount Out: ${formattedAmountOut}`);
   if (quote.gasEstimate !== undefined) {
@@ -72,7 +76,33 @@ export async function swapTokens(
   }
 
   const plan = service.buildExecutionPlan(quote, quoteRequest);
-  const hash = await service.executeSwap(plan);
+
+  console.log("\n📋 Execution Plan:");
+  console.log(`Target: ${plan.to}`);
+  console.log(`Value: ${plan.value}`);
+  console.log(`Calldata length: ${plan.data.length} bytes`);
+  console.log(`Approval needed: ${plan.approvalAmount > 0n ? plan.approvalAmount.toString() : "none"}`);
+
+  if (options.quoteOnly) {
+    console.log("\n(Quote only - no execution)");
+    return;
+  }
+
+  let hash: string;
+  if (options.forManager) {
+    console.log("\n⚙ Executing swap through PositionManager...");
+    hash = await executeAsManager(
+      publicClient,
+      walletClient,
+      options.positionManagerAddress,
+      plan.to,
+      plan.data,
+      plan.value,
+    );
+  } else {
+    console.log("\n⚙ Executing swap from wallet...");
+    hash = await service.executeSwap(plan);
+  }
 
   console.log("\n✓ Swap executed");
   console.log(`Transaction Hash: ${hash}`);

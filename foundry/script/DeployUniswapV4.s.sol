@@ -132,6 +132,7 @@ contract DeployUniswapV4 is Script, Deployers {
         string memory objectKey = "uniswapV4";
         vm.serializeAddress(objectKey, "poolManager", address(poolManager));
         vm.serializeAddress(objectKey, "positionManager", address(positionManager));
+        vm.serializeAddress(objectKey, "swapRouter", address(swapRouter));
         vm.serializeAddress(objectKey, "permit2", address(permit2));
         vm.serializeAddress(objectKey, "weth", address(weth));
         vm.serializeAddress(objectKey, "usdc", address(usdc));

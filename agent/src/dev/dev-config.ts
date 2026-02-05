@@ -42,9 +42,7 @@ export function readUniswapDeployments() {
     weth: deployment.weth,
     quoter: deployment.quoter,
     stateView: deployment.stateView,
-    permit2: deployment.permit2,
-    universalRouter:
-      deployment.universalRouter ?? deployment.universalRouterAddress,
+    v4Router: deployment.swapRouter,
   };
 }
 

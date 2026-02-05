@@ -449,7 +449,6 @@ contract PositionManager is
     /// Bridge funds to another chain via Li.Fi (or other bridge)
     /// @param bridge Address of the bridge contract (Li.Fi diamond)
     /// @param destinationChainId Destination chain ID
-    /// @param destinationManager Address of PositionManager on destination chain
     /// @param amount Amount to bridge
     /// @param bridgeCallData Calldata for the bridge (from Li.Fi API)
     /// Note: under the hood this is just a generic call-any-contract function.
@@ -458,7 +457,6 @@ contract PositionManager is
     function bridgeToChain(
         address bridge,
         uint256 destinationChainId,
-        address destinationManager,
         uint256 amount,
         bytes calldata bridgeCallData
     ) external onlyOperatorOrOwner nonReentrant {
@@ -475,7 +473,6 @@ contract PositionManager is
         address bridge,
         address token,
         uint256 destinationChainId,
-        address destinationManager,
         uint256 amount,
         bytes calldata bridgeCallData
     ) external onlyOperatorOrOwner nonReentrant {
