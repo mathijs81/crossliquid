@@ -8,7 +8,9 @@ import {
 import { OUR_ADDRESSES } from "../config";
 import { logger } from "../logger";
 
-import positionManagerAbi from "../abi/CrossLiquidPM.json" with { type: "abi" };
+import positionManagerAbi from "../abi/CrossLiquidPM.json" with {
+  type: "json",
+};
 
 /**
  * Syncs funds between vault and the manager.

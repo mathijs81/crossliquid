@@ -10,6 +10,7 @@ import {
   UNIV4_CONTRACTS,
 } from "../config";
 import { logger } from "../logger";
+import { defaultReadRetryer } from "../utils/retryer";
 
 export interface EthUsdcPoolData {
   poolId: string;
@@ -59,19 +60,23 @@ export async function simulateEthToUsdcSwap(
   }
 
   try {
-    const result = await config.publicClient.readContract({
-      address: contracts.quoter,
-      abi: quoterAbi,
-      functionName: "quoteExactInputSingle",
-      args: [
-        {
-          poolKey: effectivePoolKey,
-          zeroForOne: true,
-          exactAmount: ethAmount,
-          hookData: "0x",
-        },
-      ],
-    });
+    const result = await defaultReadRetryer.withRetry(
+      "simulateEthToUsdcSwap",
+      () =>
+        config.publicClient.readContract({
+          address: contracts.quoter,
+          abi: quoterAbi,
+          functionName: "quoteExactInputSingle",
+          args: [
+            {
+              poolKey: effectivePoolKey,
+              zeroForOne: true,
+              exactAmount: ethAmount,
+              hookData: "0x",
+            },
+          ],
+        }),
+    );
 
     return result[0];
   } catch (error) {
@@ -104,18 +109,22 @@ export async function getTopEthUsdcPools(
   try {
     const poolDataPromises = poolIds.map(async (poolId) => {
       const [slot0, liquidity] = await Promise.all([
-        config.publicClient.readContract({
-          address: contracts.poolManager,
-          abi: poolManagerAbi,
-          functionName: "getSlot0",
-          args: [poolId as `0x${string}`],
-        }),
-        config.publicClient.readContract({
-          address: contracts.poolManager,
-          abi: poolManagerAbi,
-          functionName: "getLiquidity",
-          args: [poolId as `0x${string}`],
-        }),
+        defaultReadRetryer.withRetry("getTopEthUsdcPools", () =>
+          config.publicClient.readContract({
+            address: contracts.poolManager,
+            abi: poolManagerAbi,
+            functionName: "getSlot0",
+            args: [poolId as `0x${string}`],
+          }),
+        ),
+        defaultReadRetryer.withRetry("getTopEthUsdcPools", () =>
+          config.publicClient.readContract({
+            address: contracts.poolManager,
+            abi: poolManagerAbi,
+            functionName: "getLiquidity",
+            args: [poolId as `0x${string}`],
+          }),
+        ),
       ]);
 
       return {
@@ -182,18 +191,22 @@ export async function getEthUsdcPoolPrice(
     );
 
     const [slot0, liquidity] = await Promise.all([
-      config.publicClient.readContract({
-        address: contracts.stateView,
-        abi: stateViewAbi,
-        functionName: "getSlot0",
-        args: [poolId],
-      }),
-      config.publicClient.readContract({
-        address: contracts.stateView,
-        abi: stateViewAbi,
-        functionName: "getLiquidity",
-        args: [poolId],
-      }),
+      defaultReadRetryer.withRetry("getEthUsdcPoolPrice_slot0", () =>
+        config.publicClient.readContract({
+          address: contracts.stateView,
+          abi: stateViewAbi,
+          functionName: "getSlot0",
+          args: [poolId],
+        }),
+      ),
+      defaultReadRetryer.withRetry("getEthUsdcPoolPrice_liq", () =>
+        config.publicClient.readContract({
+          address: contracts.stateView,
+          abi: stateViewAbi,
+          functionName: "getLiquidity",
+          args: [poolId],
+        }),
+      ),
     ]);
 
     return {
