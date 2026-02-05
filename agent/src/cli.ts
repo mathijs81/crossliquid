@@ -4,7 +4,11 @@ import { parseArgs } from "node:util";
 import { formatEther, formatUnits, type Address } from "viem";
 import { addLiquidity } from "./actions/addLiquidity";
 import { syncVault } from "./actions/vaultSync";
-import { agentConfig, createAgentWalletClient } from "./config";
+import {
+  agentConfig,
+  createAgentWalletClient,
+  UNIV4_CONTRACTS,
+} from "./config";
 import { logger } from "./logger";
 import {
   formatPosition,
@@ -143,13 +147,6 @@ async function main() {
   const positionManagerAddress = process.env.POSITION_MANAGER_ADDRESS as
     | Address
     | undefined;
-  const poolManagerAddress = process.env.POOL_MANAGER_ADDRESS as
-    | Address
-    | undefined;
-  const usdcAddress = process.env.USDC_ADDRESS as Address | undefined;
-  const privateKey = process.env.OPERATOR_PRIVATE_KEY as
-    | `0x${string}`
-    | undefined;
 
   // TODO: handle this stuff somewhere else
   if (!positionManagerAddress) {
@@ -157,20 +154,14 @@ async function main() {
     process.exit(1);
   }
 
-  if (!poolManagerAddress) {
-    console.error("POOL_MANAGER_ADDRESS environment variable is required");
-    process.exit(1);
-  }
-
-  if (!usdcAddress) {
-    console.error("USDC_ADDRESS environment variable is required");
-    process.exit(1);
-  }
-
   const service = new PositionManagerService(
     agentConfig.vaultChainId,
     positionManagerAddress,
   );
+
+  const chain = Number(process.env.CHAIN_ID) ?? agentConfig.vaultChainId;
+  const poolManagerAddress = UNIV4_CONTRACTS[chain].poolManager;
+  const usdcAddress = UNIV4_CONTRACTS[chain].usdc;
 
   try {
     switch (command) {
@@ -199,6 +190,7 @@ async function main() {
           eth: values.eth,
           usdc: values.usdc,
           poolManager: poolManagerAddress,
+          stateView: UNIV4_CONTRACTS[chain].stateView,
           usdcAddress,
           tickLower: values["tick-lower"]
             ? Number(values["tick-lower"])

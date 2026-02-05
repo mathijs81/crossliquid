@@ -5,6 +5,7 @@ import { closeDatabase, db, initializeDatabase } from "./services/database";
 import { collectEthUsdcData, type EthUsdcData } from "./services/ethusdc";
 import { calculateLOS, getTargetDistribution } from "./services/los";
 import { getVaultState } from "./services/vault";
+import { chains, databasePath } from "./config";
 
 export interface AgentStats {
   status: "running" | "stopped";
@@ -25,23 +26,13 @@ class Agent {
 
   constructor() {
     this.initializeClients();
-    initializeDatabase();
   }
 
   private initializeClients(): void {
-    const chainList: { chain: Chain; rpcUrl?: string }[] = [
-      { chain: base, rpcUrl: process.env.RPC_BASE },
-      { chain: optimism, rpcUrl: process.env.RPC_OPTIMISM },
-      { chain: mainnet, rpcUrl: process.env.RPC_MAINNET },
-      { chain: unichain, rpcUrl: process.env.RPC_UNICHAIN },
-    ];
-
-    for (const { chain, rpcUrl } of chainList) {
-      const client = createPublicClient({
-        chain,
-        transport: rpcUrl ? http(rpcUrl) : http(),
-      });
-      this.clients.set(chain.id, client);
+    // TODOLLM: just get rid of this extra mapping
+    for (const entry of chains.entries()) {
+      const [chainId, chainConfig] = entry;
+      this.clients.set(chainId, chainConfig.publicClient);
     }
   }
 
@@ -71,7 +62,7 @@ class Agent {
           db.insertPoolPrice({
             timestamp: data.swapSimulation.timestamp,
             chainId,
-            poolAddress: data.poolPrice.poolAddress,
+            poolAddress: data.poolPrice.poolId,
             sqrtPriceX96: data.poolPrice.sqrtPriceX96.toString(),
             tick: data.poolPrice.tick,
             liquidity: data.poolPrice.liquidity.toString(),
@@ -119,6 +110,7 @@ class Agent {
   }
 
   start(intervalMs = 30_000): void {
+    initializeDatabase(databasePath);
     if (this.isRunning || this.intervalId !== null) {
       logger.info("Agent already running");
       return;

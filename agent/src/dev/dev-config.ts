@@ -40,6 +40,8 @@ export function readUniswapDeployments() {
     positionManager: deployment.positionManager,
     usdc: deployment.usdc,
     weth: deployment.weth,
+    quoter: deployment.quoter,
+    stateView: deployment.stateView,
   };
 }
 

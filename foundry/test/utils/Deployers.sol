@@ -13,6 +13,9 @@ import { AddressConstants } from "hookmate/constants/AddressConstants.sol";
 import { V4RouterDeployer } from "hookmate/artifacts/V4Router.sol";
 import { IUniswapV4Router04 } from "hookmate/interfaces/router/IUniswapV4Router04.sol";
 
+import { V4Quoter } from "v4-periphery/lens/V4Quoter.sol";
+import { StateView } from "v4-periphery/lens/StateView.sol";
+
 /**
  * @title Deployers
  * @notice Base contract for deploying Uniswap v4 infrastructure
@@ -29,6 +32,14 @@ abstract contract Deployers {
 
     MockERC20 public usdc;
     MockERC20 public weth;
+
+    V4Quoter public v4Quoter;
+    StateView public stateView;
+
+    function deployOthers() internal {
+        v4Quoter = new V4Quoter(poolManager);
+        stateView = new StateView(poolManager);
+    }
 
     function deployToken(string memory name, string memory symbol, uint8 decimals) internal returns (MockERC20 token) {
         token = new MockERC20(name, symbol, decimals);
@@ -115,5 +126,6 @@ abstract contract Deployers {
         deployPoolManager();
         deployPositionManager();
         deployRouter();
+        deployOthers();
     }
 }

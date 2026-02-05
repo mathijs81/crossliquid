@@ -14,13 +14,18 @@ describe("Agent", () => {
   it("should have initial stats with stopped status", () => {
     const stats = agent.getStats();
     expect(stats.status).toBe("stopped");
-    expect(stats.lastUpdate).toBeNull();
-    expect(Object.keys(stats.chainStats).length).toBeGreaterThan(0);
   });
 
-  it("should start and stop correctly", () => {
-    agent.start(100);
+  it("should start and stop correctly", async () => {
+    agent.start(200);
     expect(agent.getStats().status).toBe("running");
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const stats = agent.getStats();
+    // Checking our test chain
+    expect(Object.keys(stats.ethUsdcData).length).toBe(1);
+    const data = Object.values(stats.ethUsdcData)[0];
+    expect(data.swapSimulation.usdcOutput).toBeCloseTo(2131.833);
 
     agent.stop();
     expect(agent.getStats().status).toBe("stopped");
@@ -39,24 +44,6 @@ describe("Agent", () => {
 
     expect(initialInterval).toBe(secondInterval);
     agent.stop();
-  });
-
-  it("should have chain stats for expected chains", () => {
-    const stats = agent.getStats();
-    const chainIds = Object.values(stats.chainStats).map(
-      (stat) => stat.chainId,
-    );
-
-    // Should have stats for Base, Optimism, and Mainnet
-    expect(chainIds).toContain(8453); // Base
-    expect(chainIds).toContain(10); // Optimism
-    expect(chainIds).toContain(1); // Mainnet
-  });
-
-  it("should have ethUsdcData field in stats", () => {
-    const stats = agent.getStats();
-    expect(stats).toHaveProperty("ethUsdcData");
-    expect(typeof stats.ethUsdcData).toBe("object");
   });
 
   it("should detect environment mode correctly", () => {

@@ -20,7 +20,7 @@ export interface PoolPriceRecord {
 class DatabaseService {
   private db: Database.Database;
 
-  constructor(dbPath = "./data/agent.db") {
+  constructor(dbPath: string) {
     this.db = new Database(dbPath);
     this.db.pragma("journal_mode = WAL");
     this.initializeTables();
@@ -124,7 +124,7 @@ class DatabaseService {
 
 export let db: DatabaseService;
 
-export function initializeDatabase(dbPath?: string): void {
+export function initializeDatabase(dbPath: string): void {
   db = new DatabaseService(dbPath);
 }
 

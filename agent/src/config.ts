@@ -35,6 +35,9 @@ export interface PoolKey {
   hooks: `0x${string}`;
 }
 
+export const databasePath =
+  ENVIRONMENT === "production" ? "./data/agent.db" : "./data/agent-dev.db";
+
 // https://docs.uniswap.org/contracts/v4/deployments
 export const UNIV4_CONTRACTS: Record<number, UniV4Contracts> = {
   8453: {

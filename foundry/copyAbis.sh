@@ -1,14 +1,18 @@
 #!/bin/bash
-for contract in CrossLiquidVault PositionManager; do
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+contracts=(CrossLiquidVault PositionManager ERC20 StateView IPoolManager IV4Quoter)
+
+for contract in "${contracts[@]}"; do
   if [ ! -f "out/${contract}.sol/${contract}.json" ]; then
     echo "Error: ${contract} artifact not found. Run 'forge build' first."
     exit 1
   fi
-  # TODO: fix it here ( needs name change for PositionManager)
-  # cat out/${contract}.sol/${contract}.json | jq .abi > ../agent/src/abi/${contract}.json
+
+  cat > "../agent/src/abi/${contract}.ts" << EOF
+import type { Abi } from 'viem'
+
+export const ${contract,}Abi = $(cat "out/${contract}.sol/${contract}.json" | jq .abi) as const satisfies Abi
+EOF
 done
-
-
-cat out/CrossLiquidVault.sol/CrossLiquidVault.json | jq .abi > ../agent/src/abi/CrossLiquidVault.json
-cat out/PositionManager.sol/PositionManager.json | jq .abi > ../agent/src/abi/CrossLiquidPM.json
-

@@ -30,10 +30,8 @@ contract DeployUniswapV4 is Script, Deployers {
     uint24 constant TEST_FEE = 3000; // 0.3%
     int24 constant TEST_TICK_SPACING = 60;
 
-    // Initial price: 1 ETH = 2324 USDC
-    // sqrt(2324 USDC / 1 ETH) = sqrt(2324e6 / 1e18) = sqrt(2.324e-9)
-    // sqrtPriceX96 = sqrt(2.324e-9) * 2^96 ≈ 3.819e24
-    uint160 constant SQRT_PRICE_ETH_USDC = 3_819_373_515_508_547_128_207_358_464;
+    // ~$2135
+    uint160 constant SQRT_PRICE_ETH_USDC = 3_660_848_142_156_780_574_518_248;
 
     function run() public {
         address deployer = msg.sender;
@@ -140,6 +138,8 @@ contract DeployUniswapV4 is Script, Deployers {
         vm.serializeString(objectKey, "mainPoolId", vm.toString(PoolId.unwrap(mainPoolId)));
         vm.serializeString(objectKey, "mainPoolFee", "0.05%");
         vm.serializeString(objectKey, "testPoolId", vm.toString(PoolId.unwrap(testPoolId)));
+        vm.serializeAddress(objectKey, "quoter", address(v4Quoter));
+        vm.serializeAddress(objectKey, "stateView", address(stateView));
         string memory json = vm.serializeString(objectKey, "testPoolFee", "0.3%");
 
         vm.writeJson(json, outputPath);

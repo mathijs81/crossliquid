@@ -1,6 +1,6 @@
 import { encodeAbiParameters, formatUnits, keccak256, parseEther } from "viem";
-import { poolManagerAbi } from "../abi/PoolManager";
-import { quoterAbi } from "../abi/Quoter";
+import { iPoolManagerAbi as poolManagerAbi } from "../abi/IPoolManager";
+import { iV4QuoterAbi as quoterAbi } from "../abi/IV4Quoter";
 import { stateViewAbi } from "../abi/StateView";
 import {
   chains,
@@ -11,17 +11,10 @@ import {
 } from "../config";
 import { logger } from "../logger";
 import { defaultReadRetryer } from "../utils/retryer";
-
-export interface EthUsdcPoolData {
-  poolId: string;
-  liquidity: bigint;
-  fee: number;
-  sqrtPriceX96: bigint;
-  tick: number;
-}
+import { createPoolId } from "../utils/poolIds";
 
 export interface EthUsdcPoolPrice {
-  poolAddress: `0x${string}`;
+  poolId: `0x${string}`;
   sqrtPriceX96: bigint;
   tick: number;
   liquidity: bigint;
@@ -36,7 +29,6 @@ export interface EthUsdcData {
     timestamp: string;
   };
   poolPrice: EthUsdcPoolPrice;
-  topPools: EthUsdcPoolData[];
 }
 
 export async function simulateEthToUsdcSwap(
@@ -63,7 +55,7 @@ export async function simulateEthToUsdcSwap(
     const result = await defaultReadRetryer.withRetry(
       "simulateEthToUsdcSwap",
       () =>
-        config.publicClient.readContract({
+        config.publicClient.simulateContract({
           address: contracts.quoter,
           abi: quoterAbi,
           functionName: "quoteExactInputSingle",
@@ -78,7 +70,7 @@ export async function simulateEthToUsdcSwap(
         }),
     );
 
-    return result[0];
+    return result.result[0];
   } catch (error) {
     logger.error(
       {
@@ -86,66 +78,6 @@ export async function simulateEthToUsdcSwap(
         error: error instanceof Error ? error.message : String(error),
       },
       "Failed to simulate ETH to USDC swap",
-    );
-    throw error;
-  }
-}
-
-export async function getTopEthUsdcPools(
-  chainId: number,
-): Promise<EthUsdcPoolData[]> {
-  const config = chains.get(chainId);
-  if (!config) {
-    throw new Error(`Chain ${chainId} not initialized`);
-  }
-
-  const contracts = UNIV4_CONTRACTS[chainId];
-  if (!contracts) {
-    throw new Error(`UniV4 contracts not configured for chain ${chainId}`);
-  }
-
-  const poolIds = ETHUSDC_POOLS[chainId] || [];
-
-  try {
-    const poolDataPromises = poolIds.map(async (poolId) => {
-      const [slot0, liquidity] = await Promise.all([
-        defaultReadRetryer.withRetry("getTopEthUsdcPools", () =>
-          config.publicClient.readContract({
-            address: contracts.poolManager,
-            abi: poolManagerAbi,
-            functionName: "getSlot0",
-            args: [poolId as `0x${string}`],
-          }),
-        ),
-        defaultReadRetryer.withRetry("getTopEthUsdcPools", () =>
-          config.publicClient.readContract({
-            address: contracts.poolManager,
-            abi: poolManagerAbi,
-            functionName: "getLiquidity",
-            args: [poolId as `0x${string}`],
-          }),
-        ),
-      ]);
-
-      return {
-        poolId,
-        liquidity,
-        sqrtPriceX96: slot0[0],
-        tick: slot0[1],
-        fee: slot0[3],
-      };
-    });
-
-    const pools = await Promise.all(poolDataPromises);
-
-    return pools.sort((a, b) => Number(b.liquidity - a.liquidity)).slice(0, 3);
-  } catch (error) {
-    logger.error(
-      {
-        chainId,
-        error: error instanceof Error ? error.message : String(error),
-      },
-      "Failed to fetch ETH-USDC pool data",
     );
     throw error;
   }
@@ -171,24 +103,7 @@ export async function getEthUsdcPoolPrice(
   }
 
   try {
-    const poolId = keccak256(
-      encodeAbiParameters(
-        [
-          { name: "currency0", type: "address" },
-          { name: "currency1", type: "address" },
-          { name: "fee", type: "uint24" },
-          { name: "tickSpacing", type: "int24" },
-          { name: "hooks", type: "address" },
-        ],
-        [
-          effectivePoolKey.currency0,
-          effectivePoolKey.currency1,
-          effectivePoolKey.fee,
-          effectivePoolKey.tickSpacing,
-          effectivePoolKey.hooks,
-        ],
-      ),
-    );
+    const poolId = createPoolId(effectivePoolKey);
 
     const [slot0, liquidity] = await Promise.all([
       defaultReadRetryer.withRetry("getEthUsdcPoolPrice_slot0", () =>
@@ -210,7 +125,7 @@ export async function getEthUsdcPoolPrice(
     ]);
 
     return {
-      poolAddress: contracts.poolManager,
+      poolId,
       sqrtPriceX96: slot0[0],
       tick: slot0[1],
       liquidity,
@@ -236,16 +151,21 @@ export async function collectEthUsdcData(
     throw new Error(`No default pool key for chain ${chainId}`);
   }
 
-  const [usdcOutput, topPools, poolPrice] = await Promise.all([
-    simulateEthToUsdcSwap(chainId, poolKey),
-    getTopEthUsdcPools(chainId),
+  async function getEthPriceThroughSwap() {
+    // We don't swap a full eth because limited liquidity might impact the price too much
+    const output = await defaultReadRetryer.withRetry(
+      "simulateEthToUsdcSwap",
+      () => simulateEthToUsdcSwap(chainId, poolKey, parseEther("0.05")),
+    );
+    return 20n * output;
+  }
+
+  const [usdcOutput, poolPrice] = await Promise.all([
+    getEthPriceThroughSwap(),
     getEthUsdcPoolPrice(chainId, poolKey),
   ]);
 
-  logger.info(
-    { chainId, usdcOutput, topPools, poolPrice },
-    "Collected ETH-USDC data",
-  );
+  logger.info({ chainId, usdcOutput, poolPrice }, "Collected ETH-USDC data");
 
   return {
     swapSimulation: {
@@ -255,6 +175,5 @@ export async function collectEthUsdcData(
       timestamp: new Date().toISOString(),
     },
     poolPrice: poolPrice!,
-    topPools,
   };
 }

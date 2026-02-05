@@ -6,25 +6,11 @@ import {
   type PublicClient,
   type WalletClient,
 } from "viem";
-import { erc20Abi } from "../abi/ERC20";
-import { poolManagerAbi } from "../abi/PoolManager";
+import { eRC20Abi as erc20Abi } from "../abi/ERC20";
+import { iPoolManagerAbi as poolManagerAbi } from "../abi/IPoolManager";
 import { logger } from "../logger";
 import { executeContractWrite } from "../utils/contract";
-
-export enum FeeTier {
-  LOWEST = 100, // 0.01%, tickSpacing 1
-  LOW = 500, // 0.05%, tickSpacing 10
-  MEDIUM = 3000, // 0.3%, tickSpacing 60
-  HIGH = 10000, // 1%, tickSpacing 200
-}
-
-export interface PoolKey {
-  currency0: Address;
-  currency1: Address;
-  fee: number;
-  tickSpacing: number;
-  hooks: Address;
-}
+import { createEthUsdcPoolKey, FeeTier, type PoolKey } from "../utils/poolIds";
 
 export interface SwapParams {
   poolManagerAddress: Address;
@@ -36,27 +22,6 @@ export interface SwapParams {
 
 const MIN_SQRT_PRICE = 4295128739n;
 const MAX_SQRT_PRICE = 1461446703485210103287273052203988822378723970342n;
-const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
-
-const FEE_TIER_TO_TICK_SPACING: Record<FeeTier, number> = {
-  [FeeTier.LOWEST]: 1,
-  [FeeTier.LOW]: 10,
-  [FeeTier.MEDIUM]: 60,
-  [FeeTier.HIGH]: 200,
-};
-
-export function createEthUsdcPoolKey(
-  usdcAddress: Address,
-  feeTier: FeeTier = FeeTier.LOW,
-): PoolKey {
-  return {
-    currency0: ZERO_ADDRESS,
-    currency1: usdcAddress,
-    fee: feeTier,
-    tickSpacing: FEE_TIER_TO_TICK_SPACING[feeTier],
-    hooks: ZERO_ADDRESS,
-  };
-}
 
 export class SwapService {
   constructor(

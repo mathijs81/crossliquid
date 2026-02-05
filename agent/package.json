@@ -14,7 +14,8 @@
     "fix": "biome lint --write && biome format --write",
     "test": "vitest",
     "test:run": "vitest --run",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "generate": "bash ../foundry/copyAbis.sh"
   },
   "dependencies": {
     "better-sqlite3": "^12.6.2",

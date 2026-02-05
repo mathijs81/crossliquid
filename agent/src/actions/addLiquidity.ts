@@ -4,7 +4,7 @@ import { formatEther, formatUnits, parseEther, parseUnits } from "viem";
 import { logger } from "../logger";
 import { getPoolCurrentTick } from "../services/pool";
 import { calculateTickRange } from "../services/positionManager";
-import { createEthUsdcPoolKey, FeeTier } from "../services/swap";
+import { createEthUsdcPoolKey, createPoolId, FeeTier } from "../utils/poolIds";
 
 export async function addLiquidity(
   service: PositionManagerService,
@@ -12,6 +12,7 @@ export async function addLiquidity(
     eth: string;
     usdc: string;
     poolManager: Address;
+    stateView: Address;
     usdcAddress: Address;
     tickLower?: number;
     tickUpper?: number;
@@ -30,6 +31,8 @@ export async function addLiquidity(
     "Preparing to add liquidity",
   );
 
+  const poolKey = createEthUsdcPoolKey(options.usdcAddress, FeeTier.LOW);
+  const poolId = createPoolId(poolKey);
   // Get current tick from pool
   let tickLower: number;
   let tickUpper: number;
@@ -38,7 +41,11 @@ export async function addLiquidity(
     tickLower = options.tickLower;
     tickUpper = options.tickUpper;
   } else {
-    const currentTick = await getPoolCurrentTick(31337, options.poolManager);
+    const currentTick = await getPoolCurrentTick(
+      31337,
+      options.stateView,
+      poolId,
+    );
     if (!currentTick) {
       throw new Error("Failed to fetch current tick from pool");
     }
@@ -47,8 +54,6 @@ export async function addLiquidity(
     tickUpper = range.tickUpper;
     logger.info({ currentTick, tickLower, tickUpper }, "Calculated tick range");
   }
-
-  const poolKey = createEthUsdcPoolKey(options.usdcAddress, FeeTier.LOW);
 
   const result = await service.addLiquidity({
     poolManagerAddress: options.poolManager,

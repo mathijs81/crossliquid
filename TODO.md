@@ -12,7 +12,7 @@
   - [ ] Only allow our own liquidity
   - [ ] Adjusts fee based on external input
   - [ ] Fee adjustment based on TWAP or oracle?
-- [ ] Automate ABI json generation -> agent (copyAbis.sh)
+- [x] Automate ABI json generation -> agent (copyAbis.sh)
 - [ ] Working test of li.fi composer
 - [ ] offchain agent: collect data, determine liquidity scores
 - [ ] offchain agent: route funds from base chain to other chains

@@ -3,9 +3,7 @@ import { positionManagerAbi } from "../abi/PositionManager";
 import { chains, createAgentWalletClient } from "../config";
 import { logger } from "../logger";
 import { executeContractWrite } from "../utils/contract";
-import type { PoolKey } from "./swap";
-
-export type { PoolKey };
+import type { PoolKey } from "../utils/poolIds";
 
 export interface PositionInfo {
   poolManager: Address;
