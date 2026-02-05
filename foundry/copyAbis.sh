@@ -2,6 +2,8 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
+mkdir -p ../agent/src/abi/
+
 contracts=(CrossLiquidVault PositionManager ERC20 StateView IPoolManager IV4Quoter IUniswapV4Router04)
 
 for contract in "${contracts[@]}"; do
