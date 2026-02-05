@@ -1,14 +1,14 @@
 <script lang="ts">
-import "./layout.css";
+import { dev } from "$app/environment";
 import favicon from "$lib/assets/favicon.svg";
 import Header from "$lib/components/Header.svelte";
 import TransactionToastHandler from "$lib/components/TransactionToastHandler.svelte";
-import { Toaster } from "svelte-sonner";
-import { QueryClientProvider } from "@tanstack/svelte-query";
 import { createBlockchainQueryClient } from "$lib/query/config";
-import { onDestroy, type Component } from "svelte";
-import { dev } from "$app/environment";
 import { setGlobalClient } from "$lib/query/globalClient";
+import { QueryClientProvider } from "@tanstack/svelte-query";
+import { type Component } from "svelte";
+import { Toaster } from "svelte-sonner";
+import "./layout.css";
 
 let { children } = $props();
 
@@ -22,6 +22,21 @@ if (dev) {
     SvelteQueryDevtools = mod.SvelteQueryDevtools;
   });
 }
+
+// function handleError(error: unknown) {
+//   const message =
+//     error instanceof Error ? error.message : `Unknown error (${String(error)})`;
+//   console.error("received top level error", error, message);
+//   toastError(message);
+// }
+// onMount(() => {
+//   window.addEventListener("error", handleError);
+//   window.addEventListener("unhandledrejection", handleError);
+//   return () => {
+//     window.removeEventListener("error", handleError);
+//     window.removeEventListener("unhandledrejection", handleError);
+//   };
+// });
 </script>
 
 <QueryClientProvider client={queryClient}>

@@ -3,6 +3,7 @@ import {
   crossLiquidVaultAbi,
   crossLiquidVaultAddress,
 } from "$lib/contracts/generated.local";
+import { createErrorQuery } from "$lib/utils/query";
 import type { WagmiChain } from "$lib/utils/types";
 import { vaultChainId } from "$lib/wagmi/chains";
 import { config } from "$lib/wagmi/config";
@@ -41,13 +42,17 @@ export function readVaultQuery<
     functionName
   >,
 >(functionName: functionName, args?: args) {
+  const address =
+    crossLiquidVaultAddress[
+      vaultChainId as keyof typeof crossLiquidVaultAddress
+    ];
+  if (!address) {
+    return createErrorQuery(`No contract yet on chain ${vaultChainId}`);
+  }
   return createQuery(
     () =>
       readContractQueryOptions(config, {
-        address:
-          crossLiquidVaultAddress[
-            vaultChainId as keyof typeof crossLiquidVaultAddress
-          ],
+        address,
         abi: crossLiquidVaultAbi,
         functionName,
         args,
@@ -91,7 +96,9 @@ export function createReadQuery(options: ReadQueryOptions) {
     options.contract.startsWith("0x")
   ) {
     if (!options.abi) {
-      throw new Error("ABI is required when using contract address directly");
+      return createErrorQuery(
+        "ABI is required when using contract address directly",
+      );
     }
     contractAddress = options.contract as `0x${string}`;
     contractAbi = options.abi;
@@ -101,7 +108,7 @@ export function createReadQuery(options: ReadQueryOptions) {
       options.chainId,
     );
     if (!contract) {
-      throw new Error(`Contract ${options.contract} not found`);
+      return createErrorQuery(`Contract ${options.contract} not found`);
     }
     contractAddress = contract.address;
     contractAbi = options.abi || contract.abi;

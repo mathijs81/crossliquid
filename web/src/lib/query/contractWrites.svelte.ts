@@ -1,10 +1,16 @@
 import type { ContractName } from "$lib/contracts/deployedContracts";
+import { createErrorMutation } from "$lib/utils/query";
 import type { WagmiChain } from "$lib/utils/types";
 import { config } from "$lib/wagmi/config";
 import { createDeployedContractInfo } from "$lib/web3/createDeployedContractInfo.svelte";
 import { txWatcher } from "$lib/web3/txWatcher.svelte";
-import { createMutation, useQueryClient } from "@tanstack/svelte-query";
-import type { Abi, TransactionReceipt } from "viem";
+import { error } from "@sveltejs/kit";
+import {
+  createMutation,
+  useQueryClient,
+  type CreateMutationResult,
+} from "@tanstack/svelte-query";
+import type { Abi, Address, TransactionReceipt } from "viem";
 import { getGlobalClient } from "./globalClient";
 
 export interface UseContractWriteOptions {
@@ -20,7 +26,16 @@ export interface UseContractWriteOptions {
   onError?: (error: Error) => void;
 }
 
-export function useContractWrite(options: UseContractWriteOptions) {
+export type ContractWriteVariables = {
+  functionName?: string;
+  args?: readonly unknown[];
+  value?: bigint;
+  gas?: bigint;
+};
+
+export function useContractWrite(
+  options: UseContractWriteOptions,
+): CreateMutationResult<Address, Error, ContractWriteVariables, void> {
   const queryClient = getGlobalClient()?.() ?? useQueryClient();
 
   let contractAddress: `0x${string}`;
@@ -32,7 +47,9 @@ export function useContractWrite(options: UseContractWriteOptions) {
     options.contract.startsWith("0x")
   ) {
     if (!options.abi) {
-      throw new Error("ABI is required when using contract address directly");
+      return createErrorMutation(
+        "ABI is required when using contract address directly",
+      );
     }
     contractAddress = options.contract as `0x${string}`;
     contractAbi = options.abi;
@@ -43,27 +60,20 @@ export function useContractWrite(options: UseContractWriteOptions) {
       options.chainId,
     );
     if (!contract) {
-      throw new Error(`Contract ${options.contract} not found`);
+      return createErrorMutation(`Contract ${options.contract} not found`);
     }
     contractAddress = contract.address;
     contractAbi = options.abi || contract.abi;
     contractName = options.contract as string;
   }
 
-  type Variables = {
-    functionName?: string;
-    args?: readonly unknown[];
-    value?: bigint;
-    gas?: bigint;
-  };
-
   return createMutation(
     () => ({
-      mutationFn: async (variables: Variables) => {
+      mutationFn: async (variables: ContractWriteVariables) => {
         const { writeContract } = await import("@wagmi/core");
         const functionName = options.functionName || variables.functionName;
         if (!functionName) {
-          throw new Error("Function name is required");
+          throw error(400, "Function name is required");
         }
         return writeContract(config, {
           address: contractAddress,
@@ -81,7 +91,10 @@ export function useContractWrite(options: UseContractWriteOptions) {
           }
         }
       },
-      onSuccess: async (hash: `0x${string}`, variables: Variables) => {
+      onSuccess: async (
+        hash: `0x${string}`,
+        variables: ContractWriteVariables,
+      ) => {
         options.onSent?.(hash);
 
         if (contractName || options.functionName) {
