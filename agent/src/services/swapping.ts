@@ -5,6 +5,7 @@ import {
 } from "@uniswap/universal-router-sdk";
 import {
   encodeFunctionData,
+  parseAbi,
   type Address,
   type Hash,
   type Hex,
@@ -12,10 +13,9 @@ import {
   type WalletClient,
 } from "viem";
 import { iUniswapV4Router04Abi } from "../abi/IUniswapV4Router04";
-import { permit2Abi } from "../abi/Permit2";
+//import { permit2Abi } from "../abi/Permit2";
 import { stateViewAbi } from "../abi/StateView";
-import { universalRouterAbi } from "../abi/UniversalRouter";
-import { v4QuoterAbi } from "../abi/V4Quoter";
+import { iV4QuoterAbi as v4QuoterAbi } from "../abi/IV4Quoter";
 import { DEFAULT_POOL_KEYS, type UniV4Contracts } from "../config";
 import { logger } from "../logger";
 import { createPoolId, type PoolKey } from "../utils/poolIds";
@@ -220,7 +220,7 @@ export class SwappingService {
     const inputs = [v4ActionsCalldata];
 
     const data = encodeFunctionData({
-      abi: universalRouterAbi,
+      abi: parseAbi(['function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline) external payable']),
       functionName: "execute",
       args: [commands, inputs, deadline],
     });
@@ -460,7 +460,7 @@ export class SwappingService {
 
     const allowanceData = await this.publicClient.readContract({
       address: permit2,
-      abi: permit2Abi,
+      abi: parseAbi(['function allowance(address user, address token, address spender) view returns (uint160 amount, uint48 expiration, uint48 nonce)']),
       functionName: "allowance",
       args: [account.address, token, spender],
     });
@@ -490,7 +490,7 @@ export class SwappingService {
       account,
       chain: this.walletClient.chain,
       address: permit2,
-      abi: permit2Abi,
+      abi: parseAbi(['function approve(address token, address spender, uint160 amount, uint48 expiration)']),
       functionName: "approve",
       args: [token, spender, requiredAmount, MAX_UINT48],
     });
