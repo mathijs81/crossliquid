@@ -1,9 +1,9 @@
 import type { Address, Hash, PublicClient, WalletClient } from "viem";
-import { positionManagerAbi } from "../abi/PositionManager";
-import { chains, createAgentWalletClient } from "../config";
-import { logger } from "../logger";
-import { executeContractWrite } from "../utils/contract";
-import type { PoolKey } from "../utils/poolIds";
+import { positionManagerAbi } from "../abi/PositionManager.js";
+import { chains, createAgentWalletClient } from "../config.js";
+import { logger } from "../logger.js";
+import { executeContractWrite } from "../utils/contract.js";
+import type { PoolKey } from "../utils/poolIds.js";
 
 export interface PositionInfo {
   poolManager: Address;

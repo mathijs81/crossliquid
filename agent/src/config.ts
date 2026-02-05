@@ -1,9 +1,9 @@
 import { createWalletClient, http, type PublicClient } from "viem";
-import { initializeChains } from "./utils/chain";
-import { validateAddress, validatePrivateKey } from "./utils/validation";
+import { initializeChains } from "./utils/chain.js";
+import { validateAddress, validatePrivateKey } from "./utils/validation.js";
 import { type Address, privateKeyToAccount } from "viem/accounts";
-import { readOurDeployment, readUniswapDeployments } from "./dev/dev-config";
-import { logger } from "./logger";
+import { readOurDeployment, readUniswapDeployments } from "./dev/dev-config.js";
+import { logger } from "./logger.js";
 
 export type Environment = "development" | "production" | "testnet";
 

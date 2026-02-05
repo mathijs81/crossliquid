@@ -1,7 +1,7 @@
 import Fastify from "fastify";
-import { agent } from "./agent";
-import { logger } from "./logger";
-import { db } from "./services/database";
+import { agent } from "./agent.js";
+import { logger } from "./logger.js";
+import { db } from "./services/database.js";
 
 const fastify = Fastify({
   loggerInstance: logger,

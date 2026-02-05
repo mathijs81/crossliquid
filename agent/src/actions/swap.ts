@@ -5,10 +5,10 @@ import {
   type PublicClient,
   type WalletClient,
 } from "viem";
-import { eRC20Abi } from "../abi/ERC20";
-import { logger } from "../logger";
-import type { SwapQuoteRequest, SwappingService } from "../services/swapping";
-import { executeAsManager } from "../utils/executeAsManager";
+import { eRC20Abi } from "../abi/ERC20.js";
+import { logger } from "../logger.js";
+import type { SwapQuoteRequest, SwappingService } from "../services/swapping.js";
+import { executeAsManager } from "../utils/executeAsManager.js";
 import { waitForTransactionReceipt } from "viem/actions";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";

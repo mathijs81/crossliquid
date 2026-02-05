@@ -1,10 +1,10 @@
 import type { PublicClient } from "viem";
-import { chains, databasePath } from "./config";
-import { logger } from "./logger";
-import { closeDatabase, db, initializeDatabase } from "./services/database";
-import { collectEthUsdcData, type EthUsdcData } from "./services/ethusdc";
-import { calculateLOS, getTargetDistribution } from "./services/los";
-import { getVaultState } from "./services/vault";
+import { chains, databasePath } from "./config.js";
+import { logger } from "./logger.js";
+import { closeDatabase, db, initializeDatabase } from "./services/database.js";
+import { collectEthUsdcData, type EthUsdcData } from "./services/ethusdc.js";
+import { calculateLOS, getTargetDistribution } from "./services/los.js";
+import { getVaultState } from "./services/vault.js";
 
 export interface AgentStats {
   status: "running" | "stopped";

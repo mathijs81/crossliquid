@@ -1,7 +1,7 @@
 import { type Chain, createPublicClient, http, type PublicClient } from "viem";
 import { base, foundry, mainnet, optimism, unichain } from "viem/chains";
-import type { ChainConfig, Environment } from "../config";
-import { logger } from "../logger";
+import type { ChainConfig, Environment } from "../config.js";
+import { logger } from "../logger.js";
 
 export const createClient = (chain: Chain, rpcUrl?: string): PublicClient => {
   return createPublicClient({

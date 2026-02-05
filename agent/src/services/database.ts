@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { logger } from "../logger";
+import { logger } from "../logger.js";
 
 export interface ExchangeRateRecord {
   timestamp: string;

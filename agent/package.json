@@ -15,7 +15,8 @@
     "test": "vitest",
     "test:run": "vitest --run",
     "check": "tsc --noEmit",
-    "generate": "bash ../foundry/copyAbis.sh"
+    "generate": "bash ../foundry/copyAbis.sh",
+    "gen-docker-image": "docker build -f prod/Dockerfile -t crossliquid-agent ."
   },
   "dependencies": {
     "@uniswap/universal-router-sdk": "^4.30.0",

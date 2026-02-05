@@ -1,6 +1,6 @@
 import type { Address, Hash, Hex, PublicClient, WalletClient } from "viem";
-import { positionManagerAbi } from "../abi/PositionManager";
-import { logger } from "../logger";
+import { positionManagerAbi } from "../abi/PositionManager.js";
+import { logger } from "../logger.js";
 
 /**
  * Execute an arbitrary contract call through PositionManager.

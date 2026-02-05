@@ -8,22 +8,22 @@ import {
   isAddress,
   type Address,
 } from "viem";
-import { addLiquidity } from "./actions/addLiquidity";
-import { swapTokens } from "./actions/swap";
-import { syncVault } from "./actions/vaultSync";
+import { addLiquidity } from "./actions/addLiquidity.js";
+import { swapTokens } from "./actions/swap.js";
+import { syncVault } from "./actions/vaultSync.js";
 import {
   agentConfig,
   chains,
   createAgentWalletClient,
   OUR_ADDRESSES,
   UNIV4_CONTRACTS,
-} from "./config";
-import { logger } from "./logger";
+} from "./config.js";
+import { logger } from "./logger.js";
 import {
   formatPosition,
   PositionManagerService,
-} from "./services/positionManager";
-import { SwappingService } from "./services/swapping";
+} from "./services/positionManager.js";
+import { SwappingService } from "./services/swapping.js";
 import { getContractEvents } from "viem/actions";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";

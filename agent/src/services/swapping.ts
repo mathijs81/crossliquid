@@ -12,13 +12,13 @@ import {
   type PublicClient,
   type WalletClient,
 } from "viem";
-import { iUniswapV4Router04Abi } from "../abi/IUniswapV4Router04";
-//import { permit2Abi } from "../abi/Permit2";
-import { stateViewAbi } from "../abi/StateView";
-import { iV4QuoterAbi as v4QuoterAbi } from "../abi/IV4Quoter";
-import { DEFAULT_POOL_KEYS, type UniV4Contracts } from "../config";
-import { logger } from "../logger";
-import { createPoolId, type PoolKey } from "../utils/poolIds";
+import { iUniswapV4Router04Abi } from "../abi/IUniswapV4Router04.js";
+//import { permit2Abi } from "../abi/Permit2.js";
+import { stateViewAbi } from "../abi/StateView.js";
+import { iV4QuoterAbi as v4QuoterAbi } from "../abi/IV4Quoter.js";
+import { DEFAULT_POOL_KEYS, type UniV4Contracts } from "../config.js";
+import { logger } from "../logger.js";
+import { createPoolId, type PoolKey } from "../utils/poolIds.js";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 const V4_SWAP_COMMAND = "0x10";

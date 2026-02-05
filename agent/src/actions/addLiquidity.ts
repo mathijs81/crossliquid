@@ -1,10 +1,10 @@
 import type { Address } from "viem/accounts";
-import type { PositionManagerService } from "../services/positionManager";
+import type { PositionManagerService } from "../services/positionManager.js";
 import { formatEther, formatUnits, parseEther, parseUnits } from "viem";
-import { logger } from "../logger";
-import { getPoolCurrentTick } from "../services/pool";
-import { calculateTickRange } from "../services/positionManager";
-import { createEthUsdcPoolKey, createPoolId, FeeTier } from "../utils/poolIds";
+import { logger } from "../logger.js";
+import { getPoolCurrentTick } from "../services/pool.js";
+import { calculateTickRange } from "../services/positionManager.js";
+import { createEthUsdcPoolKey, createPoolId, FeeTier } from "../utils/poolIds.js";
 
 export async function addLiquidity(
   service: PositionManagerService,

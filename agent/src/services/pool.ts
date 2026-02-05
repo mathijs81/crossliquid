@@ -1,6 +1,6 @@
-import { chains } from "../config";
-import { logger } from "../logger";
-import { stateViewAbi } from "../abi/StateView";
+import { chains } from "../config.js";
+import { logger } from "../logger.js";
+import { stateViewAbi } from "../abi/StateView.js";
 
 export const getPoolCurrentTick = async (
   chainId: number,

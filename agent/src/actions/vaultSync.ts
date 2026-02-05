@@ -5,10 +5,10 @@ import {
   http,
   type WalletClient,
 } from "viem";
-import { OUR_ADDRESSES } from "../config";
-import { logger } from "../logger";
+import { OUR_ADDRESSES } from "../config.js";
+import { logger } from "../logger.js";
 
-import { positionManagerAbi } from "../abi/PositionManager";
+import { positionManagerAbi } from "../abi/PositionManager.js";
 
 /**
  * Syncs funds between vault and the manager.
