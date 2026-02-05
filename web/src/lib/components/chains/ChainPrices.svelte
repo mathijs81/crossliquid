@@ -99,12 +99,7 @@ function calculateStats(
         )
         .sort((a, b) => b.timestamp - a.timestamp);
 
-      const sortedRates = rates
-        .map((r: ExchangeRate) => ({
-          ...r,
-          usdcOutput: String(Number(r.usdcOutput) * 10),
-        }))
-        .sort(
+      const sortedRates = rates.sort(
           (a, b) =>
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
         );

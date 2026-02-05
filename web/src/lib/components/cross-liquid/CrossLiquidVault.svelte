@@ -5,7 +5,6 @@ import {
 } from "$lib/query/contractReads.svelte";
 import { useContractWrite } from "$lib/query/contractWrites.svelte";
 import { formatETH, formatPrice } from "$lib/utils/format";
-import { toastError } from "$lib/utils/toast";
 import { vaultChain } from "$lib/wagmi/chains";
 import { createConnection } from "$lib/web3/createConnection.svelte";
 import { Debounced } from "runed";
