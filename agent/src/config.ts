@@ -25,6 +25,8 @@ export interface UniV4Contracts {
   quoter: `0x${string}`;
   weth: `0x${string}`;
   usdc: `0x${string}`;
+  permit2?: `0x${string}`;
+  universalRouter?: `0x${string}`;
 }
 
 export interface PoolKey {

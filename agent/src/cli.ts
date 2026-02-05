@@ -1,11 +1,13 @@
 #!/usr/bin/env -S tsx --env-file=.env
 
 import { parseArgs } from "node:util";
-import { formatEther, formatUnits, type Address } from "viem";
+import { formatEther, formatUnits, isAddress, type Address } from "viem";
 import { addLiquidity } from "./actions/addLiquidity";
+import { swapTokens } from "./actions/swap";
 import { syncVault } from "./actions/vaultSync";
 import {
   agentConfig,
+  chains,
   createAgentWalletClient,
   UNIV4_CONTRACTS,
 } from "./config";
@@ -14,11 +16,15 @@ import {
   formatPosition,
   PositionManagerService,
 } from "./services/positionManager";
+import { SwappingService } from "./services/swapping";
+
+const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 
 const COMMANDS = {
   "list-positions": "List all positions",
   "add-liquidity": "Add liquidity to a pool",
   "remove-liquidity": "Remove liquidity from a pool",
+  swap: "Swap tokens through the Universal Router",
   "sync-vault":
     "Sync funds between the $CLQ vault and the pool manager on Base",
   help: "Show this help message",
@@ -47,6 +53,15 @@ function showHelp() {
   console.log(
     "  CHAIN_ID                  Chain ID (default: 31337 for local)",
   );
+  console.log(
+    "  UNISWAP_API_KEY           API key for Uniswap routing API (optional)",
+  );
+  console.log(
+    "  UNIVERSAL_ROUTER_ADDRESS  Local Universal Router address (chain 31337)",
+  );
+  console.log(
+    "  PERMIT2_ADDRESS           Local Permit2 address (chain 31337)",
+  );
   console.log("\nExamples:");
   console.log("  # List all positions");
   console.log("  pnpm cli list-positions");
@@ -56,6 +71,9 @@ function showHelp() {
   console.log();
   console.log("  # Remove liquidity");
   console.log("  pnpm cli remove-liquidity --position-id 0 --amount 100");
+  console.log();
+  console.log("  # Swap ETH for USDC");
+  console.log("  pnpm cli swap --amount 0.1 --token-in eth --token-out usdc");
 }
 
 async function listPositions(service: PositionManagerService) {
@@ -239,6 +257,92 @@ async function main() {
         break;
       }
 
+      case "swap": {
+        const { values } = parseArgs({
+          args: args.slice(1),
+          options: {
+            amount: { type: "string" },
+            "token-in": { type: "string" },
+            "token-out": { type: "string" },
+            "exact-out": { type: "boolean", default: false },
+            "slippage-bps": { type: "string" },
+            "deadline-seconds": { type: "string" },
+            recipient: { type: "string" },
+            "quote-only": { type: "boolean", default: false },
+          },
+        });
+
+        if (!values.amount) {
+          console.error("--amount is required");
+          process.exit(1);
+        }
+
+        const tradeType = values["exact-out"] ? "EXACT_OUTPUT" : "EXACT_INPUT";
+        const slippageBps = values["slippage-bps"]
+          ? Number(values["slippage-bps"])
+          : 50;
+        const deadlineSeconds = values["deadline-seconds"]
+          ? Number(values["deadline-seconds"])
+          : 1800;
+
+        if (Number.isNaN(slippageBps) || slippageBps < 0) {
+          throw new Error("Invalid --slippage-bps value");
+        }
+        if (Number.isNaN(deadlineSeconds) || deadlineSeconds <= 0) {
+          throw new Error("Invalid --deadline-seconds value");
+        }
+
+        const chainContracts = UNIV4_CONTRACTS[chain];
+        if (!chainContracts) {
+          throw new Error(`Unsupported chain ${chain}`);
+        }
+
+        const tokenIn = resolveTokenAddress(
+          values["token-in"],
+          chainContracts,
+          ZERO_ADDRESS,
+        );
+        const tokenOut = resolveTokenAddress(
+          values["token-out"],
+          chainContracts,
+          chainContracts.usdc,
+        );
+
+        const publicClient = chains.get(chain)?.publicClient;
+        if (!publicClient) {
+          throw new Error(`No public client for chain ${chain}`);
+        }
+
+        const walletClient = createAgentWalletClient(chain);
+        const swapService = new SwappingService(
+          publicClient,
+          walletClient,
+          chain,
+          chainContracts,
+        );
+
+        const recipient = values.recipient
+          ? resolveRecipientAddress(values.recipient)
+          : walletClient.account?.address;
+
+        if (!recipient) {
+          throw new Error("Recipient address is required");
+        }
+
+        await swapTokens(swapService, publicClient, {
+          chainId: chain,
+          tokenIn,
+          tokenOut,
+          amount: values.amount,
+          tradeType,
+          slippageBps,
+          recipient,
+          deadlineSeconds,
+          quoteOnly: values["quote-only"] as boolean,
+        });
+        break;
+      }
+
       case "help": {
         showHelp();
         break;
@@ -252,6 +356,43 @@ async function main() {
     );
     process.exit(1);
   }
+}
+
+function resolveTokenAddress(
+  value: string | undefined,
+  contracts: { weth: Address; usdc: Address },
+  fallback: Address,
+): Address {
+  if (!value) {
+    return fallback;
+  }
+
+  const normalized = value.toLowerCase();
+  if (normalized === "eth" || normalized === "native") {
+    return ZERO_ADDRESS;
+  }
+  if (normalized === "weth") {
+    return contracts.weth;
+  }
+  if (normalized === "usdc") {
+    return contracts.usdc;
+  }
+  if (normalized === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
+    return ZERO_ADDRESS;
+  }
+  if (isAddress(value)) {
+    return value as Address;
+  }
+
+  throw new Error(`Invalid address: ${value}`);
+}
+
+function resolveRecipientAddress(value: string): Address {
+  if (isAddress(value)) {
+    return value as Address;
+  }
+
+  throw new Error(`Invalid recipient address: ${value}`);
 }
 
 main();
