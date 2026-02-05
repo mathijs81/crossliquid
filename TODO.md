@@ -18,6 +18,9 @@
 - [ ] offchain agent: route funds from base chain to other chains (in progress)
 - [x] UI: show status across chains
 - [x] Docker build and production deployment 
+- [ ] UI: show feegrowth global
+- [ ] liquidity opportunity: pull in more pools
+- [ ] Calculate final liquidity opportunity score
 
 **Nice to have**
 

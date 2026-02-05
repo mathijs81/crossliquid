@@ -66,6 +66,8 @@ class Agent {
             tick: data.poolPrice.tick,
             liquidity: data.poolPrice.liquidity.toString(),
             fee: data.poolPrice.fee,
+            feeGrowthGlobal0: data.poolPrice.feeGrowthGlobal0.toString(),
+            feeGrowthGlobal1: data.poolPrice.feeGrowthGlobal1.toString(),
           });
         } catch (error) {
           logger.error(

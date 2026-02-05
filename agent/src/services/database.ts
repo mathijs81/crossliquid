@@ -15,6 +15,8 @@ export interface PoolPriceRecord {
   tick: number;
   liquidity: string;
   fee: number;
+  feeGrowthGlobal0: string;
+  feeGrowthGlobal1: string;
 }
 
 class DatabaseService {
@@ -44,7 +46,9 @@ class DatabaseService {
         sqrtPriceX96 TEXT NOT NULL,
         tick INTEGER NOT NULL,
         liquidity TEXT NOT NULL,
-        fee INTEGER NOT NULL
+        fee INTEGER NOT NULL,
+        feeGrowthGlobal0 TEXT NOT NULL DEFAULT '0',
+        feeGrowthGlobal1 TEXT NOT NULL DEFAULT '0'
       );
 
       CREATE INDEX IF NOT EXISTS idx_rates_timestamp ON exchange_rates(timestamp);
@@ -52,6 +56,19 @@ class DatabaseService {
       CREATE INDEX IF NOT EXISTS idx_pool_prices_timestamp ON pool_prices(timestamp);
       CREATE INDEX IF NOT EXISTS idx_pool_prices_chainId ON pool_prices(chainId);
     `);
+
+    // Migration: add feeGrowthGlobal columns to existing tables
+    this.migrateAddColumn("pool_prices", "feeGrowthGlobal0", "TEXT NOT NULL DEFAULT '0'");
+    this.migrateAddColumn("pool_prices", "feeGrowthGlobal1", "TEXT NOT NULL DEFAULT '0'");
+  }
+
+  private migrateAddColumn(table: string, column: string, type: string): void {
+    try {
+      this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+      logger.info({ table, column }, "Migration: added column");
+    } catch {
+      // Column already exists
+    }
   }
 
   insertExchangeRate(record: ExchangeRateRecord): void {
@@ -69,8 +86,8 @@ class DatabaseService {
 
   insertPoolPrice(record: PoolPriceRecord): void {
     const stmt = this.db.prepare(`
-      INSERT INTO pool_prices (timestamp, chainId, poolAddress, sqrtPriceX96, tick, liquidity, fee)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO pool_prices (timestamp, chainId, poolAddress, sqrtPriceX96, tick, liquidity, fee, feeGrowthGlobal0, feeGrowthGlobal1)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -81,6 +98,8 @@ class DatabaseService {
       record.tick,
       record.liquidity,
       record.fee,
+      record.feeGrowthGlobal0,
+      record.feeGrowthGlobal1,
     );
     logger.debug(
       { chainId: record.chainId, poolAddress: record.poolAddress },
@@ -109,7 +128,7 @@ class DatabaseService {
 
   getRecentPoolPrices(limit = 256): PoolPriceRecord[] {
     const stmt = this.db.prepare<[number]>(`
-      SELECT timestamp, chainId, poolAddress, sqrtPriceX96, tick, liquidity, fee FROM pool_prices
+      SELECT timestamp, chainId, poolAddress, sqrtPriceX96, tick, liquidity, fee, feeGrowthGlobal0, feeGrowthGlobal1 FROM pool_prices
       ORDER BY timestamp DESC
       LIMIT ?
     `);

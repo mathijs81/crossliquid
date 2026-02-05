@@ -17,6 +17,8 @@ export interface EthUsdcPoolPrice {
   tick: number;
   liquidity: bigint;
   fee: number;
+  feeGrowthGlobal0: bigint;
+  feeGrowthGlobal1: bigint;
 }
 
 export interface EthUsdcData {
@@ -103,31 +105,54 @@ export async function getEthUsdcPoolPrice(
   try {
     const poolId = createPoolId(effectivePoolKey);
 
-    const [slot0, liquidity] = await Promise.all([
-      defaultReadRetryer.withRetry("getEthUsdcPoolPrice_slot0", () =>
-        config.publicClient.readContract({
-          address: contracts.stateView,
-          abi: stateViewAbi,
-          functionName: "getSlot0",
-          args: [poolId],
+    const results = await defaultReadRetryer.withRetry(
+      "getEthUsdcPoolPrice_multicall",
+      () =>
+        config.publicClient.multicall({
+          contracts: [
+            {
+              address: contracts.stateView,
+              abi: stateViewAbi,
+              functionName: "getSlot0",
+              args: [poolId],
+            },
+            {
+              address: contracts.stateView,
+              abi: stateViewAbi,
+              functionName: "getLiquidity",
+              args: [poolId],
+            },
+            {
+              address: contracts.stateView,
+              abi: stateViewAbi,
+              functionName: "getFeeGrowthGlobals",
+              args: [poolId],
+            },
+          ],
         }),
-      ),
-      defaultReadRetryer.withRetry("getEthUsdcPoolPrice_liq", () =>
-        config.publicClient.readContract({
-          address: contracts.stateView,
-          abi: stateViewAbi,
-          functionName: "getLiquidity",
-          args: [poolId],
-        }),
-      ),
-    ]);
+    );
+
+    const [slot0Result, liquidityResult, feeGrowthResult] = results;
+    if (
+      slot0Result.status !== "success" ||
+      liquidityResult.status !== "success" ||
+      feeGrowthResult.status !== "success"
+    ) {
+      const failed = results
+        .map((r, i) => (r.status === "failure" ? ["slot0", "liquidity", "feeGrowthGlobals"][i] : null))
+        .filter(Boolean);
+      logger.error({ chainId, failed }, "Multicall partial failure");
+      return null;
+    }
 
     return {
       poolId,
-      sqrtPriceX96: slot0[0],
-      tick: slot0[1],
-      liquidity,
-      fee: slot0[3],
+      sqrtPriceX96: slot0Result.result[0],
+      tick: slot0Result.result[1],
+      liquidity: liquidityResult.result,
+      fee: slot0Result.result[3],
+      feeGrowthGlobal0: feeGrowthResult.result[0],
+      feeGrowthGlobal1: feeGrowthResult.result[1],
     };
   } catch (error) {
     logger.error(
