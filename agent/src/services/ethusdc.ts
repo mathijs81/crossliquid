@@ -1,17 +1,15 @@
-import { encodeAbiParameters, formatUnits, keccak256, parseEther } from "viem";
-import { iPoolManagerAbi as poolManagerAbi } from "../abi/IPoolManager";
+import { formatUnits, parseEther } from "viem";
 import { iV4QuoterAbi as quoterAbi } from "../abi/IV4Quoter";
 import { stateViewAbi } from "../abi/StateView";
 import {
   chains,
   DEFAULT_POOL_KEYS,
-  ETHUSDC_POOLS,
   type PoolKey,
   UNIV4_CONTRACTS,
 } from "../config";
 import { logger } from "../logger";
-import { defaultReadRetryer } from "../utils/retryer";
 import { createPoolId } from "../utils/poolIds";
+import { defaultReadRetryer } from "../utils/retryer";
 
 export interface EthUsdcPoolPrice {
   poolId: `0x${string}`;

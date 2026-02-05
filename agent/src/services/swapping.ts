@@ -27,8 +27,7 @@ const MAX_UINT48 = 2 ** 48 - 1;
 const MAX_UINT160 = (1n << 160n) - 1n;
 const MAX_UINT128 = (1n << 128n) - 1n;
 const SLIPPAGE_DENOMINATOR = 10_000n;
-const PERMIT2_ADDRESS: Address =
-  "0x000000000022D473030F116dDEE9F6B43aC78BA3";
+const PERMIT2_ADDRESS: Address = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
 
 export type QuoteSource = "local" | "routing-api";
 
@@ -102,11 +101,8 @@ export class SwappingService {
     quote: SwapQuoteResult,
     request: SwapQuoteRequest,
   ): SwapExecutionPlan {
-    const deadlineSeconds =
-      request.deadlineSeconds ?? DEFAULT_DEADLINE_SECONDS;
-    const deadline = BigInt(
-      Math.floor(Date.now() / 1000) + deadlineSeconds,
-    );
+    const deadlineSeconds = request.deadlineSeconds ?? DEFAULT_DEADLINE_SECONDS;
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineSeconds);
 
     if (quote.quoteSource === "routing-api") {
       if (!quote.routing?.calldata) {
@@ -151,9 +147,12 @@ export class SwappingService {
 
     // For local chains, use IUniswapV4Router04 instead of UniversalRouter
     if (this.chainId === 31337) {
-      const routerAddress = this.contracts.v4Router ?? this.contracts.universalRouter;
+      const routerAddress =
+        this.contracts.v4Router ?? this.contracts.universalRouter;
       if (!routerAddress) {
-        throw new Error("No v4Router or universalRouter configured for local chain");
+        throw new Error(
+          "No v4Router or universalRouter configured for local chain",
+        );
       }
 
       // Router04 uses negative amountSpecified for exact input
@@ -338,8 +337,7 @@ export class SwappingService {
     request: SwapQuoteRequest & { slippageBps: number },
   ): Promise<SwapQuoteResult> {
     const apiUrl = "https://api.uniswap.org/v1/quote";
-    const deadlineSeconds =
-      request.deadlineSeconds ?? DEFAULT_DEADLINE_SECONDS;
+    const deadlineSeconds = request.deadlineSeconds ?? DEFAULT_DEADLINE_SECONDS;
     const deadline = Math.floor(Date.now() / 1000) + deadlineSeconds;
     const slippageTolerance = request.slippageBps / 100;
 
@@ -424,7 +422,8 @@ export class SwappingService {
 
   private resolveUniversalRouterAddress(): Address {
     if (this.chainId === 31337) {
-      const local = this.contracts.universalRouter ?? process.env.UNIVERSAL_ROUTER_ADDRESS;
+      const local =
+        this.contracts.universalRouter ?? process.env.UNIVERSAL_ROUTER_ADDRESS;
       if (!local) {
         throw new Error("UNIVERSAL_ROUTER_ADDRESS is not set for local chain");
       }
@@ -445,10 +444,7 @@ export class SwappingService {
     return this.isNativeCurrency(token) ? ZERO_ADDRESS : token;
   }
 
-  private async ensurePermit2Allowance(
-    token: Address,
-    requiredAmount: bigint,
-  ) {
+  private async ensurePermit2Allowance(token: Address, requiredAmount: bigint) {
     const account = this.walletClient.account;
     if (!account) {
       throw new Error("Wallet client is missing an account");
@@ -471,9 +467,7 @@ export class SwappingService {
     const allowance = allowanceData[0] as bigint;
     const expirationRaw = allowanceData[1] as number | bigint;
     const expiration =
-      typeof expirationRaw === "bigint"
-        ? Number(expirationRaw)
-        : expirationRaw;
+      typeof expirationRaw === "bigint" ? Number(expirationRaw) : expirationRaw;
 
     const isExpired = expiration <= nowSeconds;
     const isSufficient = allowance >= requiredAmount;

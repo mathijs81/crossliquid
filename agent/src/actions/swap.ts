@@ -1,11 +1,15 @@
-import { formatUnits, parseUnits, type Address, type PublicClient, type WalletClient } from "viem";
+import {
+  formatUnits,
+  parseUnits,
+  type Address,
+  type PublicClient,
+  type WalletClient,
+} from "viem";
 import { eRC20Abi } from "../abi/ERC20";
 import { logger } from "../logger";
-import type {
-  SwapQuoteRequest,
-  SwappingService,
-} from "../services/swapping";
+import type { SwapQuoteRequest, SwappingService } from "../services/swapping";
 import { executeAsManager } from "../utils/executeAsManager";
+import { waitForTransactionReceipt } from "viem/actions";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 
@@ -64,7 +68,9 @@ export async function swapTokens(
 
   console.log("\n✓ Quote ready");
   console.log(`Source: ${quote.quoteSource}`);
-  console.log(`Execution Mode: ${options.forManager ? "via PositionManager" : "direct from wallet"}`);
+  console.log(
+    `Execution Mode: ${options.forManager ? "via PositionManager" : "direct from wallet"}`,
+  );
   console.log(`Amount In: ${formattedAmountIn}`);
   console.log(`Amount Out: ${formattedAmountOut}`);
   if (quote.gasEstimate !== undefined) {
@@ -81,7 +87,9 @@ export async function swapTokens(
   console.log(`Target: ${plan.to}`);
   console.log(`Value: ${plan.value}`);
   console.log(`Calldata length: ${plan.data.length} bytes`);
-  console.log(`Approval needed: ${plan.approvalAmount > 0n ? plan.approvalAmount.toString() : "none"}`);
+  console.log(
+    `Approval needed: ${plan.approvalAmount > 0n ? plan.approvalAmount.toString() : "none"}`,
+  );
 
   if (options.quoteOnly) {
     console.log("\n(Quote only - no execution)");
@@ -106,6 +114,11 @@ export async function swapTokens(
 
   console.log("\n✓ Swap executed");
   console.log(`Transaction Hash: ${hash}`);
+
+  const receipt = await waitForTransactionReceipt(publicClient, {
+    hash: hash as `0x${string}`,
+  });
+  console.log("Receipt:", receipt);
 }
 
 async function getTokenDecimals(

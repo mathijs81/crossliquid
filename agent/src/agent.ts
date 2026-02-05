@@ -1,11 +1,10 @@
-import { type Chain, createPublicClient, http, type PublicClient } from "viem";
-import { base, mainnet, optimism, unichain } from "viem/chains";
+import type { PublicClient } from "viem";
+import { chains, databasePath } from "./config";
 import { logger } from "./logger";
 import { closeDatabase, db, initializeDatabase } from "./services/database";
 import { collectEthUsdcData, type EthUsdcData } from "./services/ethusdc";
 import { calculateLOS, getTargetDistribution } from "./services/los";
 import { getVaultState } from "./services/vault";
-import { chains, databasePath } from "./config";
 
 export interface AgentStats {
   status: "running" | "stopped";

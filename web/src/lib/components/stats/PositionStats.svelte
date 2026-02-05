@@ -1,10 +1,13 @@
 <script lang="ts">
+import { deployedContracts } from "$lib/contracts/deployedContracts";
 import { createReadQuery } from "$lib/query/contractReads.svelte";
 import { formatETH } from "$lib/utils/format";
 import { vaultChain } from "$lib/wagmi/chains";
+import { erc20Abi, formatUnits } from "viem";
 import QueryRenderer from "../QueryRenderer.svelte";
 import Alert from "../atoms/Alert.svelte";
 import Badge from "../atoms/Badge.svelte";
+import { useBalance } from "$lib/query/networkInfo.svelte";
 
 const positionsQuery = $derived(
   createReadQuery({
@@ -23,12 +26,46 @@ function formatPositionId(positionId: `0x${string}`): string {
 function formatTick(tick: number): string {
   return tick.toLocaleString();
 }
+
+const managerAddress =
+  deployedContracts.positionManager.deployments[vaultChain.id];
+const usdcAddress = "0x0165878A594ca255338adfa4d48449f69242Eb8F";
+//deployedContracts.usdc.deployments[vaultChain.id];
+
+const usdBalanceQuery = createReadQuery({
+  contract: usdcAddress,
+  abi: erc20Abi,
+  functionName: "balanceOf",
+  args: [managerAddress],
+  chainId: vaultChain.id,
+  watch: true,
+});
+
+const ethBalanceQuery = useBalance(managerAddress);
 </script>
 
 <div class="space-y-6">
   <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
-      <h2 class="card-title text-xl">Deployed Positions</h2>
+      <h2 class="card-title text-xl">Manager State</h2>
+      <h3 class="card-subtitle text-lg">Manager Address: {managerAddress}</h3>
+      <strong>Balances:</strong>
+      ETH: 
+      <QueryRenderer query={ethBalanceQuery}>
+        {#snippet children(data)}
+          {formatETH(data.value)}
+        {/snippet}
+      </QueryRenderer>
+      USDC: 
+      <QueryRenderer query={usdBalanceQuery}>
+        {#snippet children(data)}
+          $ {
+            // Format with 2 decimal places:
+          Number(formatUnits(data as bigint, 6)).toFixed(2) }
+        {/snippet}
+      </QueryRenderer>
+
+      <h3 class="card-subtitle text-lg">Uniswap LP positions:</h3>
 
       <QueryRenderer query={positionsQuery}>
         {#snippet children(data)}

@@ -1,7 +1,13 @@
 #!/usr/bin/env -S tsx --env-file=.env
 
 import { parseArgs } from "node:util";
-import { formatEther, formatUnits, isAddress, type Address } from "viem";
+import {
+  erc20Abi,
+  formatEther,
+  formatUnits,
+  isAddress,
+  type Address,
+} from "viem";
 import { addLiquidity } from "./actions/addLiquidity";
 import { swapTokens } from "./actions/swap";
 import { syncVault } from "./actions/vaultSync";
@@ -18,6 +24,7 @@ import {
   PositionManagerService,
 } from "./services/positionManager";
 import { SwappingService } from "./services/swapping";
+import { getContractEvents } from "viem/actions";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 
@@ -28,6 +35,7 @@ const COMMANDS = {
   swap: "Swap tokens through the Universal Router",
   "sync-vault":
     "Sync funds between the $CLQ vault and the pool manager on Base",
+  "dump-usdc-transfers": "Dump all USDC transfers from the manager",
   help: "Show this help message",
 } as const;
 
@@ -258,6 +266,22 @@ async function main() {
         break;
       }
 
+      case "dump-usdc-transfers": {
+        const publicClient = chains.get(chain)?.publicClient;
+        if (!publicClient) {
+          throw new Error(`No public client for chain ${chain}`);
+        }
+        const events = await getContractEvents(publicClient, {
+          address: usdcAddress,
+          abi: erc20Abi,
+          eventName: "Transfer",
+          fromBlock: "earliest",
+          toBlock: "latest",
+        });
+        logger.info(events);
+        break;
+      }
+
       case "swap": {
         const { values } = parseArgs({
           args: args.slice(1),
@@ -298,6 +322,8 @@ async function main() {
           throw new Error(`Unsupported chain ${chain}`);
         }
 
+        const forManager = values["for-manager"] as boolean;
+
         const tokenIn = resolveTokenAddress(
           values["token-in"],
           chainContracts,
@@ -324,7 +350,9 @@ async function main() {
 
         const recipient = values.recipient
           ? resolveRecipientAddress(values.recipient)
-          : walletClient.account?.address;
+          : forManager
+            ? OUR_ADDRESSES.manager
+            : walletClient.account?.address;
 
         if (!recipient) {
           throw new Error("Recipient address is required");
@@ -337,7 +365,9 @@ async function main() {
         const quoteOnly = (values["quote-only"] as boolean) || dryRunProduction;
 
         if (dryRunProduction) {
-          console.log("\n🧪 Dry-run production mode: simulating production chain behavior\n");
+          console.log(
+            "\n🧪 Dry-run production mode: simulating production chain behavior\n",
+          );
         }
 
         await swapTokens(swapService, publicClient, walletClient, {
@@ -349,7 +379,7 @@ async function main() {
           recipient,
           deadlineSeconds,
           quoteOnly,
-          forManager: values["for-manager"] as boolean,
+          forManager,
           positionManagerAddress,
           useProductionRouting: dryRunProduction,
         });
