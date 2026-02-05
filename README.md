@@ -1,5 +1,7 @@
 # CrossLiquid - Agentic Crosschain LP
 
+**[Live Demo](https://crossliquid.duckdns.org/)** | HackMoney 2026 Submission
+
 ## Goal
 
 Manage liquidity from a single vault cross-chain to find the best opportunities to generate LP fees while protecting against loss-versus-rebalancing and just-in-time liquidity sniping.
