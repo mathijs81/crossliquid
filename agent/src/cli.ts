@@ -1,14 +1,9 @@
 #!/usr/bin/env -S tsx --env-file=.env
 
 import { parseArgs } from "node:util";
-import {
-  erc20Abi,
-  formatEther,
-  formatUnits,
-  isAddress,
-  type Address,
-} from "viem";
+import { erc20Abi, isAddress, type Address } from "viem";
 import { addLiquidity } from "./actions/addLiquidity.js";
+import { removeLiquidity } from "./actions/removeLiquidity.js";
 import { swapTokens } from "./actions/swap.js";
 import { syncVault } from "./actions/vaultSync.js";
 import {
@@ -104,55 +99,6 @@ async function listPositions(service: PositionManagerService) {
     console.log(formatPosition(positions[i]));
     console.log();
   }
-}
-
-async function removeLiquidity(
-  service: PositionManagerService,
-  options: {
-    positionIndex: number;
-    amount: string;
-    poolManager: Address;
-    usdcAddress: Address;
-  },
-) {
-  const { positions } = await service.getAllPositions();
-
-  if (options.positionIndex >= positions.length) {
-    throw new Error(`Position index ${options.positionIndex} not found`);
-  }
-
-  const position = positions[options.positionIndex];
-  const liquidityToRemove = BigInt(options.amount);
-
-  if (liquidityToRemove > position.liquidity) {
-    throw new Error(
-      `Requested liquidity ${liquidityToRemove} exceeds position liquidity ${position.liquidity}`,
-    );
-  }
-
-  logger.info(
-    {
-      positionIndex: options.positionIndex,
-      liquidityToRemove: liquidityToRemove.toString(),
-      totalLiquidity: position.liquidity.toString(),
-    },
-    "Preparing to remove liquidity",
-  );
-
-  const result = await service.removeLiquidity({
-    poolManagerAddress: options.poolManager,
-    poolKey: position.poolKey,
-    tickLower: position.tickLower,
-    tickUpper: position.tickUpper,
-    liquidity: liquidityToRemove,
-    amount0Min: 0n,
-    amount1Min: 0n,
-  });
-
-  console.log("\n✓ Liquidity removed successfully!");
-  console.log(`Transaction Hash: ${result.hash}`);
-  console.log(`ETH Received: ${formatEther(result.amount0)}`);
-  console.log(`USDC Received: ${formatUnits(result.amount1, 6)}`);
 }
 
 async function main() {

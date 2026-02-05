@@ -4,7 +4,11 @@ import { formatEther, formatUnits, parseEther, parseUnits } from "viem";
 import { logger } from "../logger.js";
 import { getPoolCurrentTick } from "../services/pool.js";
 import { calculateTickRange } from "../services/positionManager.js";
-import { createEthUsdcPoolKey, createPoolId, FeeTier } from "../utils/poolIds.js";
+import {
+  createEthUsdcPoolKey,
+  createPoolId,
+  FeeTier,
+} from "../utils/poolIds.js";
 
 export async function addLiquidity(
   service: PositionManagerService,
@@ -18,7 +22,7 @@ export async function addLiquidity(
     tickUpper?: number;
   },
 ) {
-  const amount0Desired = parseEther("0"); // ETH (represented as 0 address in PoolKey)
+  const amount0Desired = parseEther(options.eth);
   const amount1Desired = parseUnits(options.usdc, 6);
 
   logger.info(

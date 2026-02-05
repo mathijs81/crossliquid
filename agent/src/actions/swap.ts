@@ -7,7 +7,10 @@ import {
 } from "viem";
 import { eRC20Abi } from "../abi/ERC20.js";
 import { logger } from "../logger.js";
-import type { SwapQuoteRequest, SwappingService } from "../services/swapping.js";
+import type {
+  SwapQuoteRequest,
+  SwappingService,
+} from "../services/swapping.js";
 import { executeAsManager } from "../utils/executeAsManager.js";
 import { waitForTransactionReceipt } from "viem/actions";
 

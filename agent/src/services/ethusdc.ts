@@ -139,7 +139,11 @@ export async function getEthUsdcPoolPrice(
       feeGrowthResult.status !== "success"
     ) {
       const failed = results
-        .map((r, i) => (r.status === "failure" ? ["slot0", "liquidity", "feeGrowthGlobals"][i] : null))
+        .map((r, i) =>
+          r.status === "failure"
+            ? ["slot0", "liquidity", "feeGrowthGlobals"][i]
+            : null,
+        )
         .filter(Boolean);
       logger.error({ chainId, failed }, "Multicall partial failure");
       return null;

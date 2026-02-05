@@ -220,7 +220,9 @@ export class SwappingService {
     const inputs = [v4ActionsCalldata];
 
     const data = encodeFunctionData({
-      abi: parseAbi(['function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline) external payable']),
+      abi: parseAbi([
+        "function execute(bytes calldata commands, bytes[] calldata inputs, uint256 deadline) external payable",
+      ]),
       functionName: "execute",
       args: [commands, inputs, deadline],
     });
@@ -460,7 +462,9 @@ export class SwappingService {
 
     const allowanceData = await this.publicClient.readContract({
       address: permit2,
-      abi: parseAbi(['function allowance(address user, address token, address spender) view returns (uint160 amount, uint48 expiration, uint48 nonce)']),
+      abi: parseAbi([
+        "function allowance(address user, address token, address spender) view returns (uint160 amount, uint48 expiration, uint48 nonce)",
+      ]),
       functionName: "allowance",
       args: [account.address, token, spender],
     });
@@ -490,7 +494,9 @@ export class SwappingService {
       account,
       chain: this.walletClient.chain,
       address: permit2,
-      abi: parseAbi(['function approve(address token, address spender, uint160 amount, uint48 expiration)']),
+      abi: parseAbi([
+        "function approve(address token, address spender, uint160 amount, uint48 expiration)",
+      ]),
       functionName: "approve",
       args: [token, spender, requiredAmount, MAX_UINT48],
     });

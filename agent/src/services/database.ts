@@ -58,8 +58,16 @@ class DatabaseService {
     `);
 
     // Migration: add feeGrowthGlobal columns to existing tables
-    this.migrateAddColumn("pool_prices", "feeGrowthGlobal0", "TEXT NOT NULL DEFAULT '0'");
-    this.migrateAddColumn("pool_prices", "feeGrowthGlobal1", "TEXT NOT NULL DEFAULT '0'");
+    this.migrateAddColumn(
+      "pool_prices",
+      "feeGrowthGlobal0",
+      "TEXT NOT NULL DEFAULT '0'",
+    );
+    this.migrateAddColumn(
+      "pool_prices",
+      "feeGrowthGlobal1",
+      "TEXT NOT NULL DEFAULT '0'",
+    );
   }
 
   private migrateAddColumn(table: string, column: string, type: string): void {
