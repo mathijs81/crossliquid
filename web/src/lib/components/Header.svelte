@@ -53,9 +53,9 @@ async function disconnectWallet() {
 }
 
 const baseDestinations = [
+  [CurrencyCircleDollarIcon, "Crosschain Liquidity", "/chains"],
   [PiggyBankIcon, "Deposit to Vault", "/cross-liquid"],
   [ChartLineIcon, "Position Stats", "/stats"],
-  [CurrencyCircleDollarIcon, "Chain Prices", "/chains"],
   [BugIcon, "Debug", "/debug"],
 ] as const;
 

@@ -160,6 +160,19 @@ contract PositionManager is
         bytes data;
     }
 
+    // Transient storage slot: set before poolManager.unlock(), checked in unlockCallback
+    // to prevent anyone from calling unlockCallback directly with a fake PoolManager.
+    // keccak256("crossliquid.activePoolManager") truncated
+    bytes32 private constant _ACTIVE_PM_SLOT = 0x7e4c2a8d5b3f1e6a9c0d8b7f4e2a1d3c5b8f7e6a9d0c3b2a1f4e8d7c6b5a4e03;
+
+    function _setActivePoolManager(address pm) private {
+        assembly { tstore(_ACTIVE_PM_SLOT, pm) }
+    }
+
+    function _getActivePoolManager() private view returns (address pm) {
+        assembly { pm := tload(_ACTIVE_PM_SLOT) }
+    }
+
     function depositToUniswap(
         address poolManagerAddress,
         PoolKey calldata poolKey,
@@ -170,8 +183,12 @@ contract PositionManager is
         uint256 amount0Min,
         uint256 amount1Min
     ) external onlyOperatorOrOwner nonReentrant returns (uint128 liquidityAdded, uint256 amount0, uint256 amount1) {
-        IERC20(Currency.unwrap(poolKey.currency0)).safeIncreaseAllowance(poolManagerAddress, amount0Desired);
-        IERC20(Currency.unwrap(poolKey.currency1)).safeIncreaseAllowance(poolManagerAddress, amount1Desired);
+        if (!poolKey.currency0.isAddressZero()) {
+            IERC20(Currency.unwrap(poolKey.currency0)).safeIncreaseAllowance(poolManagerAddress, amount0Desired);
+        }
+        if (!poolKey.currency1.isAddressZero()) {
+            IERC20(Currency.unwrap(poolKey.currency1)).safeIncreaseAllowance(poolManagerAddress, amount1Desired);
+        }
 
         (liquidityAdded, amount0, amount1) =
             _addLiquidityToPool(poolManagerAddress, poolKey, tickLower, tickUpper, amount0Desired, amount1Desired);
@@ -202,6 +219,7 @@ contract PositionManager is
             )
         });
 
+        _setActivePoolManager(poolManagerAddress);
         bytes memory result = IPoolManager(poolManagerAddress).unlock(abi.encode(cbData));
         (liquidityAdded, amount0, amount1) = abi.decode(result, (uint128, uint256, uint256));
     }
@@ -266,6 +284,7 @@ contract PositionManager is
             )
         });
 
+        _setActivePoolManager(poolManagerAddress);
         bytes memory result = poolManager.unlock(abi.encode(cbData));
         (amount0, amount1) = abi.decode(result, (uint256, uint256));
 
@@ -282,7 +301,7 @@ contract PositionManager is
     }
 
     function unlockCallback(bytes calldata rawData) external returns (bytes memory) {
-        if (msg.sender.code.length == 0) revert InvalidCaller();
+        if (msg.sender != _getActivePoolManager()) revert InvalidCaller();
 
         CallbackData memory data = abi.decode(rawData, (CallbackData));
 
@@ -366,9 +385,13 @@ contract PositionManager is
     }
 
     function _settle(IPoolManager poolManager, Currency currency, uint256 amount) internal {
-        poolManager.sync(currency);
-        IERC20(Currency.unwrap(currency)).safeTransfer(address(poolManager), amount);
-        poolManager.settle();
+        if (currency.isAddressZero()) {
+            poolManager.settle{value: amount}();
+        } else {
+            poolManager.sync(currency);
+            IERC20(Currency.unwrap(currency)).safeTransfer(address(poolManager), amount);
+            poolManager.settle();
+        }
     }
 
     function _removePosition(bytes32 positionId) internal {
