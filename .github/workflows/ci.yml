@@ -44,6 +44,9 @@ jobs:
 
       - name: Build Foundry contracts
         run: pnpm -C foundry build
+
+      - name: Create agent .env file
+        run: cp agent/.env.example agent/.env
         
       - name: Run local chain and generate contract abis
         run: just run-chain
