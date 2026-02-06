@@ -22,3 +22,4 @@ run-chain:
     pnpm chain
     pnpm chain:local_test_setup
     pnpm generate
+    agent/init-liquidity.sh

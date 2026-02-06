@@ -2,7 +2,7 @@
 
 - [x] simple vault contract
 - [x] UI: deposit funds into vault
-- [ ] Manager that can get funds from contract, deploy to uniswap
+- [x] Manager that can get funds from contract, deploy to uniswap
   - [x] First commit
   - [x] Actual deployment / getting from uniswap
 - [x] UI: show current deployment in uniswap

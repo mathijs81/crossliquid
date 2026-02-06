@@ -16,3 +16,6 @@
 [submodule "foundry/lib/hookmate"]
 	path = foundry/lib/hookmate
 	url = https://github.com/akshatmittal/hookmate
+[submodule "foundry/lib/uniswap-hooks"]
+	path = foundry/lib/uniswap-hooks
+	url = https://github.com/OpenZeppelin/uniswap-hooks
