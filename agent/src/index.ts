@@ -55,12 +55,9 @@ fastify.get("/metrics", async (request) => {
   const poolPrices = db.getRecentPoolPrices(parsedLimit);
 
   // Calculate metrics for all chains or specific chain
-  const chainIds = parsedChainId
-    ? [parsedChainId]
-    : Array.from(chains.keys());
-  const metricsMap = await MetricsService.calculateMetricsForAllChains(
-    chainIds,
-  );
+  const chainIds = parsedChainId ? [parsedChainId] : Array.from(chains.keys());
+  const metricsMap =
+    await MetricsService.calculateMetricsForAllChains(chainIds);
 
   // Calculate LOS scores
   const losMap = await calculateLOS();

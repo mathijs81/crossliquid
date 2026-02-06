@@ -41,7 +41,9 @@ export async function swapTokens(
 
   const parsedAmountIn = parseUnits(options.amountIn, tokenInDecimals);
 
-  const fromAddress = options.forManager ? options.positionManagerAddress : walletClient.account?.address;
+  const fromAddress = options.forManager
+    ? options.positionManagerAddress
+    : walletClient.account?.address;
   if (!fromAddress) {
     throw new Error("From address is required");
   }

@@ -32,9 +32,8 @@ const PERMIT2_ADDRESS: Address = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
 export type QuoteSource = "local" | "routing-api" | "lifi";
 
 const lifiConfig = createConfig({
-  integrator: "CrossLiquid"
+  integrator: "CrossLiquid",
 });
-
 
 export interface SwapQuoteRequest {
   chainId: number;
@@ -136,7 +135,6 @@ export class SwappingService {
         quoteSource: quote.quoteSource,
       };
     }
-
 
     if (!quote.poolKey || quote.zeroForOne === undefined) {
       throw new Error("Local quote missing pool metadata");
@@ -343,7 +341,9 @@ export class SwappingService {
     };
   }
 
-  private async quoteLifi(request: SwapQuoteRequest & { slippageBps: number }): Promise<SwapQuoteResult> {
+  private async quoteLifi(
+    request: SwapQuoteRequest & { slippageBps: number },
+  ): Promise<SwapQuoteResult> {
     const quote = await getQuote({
       fromChain: request.chainId,
       toChain: request.chainId,
@@ -366,8 +366,8 @@ export class SwappingService {
       routing: {
         calldata: "0x" as Hex,
         value: 0n,
-        to: '0x000',
-      }
+        to: "0x000",
+      },
     };
   }
 

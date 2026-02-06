@@ -128,10 +128,7 @@ async function main() {
   }
 
   const chain = Number(process.env.CHAIN_ID) ?? agentConfig.vaultChainId;
-  const service = new PositionManagerService(
-    chain,
-    positionManagerAddress,
-  );
+  const service = new PositionManagerService(chain, positionManagerAddress);
 
   const poolManagerAddress = UNIV4_CONTRACTS[chain].poolManager;
   const usdcAddress = UNIV4_CONTRACTS[chain].usdc;

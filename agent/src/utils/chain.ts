@@ -1,5 +1,13 @@
 import { type Chain, createPublicClient, http, type PublicClient } from "viem";
-import { base, baseSepolia, foundry, mainnet, optimism, unichain, unichainSepolia } from "viem/chains";
+import {
+  base,
+  baseSepolia,
+  foundry,
+  mainnet,
+  optimism,
+  unichain,
+  unichainSepolia,
+} from "viem/chains";
 import type { ChainConfig, Environment } from "../config.js";
 import { logger } from "../logger.js";
 import { ChainId } from "@lifi/sdk";
@@ -37,7 +45,7 @@ const lifiChains = new Map<number, ChainId>([
 ]);
 
 function getChains(environment: Environment): number[] {
-  switch(environment) {
+  switch (environment) {
     case "development":
       return [foundry.id];
     case "production":
