@@ -28,6 +28,13 @@
       "quoteStyle": "double"
     }
   },
+  "html": {
+    "experimentalFullSupportEnabled": true,
+    "formatter": {
+      "indentWidth": 2,
+      "lineWidth": 120
+    }
+  },
   "assist": {
     "enabled": true,
     "actions": {
@@ -50,6 +57,9 @@
             "noUnusedImports": "off"
           }
         }
+      },
+      "formatter": {
+        "enabled": true
       }
     }
   ]

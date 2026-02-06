@@ -22,6 +22,4 @@ const alertClass = $derived.by(() => {
 });
 </script>
 
-<div class="alert {alertClass} shadow-lg" role="alert" aria-live="polite">
-  <span>{message}</span>
-</div>
+<div class="alert {alertClass} shadow-lg" role="alert" aria-live="polite"><span>{message}</span></div>

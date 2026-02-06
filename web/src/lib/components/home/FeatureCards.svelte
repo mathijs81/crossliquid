@@ -8,7 +8,7 @@ import PiggyBankIcon from "phosphor-svelte/lib/PiggyBankIcon";
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body">
-        <h2 class="card-title justify-center">        
+        <h2 class="card-title justify-center">
           <PiggyBankIcon class="h-10 w-10 text-primary p-1" /> Crosschain Vault
         </h2>
         <p>Single vault on Base manages liquidity across multiple chains</p>

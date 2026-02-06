@@ -6,7 +6,5 @@ const connection = createConnection();
 </script>
 
 {#if !connection.isConnected}
-  <Alert variant="warning">
-    <span>Please connect your wallet to interact with contracts</span>
-  </Alert>
+  <Alert variant="warning"><span>Please connect your wallet to interact with contracts</span></Alert>
 {/if}

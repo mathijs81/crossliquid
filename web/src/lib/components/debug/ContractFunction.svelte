@@ -128,85 +128,78 @@ let isExpanded = $state(false);
 </script>
 
 <div class="collapse collapse-arrow bg-base-200">
-	<input type="checkbox" bind:checked={isExpanded} />
-	<div class="collapse-title text-xl font-medium">
-		<div class="flex items-center gap-2">
-			<span>{functionAbi.name}</span>
-			{#if functionAbi.stateMutability === 'payable'}
-				<div class="badge badge-warning">payable</div>
-			{/if}
-		</div>
-	</div>
-	<div class="collapse-content">
-		<div class="space-y-4">
-			{#if functionAbi.inputs && functionAbi.inputs.length > 0}
-				<div class="space-y-2">
-					{#each functionAbi.inputs as input, index (input.name || `arg${index}`)}
-						{@const key = input.name || `arg${index}`}
-						{@const Component = getInputComponent(input.type)}
-						<div class="form-control">
-							<div class="label">
-								<span class="label-text">{input.name || `arg${index}`}</span>
-								<span class="label-text-alt">{input.type}</span>
-							</div>
-							<Component
-								value={inputValues[key]}
-								onInput={(value) => {
+  <input type="checkbox" bind:checked={isExpanded}>
+  <div class="collapse-title text-xl font-medium">
+    <div class="flex items-center gap-2">
+      <span>{functionAbi.name}</span>
+      {#if functionAbi.stateMutability === 'payable'}
+        <div class="badge badge-warning">payable</div>
+      {/if}
+    </div>
+  </div>
+  <div class="collapse-content">
+    <div class="space-y-4">
+      {#if functionAbi.inputs && functionAbi.inputs.length > 0}
+        <div class="space-y-2">
+          {#each functionAbi.inputs as input, index (input.name || `arg${index}`)}
+            {@const key = input.name || `arg${index}`}
+            {@const Component = getInputComponent(input.type)}
+            <div class="form-control">
+              <div class="label">
+                <span class="label-text">{input.name || `arg${index}`}</span>
+                <span class="label-text-alt">{input.type}</span>
+              </div>
+              <Component
+                value={inputValues[key]}
+                onInput={(value) => {
 									inputValues[key] = value;
 								}}
-								placeholder={input.type}
-							/>
-						</div>
-					{/each}
-				</div>
-			{/if}
+                placeholder={input.type}
+              />
+            </div>
+          {/each}
+        </div>
+      {/if}
 
-			<div class="flex gap-2">
-				{#if isReadFunction}
-					<button class="btn btn-primary" onclick={handleRead} disabled={readQuery?.isFetching}>
-						{readQuery?.isFetching ? 'Reading...' : 'Read'}
-					</button>
-				{:else if writeMutation}
-					<button
-						class="btn btn-primary"
-						onclick={handleWrite}
-						disabled={writeMutation.isPending}
-					>
-						{#if writeMutation.isPending}
-							Sending transaction...
-						{:else}
-							Write
-						{/if}
-					</button>
-				{/if}
-			</div>
+      <div class="flex gap-2">
+        {#if isReadFunction}
+          <button class="btn btn-primary" onclick={handleRead} disabled={readQuery?.isFetching}>
+            {readQuery?.isFetching ? 'Reading...' : 'Read'}
+          </button>
+        {:else if writeMutation}
+          <button class="btn btn-primary" onclick={handleWrite} disabled={writeMutation.isPending}>
+            {#if writeMutation.isPending}
+              Sending transaction...
+            {:else}
+              Write
+            {/if}
+          </button>
+        {/if}
+      </div>
 
-			{#if isReadFunction && readQuery && readTriggered}
-				<div class="divider">Result</div>
-				{#if readQuery.isFetching}
-					<div class="loading loading-spinner loading-sm"></div>
-				{:else if readQuery.error}
-					<div class="alert alert-error">
-						<span>{readQuery.error.message}</span>
-					</div>
-				{:else if readQuery.data !== undefined}
-					<div class="mockup-code">
-						<pre><code>{JSON.stringify(readQuery.data, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2)}</code></pre>
-					</div>
-				{/if}
-			{/if}
+      {#if isReadFunction && readQuery && readTriggered}
+        <div class="divider">Result</div>
+        {#if readQuery.isFetching}
+          <div class="loading loading-spinner loading-sm"></div>
+        {:else if readQuery.error}
+          <div class="alert alert-error"><span>{readQuery.error.message}</span></div>
+        {:else if readQuery.data !== undefined}
+          <div class="mockup-code">
+            <pre
+            ><code>{JSON.stringify(readQuery.data, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2)}</code></pre>
+          </div>
+        {/if}
+      {/if}
 
-			{#if !isReadFunction && writeMutation}
-				{#if writeMutation.error}
-					<div class="divider">Error</div>
-					<div class="alert alert-error">
-						<span>{writeMutation.error.message}</span>
-					</div>
-				{:else if writeMutation.data}
-					<div class="divider">Transaction</div>
-					<TransactionStatus hash={writeMutation.data} {chainId} />
-				{/if}
-			{/if}
-		</div>
-	</div>
+      {#if !isReadFunction && writeMutation}
+        {#if writeMutation.error}
+          <div class="divider">Error</div>
+          <div class="alert alert-error"><span>{writeMutation.error.message}</span></div>
+        {:else if writeMutation.data}
+          <div class="divider">Transaction</div>
+          <TransactionStatus hash={writeMutation.data} {chainId} />
+        {/if}
+      {/if}
+    </div>
+  </div>
 </div>

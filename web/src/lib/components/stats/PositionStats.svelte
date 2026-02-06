@@ -31,8 +31,7 @@ function formatPositionId(positionId: `0x${string}`): string {
   return `${positionId.slice(0, 10)}...${positionId.slice(-8)}`;
 }
 
-const managerAddress =
-  deployedContracts.positionManager.deployments[vaultChain.id];
+const managerAddress = deployedContracts.positionManager.deployments[vaultChain.id];
 const usdcAddress = "0x0165878A594ca255338adfa4d48449f69242Eb8F";
 
 // Register known tokens so getTokenMeta can resolve them
@@ -49,11 +48,7 @@ const usdBalanceQuery = createReadQuery({
 
 const ethBalanceQuery = useBalance(managerAddress);
 
-function rangeBarPercent(
-  tickLower: number,
-  tickUpper: number,
-  currentTick: number,
-): number {
+function rangeBarPercent(tickLower: number, tickUpper: number, currentTick: number): number {
   if (tickUpper === tickLower) return 50;
   const clamped = Math.max(tickLower, Math.min(tickUpper, currentTick));
   return ((clamped - tickLower) / (tickUpper - tickLower)) * 100;
@@ -91,9 +86,7 @@ function rangeBarPercent(
           ]}
 
           {#if ids.length === 0}
-            <Alert variant="info">
-              <span>No positions deployed yet</span>
-            </Alert>
+            <Alert variant="info"><span>No positions deployed yet</span></Alert>
           {:else}
             <div class="space-y-4">
               {#each ids as id, idx}
@@ -167,21 +160,15 @@ function rangeBarPercent(
                     <div class="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div class="opacity-60 text-xs">{meta0.symbol}</div>
-                        <div class="font-medium">
-                          {formatTokenAmount(position.amount0, meta0.decimals)}
-                        </div>
+                        <div class="font-medium">{formatTokenAmount(position.amount0, meta0.decimals)}</div>
                       </div>
                       <div>
                         <div class="opacity-60 text-xs">{meta1.symbol}</div>
-                        <div class="font-medium">
-                          {formatTokenAmount(position.amount1, meta1.decimals, 2)}
-                        </div>
+                        <div class="font-medium">{formatTokenAmount(position.amount1, meta1.decimals, 2)}</div>
                       </div>
                       <div>
                         <div class="opacity-60 text-xs">Liquidity</div>
-                        <div class="font-mono text-xs">
-                          {position.liquidity.toString()}
-                        </div>
+                        <div class="font-mono text-xs">{position.liquidity.toString()}</div>
                       </div>
                     </div>
                   </div>
@@ -192,21 +179,15 @@ function rangeBarPercent(
             <div class="stats stats-vertical sm:stats-horizontal shadow bg-base-200/50 w-full mt-4">
               <div class="stat place-items-center sm:place-items-start">
                 <div class="stat-title">Total Positions</div>
-                <div class="stat-value text-2xl text-primary">
-                  {ids.length}
-                </div>
+                <div class="stat-value text-2xl text-primary">{ids.length}</div>
               </div>
               <div class="stat place-items-center sm:place-items-start">
                 <div class="stat-title">In Range</div>
-                <div class="stat-value text-2xl text-success">
-                  {inRangeList.filter((x) => x).length}
-                </div>
+                <div class="stat-value text-2xl text-success">{inRangeList.filter((x) => x).length}</div>
               </div>
               <div class="stat place-items-center sm:place-items-start">
                 <div class="stat-title">Out of Range</div>
-                <div class="stat-value text-2xl text-warning">
-                  {inRangeList.filter((x) => !x).length}
-                </div>
+                <div class="stat-value text-2xl text-warning">{inRangeList.filter((x) => !x).length}</div>
               </div>
             </div>
           {/if}

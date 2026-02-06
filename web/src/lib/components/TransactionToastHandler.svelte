@@ -1,11 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { txWatcher, type TxState } from "$lib/web3/txWatcher.svelte";
-import {
-  toastTransaction,
-  toastTransactionSuccess,
-  toastTransactionError,
-} from "$lib/utils/toast";
+import { toastTransaction, toastTransactionSuccess, toastTransactionError } from "$lib/utils/toast";
 
 onMount(() => {
   const handleTxChange = (tx: TxState) => {

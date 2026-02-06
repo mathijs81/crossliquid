@@ -1,8 +1,5 @@
 <script lang="ts">
-import {
-  createReadQuery,
-  readVaultQuery,
-} from "$lib/query/contractReads.svelte";
+import { createReadQuery, readVaultQuery } from "$lib/query/contractReads.svelte";
 import { useContractWrite } from "$lib/query/contractWrites.svelte";
 import { formatETH, formatPrice } from "$lib/utils/format";
 import { vaultChain } from "$lib/wagmi/chains";
@@ -15,15 +12,11 @@ import TransactionStatus from "../TransactionStatus.svelte";
 const connection = createConnection();
 
 let ethAmount = $state(0);
-let ethAmountWei = $derived(
-  BigInt(parseUnits(ethAmount?.toString() ?? "0", 18)),
-);
+let ethAmountWei = $derived(BigInt(parseUnits(ethAmount?.toString() ?? "0", 18)));
 
 const debouncedEthAmountWei = new Debounced(() => ethAmountWei, 250);
 
-let tokensToReceive = $derived(
-  readVaultQuery("calcTokensFromValue", [debouncedEthAmountWei?.current ?? 0n]),
-);
+let tokensToReceive = $derived(readVaultQuery("calcTokensFromValue", [debouncedEthAmountWei?.current ?? 0n]));
 let hash = $state<`0x${string}` | undefined>(undefined);
 
 const balance = $derived(
@@ -63,7 +56,10 @@ const mint = async () => {
         <div class="stat place-items-center sm:place-items-start">
           <div class="stat-title">Balance</div>
           <div class="stat-value text-2xl text-primary" data-testid="balance">
-            {formatETH(balance.data as bigint | undefined)} {#if balance.isLoading}*{/if}
+            {formatETH(balance.data as bigint | undefined)}
+            {#if balance.isLoading}
+              *
+            {/if}
           </div>
           <div class="stat-desc">vault tokens</div>
         </div>
@@ -72,7 +68,7 @@ const mint = async () => {
           <div class="stat-value text-2xl">
             <QueryRenderer query={conversionRate}>
               {#snippet children(conversionRate)}
-              1 $CLQ = <span class="font-medium">{formatPrice(conversionRate, 9, 2)}</span> ETH
+                1 $CLQ = <span class="font-medium">{formatPrice(conversionRate, 9, 2)}</span> ETH
               {/snippet}
             </QueryRenderer>
           </div>
@@ -85,14 +81,10 @@ const mint = async () => {
   <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
       <h2 class="card-title text-xl">Mint new tokens</h2>
-      <p class="text-base-content/70 text-sm">
-        Enter how much ETH you want to spend.
-      </p>
+      <p class="text-base-content/70 text-sm">Enter how much ETH you want to spend.</p>
 
       <div class="form-control w-full max-w-xs">
-        <label class="label" for="mint-amount">
-          <span class="label-text">ETH Amount</span>
-        </label>
+        <label class="label" for="mint-amount"><span class="label-text">ETH Amount</span></label>
         <input
           id="mint-amount"
           type="number"
@@ -100,22 +92,20 @@ const mint = async () => {
           step="0.001"
           bind:value={ethAmount}
           class="input input-bordered input-primary w-full"
-        />
+        >
       </div>
 
-      <div class="flex flex-wrap items-center gap-3">
-        <span class="text-base-content/80">
-          {#if ethAmount > 0}
-            <QueryRenderer query={tokensToReceive}>
-              {#snippet children(tokens)}
-                You'll receive: <span class="font-medium">{formatPrice(tokens, 18, 6)}</span> $CLQ
-              {/snippet}
-            </QueryRenderer>
-          {:else}
-            —
-          {/if}
-        </span>
-      </div>
+      <div class="flex flex-wrap items-center gap-3"><span class="text-base-content/80">
+        {#if ethAmount > 0}
+          <QueryRenderer query={tokensToReceive}>
+            {#snippet children(tokens)}
+              You'll receive: <span class="font-medium">{formatPrice(tokens, 18, 6)}</span> $CLQ
+            {/snippet}
+          </QueryRenderer>
+        {:else}
+          —
+        {/if}
+      </span></div>
 
       <div class="card-actions justify-start pt-2">
         <button

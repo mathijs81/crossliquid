@@ -1,10 +1,7 @@
 <script lang="ts">
 import { getGlobalClient } from "$lib/query/globalClient";
 import type { ExchangeRate, PoolPrice } from "$lib/types/exchangeRate";
-import {
-  CHAIN_INFO,
-  convertSqrtPriceX96ToPrice,
-} from "$lib/types/exchangeRate";
+import { CHAIN_INFO, convertSqrtPriceX96ToPrice } from "$lib/types/exchangeRate";
 import { createQuery } from "@tanstack/svelte-query";
 import { groupBy } from "es-toolkit";
 import { onMount } from "svelte";
@@ -63,34 +60,22 @@ interface ChainStats {
 // Compute annualized fee APR from feeGrowthGlobal deltas.
 // Uses the full-range liquidity approximation: capital per unit L = 2 * sqrt(P) / 10^6 USD.
 // This is a fair cross-chain comparison basis (concentrated positions earn proportionally more).
-function computeFeeAndLiquidity(
-  poolPrices: PoolPrice[],
-): { feeApr: number; liquidity: number } | null {
+function computeFeeAndLiquidity(poolPrices: PoolPrice[]): { feeApr: number; liquidity: number } | null {
   if (poolPrices.length < 2) return null;
 
   const sorted = [...poolPrices]
     .filter((p) => p.feeGrowthGlobal0 !== "0" && p.feeGrowthGlobal1 !== "0")
-    .sort(
-      (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-    );
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   const oldest = sorted[0];
   const newest = sorted[sorted.length - 1];
 
-  const timeDeltaSeconds =
-    (new Date(newest.timestamp).getTime() -
-      new Date(oldest.timestamp).getTime()) /
-    1000;
+  const timeDeltaSeconds = (new Date(newest.timestamp).getTime() - new Date(oldest.timestamp).getTime()) / 1000;
   if (timeDeltaSeconds < 60) return null;
 
   //console.log(`From ${new Date(oldest.timestamp).toISOString()} to ${new Date(newest.timestamp).toISOString()} -- ${timeDeltaSeconds} seconds`);
 
-  const deltaFee0 =
-    Number(BigInt(newest.feeGrowthGlobal0) - BigInt(oldest.feeGrowthGlobal0)) /
-    2 ** 128;
-  const deltaFee1 =
-    Number(BigInt(newest.feeGrowthGlobal1) - BigInt(oldest.feeGrowthGlobal1)) /
-    2 ** 128;
+  const deltaFee0 = Number(BigInt(newest.feeGrowthGlobal0) - BigInt(oldest.feeGrowthGlobal0)) / 2 ** 128;
+  const deltaFee1 = Number(BigInt(newest.feeGrowthGlobal1) - BigInt(oldest.feeGrowthGlobal1)) / 2 ** 128;
   if (deltaFee0 === 0 && deltaFee1 === 0) return null;
 
   const price = (Number(newest.sqrtPriceX96) / 2 ** 96) ** 2;
@@ -113,20 +98,14 @@ function computeFeeAndLiquidity(
   };
 }
 
-function calculateStats(
-  data: ExchangeRate[],
-  poolPrices: PoolPrice[],
-): ChainStats[] {
+function calculateStats(data: ExchangeRate[], poolPrices: PoolPrice[]): ChainStats[] {
   if (!data || !poolPrices) {
     return [];
   }
   const grouped = groupBy(data, (rate) => rate.chainId);
   const groupedPoolPrices = groupBy(poolPrices, (price) => price.chainId);
 
-  const allKeys = new Set([
-    ...Object.keys(grouped),
-    ...Object.keys(groupedPoolPrices),
-  ]);
+  const allKeys = new Set([...Object.keys(grouped), ...Object.keys(groupedPoolPrices)]);
 
   return Array.from(allKeys)
     .map((key) => {
@@ -155,10 +134,7 @@ function calculateStats(
         )
         .sort((a, b) => b.timestamp - a.timestamp);
 
-      const sortedRates = rates.sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-      );
+      const sortedRates = rates.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       const priceValues = prices.map((x) => x.price);
 
       //   const latestRate = sortedRates[0];
@@ -169,30 +145,26 @@ function calculateStats(
       const minPrice = prices.length > 0 ? Math.min(...priceValues) : 0;
       const maxPrice = prices.length > 0 ? Math.max(...priceValues) : 0;
       const priceChange = latestPrice - oldestPrice;
-      const priceChangePercent =
-        oldestPrice !== 0 ? (priceChange / oldestPrice) * 100 : 0;
+      const priceChangePercent = oldestPrice !== 0 ? (priceChange / oldestPrice) * 100 : 0;
 
-      const { feeApr, liquidity: liquidityUsd } = computeFeeAndLiquidity(
-        poolPrices,
-      ) ?? { feeApr: null, liquidity: null };
+      const { feeApr, liquidity: liquidityUsd } = computeFeeAndLiquidity(poolPrices) ?? {
+        feeApr: null,
+        liquidity: null,
+      };
 
       return {
         chainId,
         name: chainInfo.name,
         color: chainInfo.color,
         latestPrice,
-        latestPoolPrice:
-          poolPrices.length > 0
-            ? convertSqrtPriceX96ToPrice(poolPrices[0].sqrtPriceX96)
-            : 0,
+        latestPoolPrice: poolPrices.length > 0 ? convertSqrtPriceX96ToPrice(poolPrices[0].sqrtPriceX96) : 0,
         data: sortedRates.reverse(), // Reverse for chronological order
         poolPrices: poolPrices.reverse(),
         priceChange,
         priceChangePercent,
         minPrice,
         maxPrice,
-        lastUpdated:
-          prices.length > 0 ? new Date(prices[0].timestamp) : new Date(),
+        lastUpdated: prices.length > 0 ? new Date(prices[0].timestamp) : new Date(),
         dataPoints: rates.length,
         feeApr,
         liquidityUsd,
@@ -239,163 +211,147 @@ function getTimeSince(date: Date): { display: string; isFresh: boolean } {
 </script>
 
 <div class="card bg-base-100 shadow-xl">
-	<div class="card-body">
-		<h2 class="card-title text-xl">Chain Prices & Volatility</h2>
-		<p class="text-sm text-base-content/70">
-			ETH/USDC prices across chains (status of 0.05% ETH/USDC v4 pools)
-		</p>
+  <div class="card-body">
+    <h2 class="card-title text-xl">Chain Prices & Volatility</h2>
+    <p class="text-sm text-base-content/70">ETH/USDC prices across chains (status of 0.05% ETH/USDC v4 pools)</p>
 
-		<QueryRenderer query={ratesQuery}>
-			{#snippet children(data)}
-				{@const chainStats = calculateStats(data as ExchangeRate[], poolPricesQuery.data as PoolPrice[])}
+    <QueryRenderer query={ratesQuery}>
+      {#snippet children(data)}
+        {@const chainStats = calculateStats(data as ExchangeRate[], poolPricesQuery.data as PoolPrice[])}
 
-				{#if chainStats.length === 0}
-					<div class="alert alert-info">
-						<span>No exchange rate data available yet</span>
-					</div>
-				{:else}
-					<div class="overflow-x-auto">
-						<table class="table table-zebra">
-							<thead>
-								<tr>
-									<th>Chain</th>
-									<th class="text-right">Liquidity</th>
-									<th class="text-right">Fee APR</th>
-									<th class="text-right">Latest Price</th>
-									<th class="text-right">Range</th>
-									<th class="text-right">Change</th>
-									<th class="text-center">Trend</th>
-								</tr>
-							</thead>
-							<tbody>
-								{#each chainStats as stat}
-                {@const { display, isFresh } = getTimeSince(stat.lastUpdated)}
-									<tr>
-										<td>
-											<div class="flex items-center gap-2">
-												<div
-													class="w-3 h-3 rounded-full"
-													style="background-color: {stat.color}"
-												></div>
+        {#if chainStats.length === 0}
+          <div class="alert alert-info"><span>No exchange rate data available yet</span></div>
+        {:else}
+          <div class="overflow-x-auto">
+            <table class="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Chain</th>
+                  <th class="text-right">Liquidity</th>
+                  <th class="text-right">Fee APR</th>
+                  <th class="text-right">Latest Price</th>
+                  <th class="text-right">Range</th>
+                  <th class="text-right">Change</th>
+                  <th class="text-center">Trend</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each chainStats as stat}
+                  {@const { display, isFresh } = getTimeSince(stat.lastUpdated)}
+                  <tr>
+                    <td>
+                      <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full" style="background-color: {stat.color}"></div>
                         <div>
-												  <span class="font-medium">{stat.name}</span><br/>
+                          <span class="font-medium">{stat.name}</span>
+                          <br>
                         </div>
-											</div>
-										</td>
-										<td class="text-right font-mono text-lg">
-											{#if stat.liquidityUsd !== null}
-												{formatUSD(stat.liquidityUsd, 0)}
-											{:else}
-												<span class="text-base-content/50">-</span>
-											{/if}
-										</td>
-
-										<td class="text-right font-mono text-sm">
-											{#if stat.feeApr !== null}
-												<span class="text-accent">{(stat.feeApr * 100).toFixed(2)}%</span>
-											{:else}
-												<span class="text-base-content/50">-</span>
-											{/if}
-										</td>
+                      </div>
+                    </td>
                     <td class="text-right font-mono text-lg">
-											{#if stat.latestPrice > 0}
-												  {formatPrice(stat.latestPrice)}
-											{:else}
-												<span class="text-base-content/50">-</span>
-											{/if}
-										</td>
+                      {#if stat.liquidityUsd !== null}
+                        {formatUSD(stat.liquidityUsd, 0)}
+                      {:else}
+                        <span class="text-base-content/50">-</span>
+                      {/if}
+                    </td>
+
+                    <td class="text-right font-mono text-sm">
+                      {#if stat.feeApr !== null}
+                        <span class="text-accent">{(stat.feeApr * 100).toFixed(2)}%</span>
+                      {:else}
+                        <span class="text-base-content/50">-</span>
+                      {/if}
+                    </td>
+                    <td class="text-right font-mono text-lg">
+                      {#if stat.latestPrice > 0}
+                        {formatPrice(stat.latestPrice)}
+                      {:else}
+                        <span class="text-base-content/50">-</span>
+                      {/if}
+                    </td>
                     <td class="text-right text-sm text-base-content/70">
-											{formatPrice(stat.minPrice)} - {formatPrice(stat.maxPrice)}
-										</td>
-										<td
-											class="text-right font-mono {getPriceChangeColor(
+                      {formatPrice(stat.minPrice)} - {formatPrice(stat.maxPrice)}
+                    </td>
+                    <td
+                      class="text-right font-mono {getPriceChangeColor(
 												stat.priceChange,
 											)}"
-										>
-											{formatPriceChange(
+                    >
+                      {formatPriceChange(
 												stat.priceChange,
 												stat.priceChangePercent,
 											)}
-										</td>
-																				<td>
-											<div class="flex justify-center">
-												<div class="w-[200px] h-[50px]">
-													<ChainPriceChart
-														data={stat.data}
-														poolPrices={stat.poolPrices}
-														color={stat.color}
-													/>
-												</div>
-											</div>
-										</td>
-                    <td>
-                      
-                      <span class="text-xs text-base-content/70">
-                        <div
-													class="w-2 h-2 rounded-full inline-block mr-1"
-													class:bg-success={isFresh}
-													class:bg-warning={!isFresh}
-												></div>
-                        {display} 
-                        </span>
                     </td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
+                    <td>
+                      <div class="flex justify-center">
+                        <div class="w-[200px] h-[50px]">
+                          <ChainPriceChart data={stat.data} poolPrices={stat.poolPrices} color={stat.color} />
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="text-xs text-base-content/70">
+                      <div
+                        class="w-2 h-2 rounded-full inline-block mr-1"
+                        class:bg-success={isFresh}
+                        class:bg-warning={!isFresh}
+                      ></div>
+                      {display}
+                    </span></td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
 
-					<!-- Summary Stats -->
-					<div
-						class="stats stats-vertical sm:stats-horizontal shadow bg-base-200/50 w-full mt-4"
-					>
-						<div class="stat place-items-center sm:place-items-start">
-							<div class="stat-title">Chains</div>
-							<div class="stat-value text-2xl text-primary">
-								{chainStats.length}
-							</div>
-						</div>
-						<div class="stat place-items-center sm:place-items-start">
-							<div class="stat-title">Highest Price</div>
-							<div class="stat-value text-2xl text-success">
-								{formatPrice(Math.max(...chainStats.map((s) => s.latestPrice)))}
-							</div>
-							<div class="stat-desc">
-								{chainStats.find(
+          <!-- Summary Stats -->
+          <div class="stats stats-vertical sm:stats-horizontal shadow bg-base-200/50 w-full mt-4">
+            <div class="stat place-items-center sm:place-items-start">
+              <div class="stat-title">Chains</div>
+              <div class="stat-value text-2xl text-primary">{chainStats.length}</div>
+            </div>
+            <div class="stat place-items-center sm:place-items-start">
+              <div class="stat-title">Highest Price</div>
+              <div class="stat-value text-2xl text-success">
+                {formatPrice(Math.max(...chainStats.map((s) => s.latestPrice)))}
+              </div>
+              <div class="stat-desc">
+                {chainStats.find(
 									(s) =>
 										s.latestPrice ===
 										Math.max(...chainStats.map((s) => s.latestPrice)),
 								)?.name}
-							</div>
-						</div>
-						<div class="stat place-items-center sm:place-items-start">
-							<div class="stat-title">Lowest Price</div>
-							<div class="stat-value text-2xl text-error">
-								{formatPrice(Math.min(...chainStats.map((s) => s.latestPrice)))}
-							</div>
-							<div class="stat-desc">
-								{chainStats.find(
+              </div>
+            </div>
+            <div class="stat place-items-center sm:place-items-start">
+              <div class="stat-title">Lowest Price</div>
+              <div class="stat-value text-2xl text-error">
+                {formatPrice(Math.min(...chainStats.map((s) => s.latestPrice)))}
+              </div>
+              <div class="stat-desc">
+                {chainStats.find(
 									(s) =>
 										s.latestPrice ===
 										Math.min(...chainStats.map((s) => s.latestPrice)),
 								)?.name}
-							</div>
-						</div>
-						<div class="stat place-items-center sm:place-items-start">
-							<div class="stat-title">Price Spread</div>
-							<div class="stat-value text-2xl text-info">
-								{(
+              </div>
+            </div>
+            <div class="stat place-items-center sm:place-items-start">
+              <div class="stat-title">Price Spread</div>
+              <div class="stat-value text-2xl text-info">
+                {(
 									((Math.max(...chainStats.map((s) => s.latestPrice)) -
 										Math.min(...chainStats.map((s) => s.latestPrice))) /
 										Math.min(...chainStats.map((s) => s.latestPrice))) *
 									100
-								).toFixed(2)}%
-							</div>
-							<div class="stat-desc">Arbitrage opportunity</div>
-						</div>
-					</div>
-				{/if}
-			{/snippet}
-		</QueryRenderer>
-	</div>
+								).toFixed(2)}
+                %
+              </div>
+              <div class="stat-desc">Arbitrage opportunity</div>
+            </div>
+          </div>
+        {/if}
+      {/snippet}
+    </QueryRenderer>
+  </div>
 </div>

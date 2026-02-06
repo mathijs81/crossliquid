@@ -13,4 +13,4 @@ let { value = "", onInput }: Props = $props();
   value={value}
   oninput={(e) => onInput?.(e.currentTarget.value)}
   placeholder="0x..."
-/>
+>

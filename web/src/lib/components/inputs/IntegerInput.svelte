@@ -16,4 +16,4 @@ let { value = "", onInput, min, max }: Props = $props();
   oninput={(e) => onInput?.(e.currentTarget.value)}
   {min}
   {max}
-/>
+>

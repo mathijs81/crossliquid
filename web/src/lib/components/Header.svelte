@@ -22,10 +22,7 @@ const balance = $derived(
 );
 const blockNumber = useBlockNumber({ watch: true });
 
-const chainName = $derived(
-  config.chains.find((chain) => chain.id === connection.chainId)?.name ??
-    "Unsupported chain",
-);
+const chainName = $derived(config.chains.find((chain) => chain.id === connection.chainId)?.name ?? "Unsupported chain");
 
 let connectError = $state<string | null>(null);
 let isConnecting = $state(false);
@@ -40,8 +37,7 @@ async function connectWallet() {
     await connect(config, { connector: config.connectors[0] });
   } catch (error: unknown) {
     console.error("Failed to connect wallet:", error);
-    connectError =
-      error instanceof Error ? error.message : "Failed to connect wallet";
+    connectError = error instanceof Error ? error.message : "Failed to connect wallet";
   } finally {
     isConnecting = false;
   }
@@ -60,12 +56,7 @@ const baseDestinations = [
 ] as const;
 
 const destinations = $derived(
-  baseDestinations.map(([Icon, name, href]) => [
-    Icon,
-    name,
-    href,
-    page.url.pathname?.startsWith(href) ?? false,
-  ]),
+  baseDestinations.map(([Icon, name, href]) => [Icon, name, href, page.url.pathname?.startsWith(href) ?? false]),
 ) as [Component, string, string, boolean][];
 </script>
 
@@ -79,24 +70,24 @@ const destinations = $derived(
       </div>
       <ul tabindex="-1" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
         {#each destinations as [Icon, name, href, active] (name)}
-          <li>
-            <a href={href} class:menu-active={active}>
-              <Icon class="h-5 w-5" /> {name}
-            </a>
-          </li>
+          <li><a href={href} class:menu-active={active}>
+            <Icon class="h-5 w-5" />
+            {name}
+          </a></li>
         {/each}
       </ul>
     </div>
-    <a href="/" class="btn btn-ghost text-xl text-primary"><ShuffleAngularIcon class="h-6 w-6" /> CrossLiquid</a>
+    <a href="/" class="btn btn-ghost text-xl text-primary"
+      ><ShuffleAngularIcon class="h-6 w-6" /> CrossLiquid</a
+    >
   </div>
   <div class="navbar-center hidden lg:flex">
     <ul class="menu menu-horizontal px-1 gap-1">
       {#each destinations as [Icon, name, href, active] (name)}
-        <li>
-          <a href={href} class="btn btn-ghost gap-2" class:btn-active={active}>
-            <Icon class="h-5 w-5" /> <span>{name}</span>
-          </a>
-        </li>
+        <li><a href={href} class="btn btn-ghost gap-2" class:btn-active={active}>
+          <Icon class="h-5 w-5" />
+          <span>{name}</span>
+        </a></li>
       {/each}
     </ul>
   </div>
@@ -114,13 +105,16 @@ const destinations = $derived(
         <button type="button" tabindex="0" class="btn btn-sm bg-base-200 hover:bg-base-300 h-fit py-1">
           {#if balance.data}
             <span class="opacity-70 text-xs">
-              {(Number(balance.data.value) / 10 ** balance.data.decimals).toFixed(3)} {balance.data.symbol}
+              {(Number(balance.data.value) / 10 ** balance.data.decimals).toFixed(3)}
+              {balance.data.symbol}
             </span>
           {/if}
           <span class="font-mono">{connection.address?.slice(0, 6)}...{connection.address?.slice(-4)}</span>
         </button>
         <ul class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
-          <li><button onclick={disconnectWallet}>Disconnect</button></li>
+          <li>
+            <button onclick={disconnectWallet}>Disconnect</button>
+          </li>
         </ul>
       </div>
     {:else}

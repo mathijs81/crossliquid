@@ -50,9 +50,7 @@ const explorerUrl = $derived(hash ? getTransactionUrl(hash, chainId) : null);
     <div class="flex flex-col gap-1 flex-1">
       <div class="flex items-center gap-2">
         <span class="font-semibold">Transaction Status:</span>
-        <span class="badge badge-sm">
-          {statusLabel}
-        </span>
+        <span class="badge badge-sm"> {statusLabel} </span>
         {#if status === "pending"}
           <span class="loading loading-spinner loading-xs"></span>
         {/if}
@@ -61,12 +59,7 @@ const explorerUrl = $derived(hash ? getTransactionUrl(hash, chainId) : null);
         <span class="text-sm">Hash:</span>
         <code class="text-xs">{hash}</code>
         {#if explorerUrl}
-          <a
-            href={explorerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="link link-primary text-xs"
-          >
+          <a href={explorerUrl} target="_blank" rel="noopener noreferrer" class="link link-primary text-xs">
             View on Explorer ↗
           </a>
         {/if}
@@ -77,9 +70,7 @@ const explorerUrl = $derived(hash ? getTransactionUrl(hash, chainId) : null);
           <span>{state?.error.message}</span>
         </div>
       {:else if status === "failed"}
-        <div class="text-sm">
-          <span>The transaction failed.</span>
-        </div>
+        <div class="text-sm"><span>The transaction failed.</span></div>
       {/if}
     </div>
     {#if onDismiss}

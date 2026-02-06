@@ -31,48 +31,45 @@ const status = $derived(query.status);
 const error = $derived(query.error);
 </script>
 
-
 {#if status === "pending"}
-    <div>Loading...</div>
+  <div>Loading...</div>
 {:else if status === "error"}
-    <div>Error: {error?.message}</div>
+  <div>Error: {error?.message}</div>
 {:else if status === "success" && events && events.length > 0}
-    <div class="overflow-x-auto">
-      <table class="table table-zebra">
-        <thead>
+  <div class="overflow-x-auto">
+    <table class="table table-zebra">
+      <thead>
+        <tr>
+          <th>Address</th>
+          <th>Event Name</th>
+          <th>Args</th>
+          <th>Data</th>
+          <th>Topics</th>
+          <th>Block Number</th>
+          <th>Block Hash</th>
+          <th>Transaction Hash</th>
+          <th>Transaction Index</th>
+          <th>Log Index</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each events as event}
           <tr>
-            <th>Address</th>
-            <th>Event Name</th>
-            <th>Args</th>
-            <th>Data</th>
-            <th>Topics</th>
-            <th>Block Number</th>
-            <th>Block Hash</th>
-            <th>Transaction Hash</th>
-            <th>Transaction Index</th>
-            <th>Log Index</th>
+            <td>{formatAddress(event.address)}</td>
+            <td>{event.eventName}</td>
+            <td>{Object.entries(event.args).map(([key, value]) => `${key}: ${value}`).join(", ")}</td>
+            <td>{@html formatBytes32StringHtml(event.data)}</td>
+            <td>{@html event.topics.map(topic => formatBytes32StringHtml(topic)).join(", ")}</td>
+            <td>{event.blockNumber}</td>
+            <td>{@html formatBytes32StringHtml(event.blockHash)}</td>
+            <td>{@html formatBytes32StringHtml(event.transactionHash)}</td>
+            <td>{event.transactionIndex}</td>
+            <td>{event.logIndex}</td>
           </tr>
-        </thead>
-        <tbody>
-          {#each events as event}
-            <tr>
-              <td>{formatAddress(event.address)}</td>
-              <td>{event.eventName}</td>
-              <td>{Object.entries(event.args).map(([key, value]) => `${key}: ${value}`).join(", ")}</td>
-              <td>{@html formatBytes32StringHtml(event.data)}</td>
-              <td>{@html event.topics.map(topic => formatBytes32StringHtml(topic)).join(", ")}</td>
-              <td>{event.blockNumber}</td>
-              <td>{@html formatBytes32StringHtml(event.blockHash)}</td>
-              <td>{@html formatBytes32StringHtml(event.transactionHash)}</td>
-              <td>{event.transactionIndex}</td>
-              <td>{event.logIndex}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+        {/each}
+      </tbody>
+    </table>
+  </div>
 {:else}
-    <div class="alert">
-        <span>No events found for contract {formatAddress(contractInfo.address)}</span>
-    </div>
+  <div class="alert"><span>No events found for contract {formatAddress(contractInfo.address)}</span></div>
 {/if}

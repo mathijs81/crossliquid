@@ -11,12 +11,8 @@ const chainId = $derived(connection.chainId);
 <div class="container mx-auto p-4">
   <div class="flex flex-col gap-4">
     <div>
-      <h1 class="text-4xl font-bold">
-        Debug Contracts
-      </h1>
-      <p class="text-base-content/70 mt-2">
-        Interactive UI to test all deployed contract functions
-      </p>
+      <h1 class="text-4xl font-bold">Debug Contracts</h1>
+      <p class="text-base-content/70 mt-2">Interactive UI to test all deployed contract functions</p>
     </div>
 
     <WalletWarning />

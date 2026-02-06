@@ -2,11 +2,7 @@
 import type { ECharts } from "echarts";
 import * as echarts from "echarts";
 import { onMount } from "svelte";
-import {
-  convertSqrtPriceX96ToPrice,
-  type ExchangeRate,
-  type PoolPrice,
-} from "$lib/types/exchangeRate";
+import { convertSqrtPriceX96ToPrice, type ExchangeRate, type PoolPrice } from "$lib/types/exchangeRate";
 
 interface Props {
   data: ExchangeRate[];
@@ -34,14 +30,9 @@ onMount(() => {
 $effect(() => {
   if (!chart || !data || data.length === 0) return;
 
-  const sortedData = [...data].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-  );
+  const sortedData = [...data].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   // ECharts time axis expects [timestamp, value] with numeric time (ms)
-  const series = sortedData.map((d) => [
-    new Date(d.timestamp).getTime(),
-    parseFloat(d.usdcOutput),
-  ]);
+  const series = sortedData.map((d) => [new Date(d.timestamp).getTime(), parseFloat(d.usdcOutput)]);
 
   const sortedPoolPrices = [...poolPrices].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
@@ -110,13 +101,11 @@ $effect(() => {
         const point = params[0];
         const [time, _] = point.data as [number, number];
         const timeStr = new Date(time).toLocaleTimeString();
-        const lines = params.map(
-          (p: { seriesName: string; data: [number, number] }) => {
-            const val = p.data[1];
-            const label = p.seriesName || "Rate";
-            return `${label}: $${Number(val).toFixed(6)}`;
-          },
-        );
+        const lines = params.map((p: { seriesName: string; data: [number, number] }) => {
+          const val = p.data[1];
+          const label = p.seriesName || "Rate";
+          return `${label}: $${Number(val).toFixed(6)}`;
+        });
         return `${timeStr}<br/>${lines.join("<br/>")}`;
       },
     },

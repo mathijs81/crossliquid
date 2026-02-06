@@ -10,10 +10,10 @@ const connection = createConnection();
 <div class="hero min-h-[calc(60vh-4rem)]">
   <div class="hero-content text-center">
     <div class="max-w-3xl">
-      <p class="py-4 text-sm text-base-content/50">
-        HackMoney 2026 submission
-      </p>
-      <h1 class="text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent flex justify-center items-center gap-2">
+      <p class="py-4 text-sm text-base-content/50">HackMoney 2026 submission</p>
+      <h1
+        class="text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent flex justify-center items-center gap-2"
+      >
         <ShuffleAngularIcon class="h-12 w-12 text-primary" /> CrossLiquid
       </h1>
       <p class="py-6 text-xl text-base-content/70">
@@ -25,19 +25,25 @@ const connection = createConnection();
           <CodeIcon class="h-6 w-6" />
           Deposit to Vault
         </a>
-        <a href="https://github.com/mathijs81/crossliquid" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg">
+        <a
+          href="https://github.com/mathijs81/crossliquid"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-outline btn-lg"
+        >
           <GithubLogoIcon class="h-6 w-6" />
           View on GitHub
         </a>
       </div>
-
 
       {#if connection.isConnected}
         <div class="mt-8">
           <div class="stats shadow">
             <div class="stat">
               <div class="stat-title">Connected Address</div>
-              <div class="stat-value text-lg font-mono">{connection.address?.slice(0, 10)}...{connection.address?.slice(-8)}</div>
+              <div class="stat-value text-lg font-mono">
+                {connection.address?.slice(0, 10)}...{connection.address?.slice(-8)}
+              </div>
               <div class="stat-desc">Chain ID: {connection.chainId}</div>
             </div>
           </div>

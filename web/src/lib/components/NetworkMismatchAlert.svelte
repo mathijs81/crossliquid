@@ -19,8 +19,7 @@ async function handleSwitchChain() {
     await switchChain(config, { chainId: vaultChainId });
   } catch (error: unknown) {
     console.error("Failed to switch chain:", error);
-    switchError =
-      error instanceof Error ? error.message : "Failed to switch chain";
+    switchError = error instanceof Error ? error.message : "Failed to switch chain";
   } finally {
     isSwitchingChain = false;
   }
@@ -30,23 +29,15 @@ async function handleSwitchChain() {
 {#if connection.isWrongChain}
   <div class="mx-4 mt-2">
     <Alert variant="warning">
-      <span>
-        You are connected to the wrong network. Please switch to {vaultChain.name}.
-      </span>
-      <button
-        class="btn btn-sm btn-primary"
-        onclick={handleSwitchChain}
-        disabled={isSwitchingChain}
-      >
+      <span> You are connected to the wrong network. Please switch to {vaultChain.name}. </span>
+      <button class="btn btn-sm btn-primary" onclick={handleSwitchChain} disabled={isSwitchingChain}>
         {isSwitchingChain ? "Switching..." : "Switch Network"}
       </button>
     </Alert>
   </div>
   {#if switchError}
     <div class="mx-4 mt-2">
-      <Alert variant="error">
-        <span>{switchError}</span>
-      </Alert>
+      <Alert variant="error"><span>{switchError}</span></Alert>
     </div>
   {/if}
 {/if}
