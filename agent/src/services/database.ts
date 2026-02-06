@@ -1,5 +1,7 @@
 import Database from "better-sqlite3";
 import { logger } from "../logger.js";
+import path from "path";
+import { existsSync, mkdirSync } from "fs";
 
 export interface ExchangeRateRecord {
   timestamp: string;
@@ -23,6 +25,11 @@ class DatabaseService {
   private db: Database.Database;
 
   constructor(dbPath: string) {
+    const dir = path.dirname(dbPath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+
     this.db = new Database(dbPath);
     this.db.pragma("journal_mode = WAL");
     this.initializeTables();
