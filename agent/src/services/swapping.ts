@@ -15,7 +15,7 @@ import {
 import { iUniswapV4Router04Abi } from "../abi/IUniswapV4Router04.js";
 import { stateViewAbi } from "../abi/StateView.js";
 import { iV4QuoterAbi as v4QuoterAbi } from "../abi/IV4Quoter.js";
-import { DEFAULT_POOL_KEYS, type UniV4Contracts } from "../config.js";
+import { QUERY_POOL_KEYS, type UniV4Contracts } from "../config.js";
 import { logger } from "../logger.js";
 import { createPoolId, type PoolKey } from "../utils/poolIds.js";
 import { createConfig, getQuote } from "@lifi/sdk";
@@ -436,8 +436,7 @@ export class SwappingService {
     zeroForOne: boolean;
   } {
     const poolKey =
-      request.poolKey ??
-      (DEFAULT_POOL_KEYS[this.chainId] as PoolKey | undefined);
+      request.poolKey ?? (QUERY_POOL_KEYS[this.chainId] as PoolKey | undefined);
     if (!poolKey) {
       throw new Error(`No pool key configured for chain ${this.chainId}`);
     }

@@ -3,7 +3,7 @@ import { iV4QuoterAbi as quoterAbi } from "../abi/IV4Quoter.js";
 import { stateViewAbi } from "../abi/StateView.js";
 import {
   chains,
-  DEFAULT_POOL_KEYS,
+  QUERY_POOL_KEYS,
   type PoolKey,
   UNIV4_CONTRACTS,
 } from "../config.js";
@@ -46,7 +46,7 @@ export async function simulateEthToUsdcSwap(
     throw new Error(`UniV4 contracts not configured for chain ${chainId}`);
   }
 
-  const effectivePoolKey = poolKey || DEFAULT_POOL_KEYS[chainId];
+  const effectivePoolKey = poolKey || QUERY_POOL_KEYS[chainId];
   if (!effectivePoolKey) {
     throw new Error(`No default pool key for chain ${chainId}`);
   }
@@ -97,7 +97,7 @@ export async function getEthUsdcPoolPrice(
     throw new Error(`UniV4 contracts not configured for chain ${chainId}`);
   }
 
-  const effectivePoolKey = poolKey || DEFAULT_POOL_KEYS[chainId];
+  const effectivePoolKey = poolKey || QUERY_POOL_KEYS[chainId];
   if (!effectivePoolKey) {
     throw new Error(`No default pool key for chain ${chainId}`);
   }
@@ -173,7 +173,7 @@ export async function getEthUsdcPoolPrice(
 export async function collectEthUsdcData(
   chainId: number,
 ): Promise<EthUsdcData> {
-  const poolKey = DEFAULT_POOL_KEYS[chainId];
+  const poolKey = QUERY_POOL_KEYS[chainId];
   if (!poolKey) {
     throw new Error(`No default pool key for chain ${chainId}`);
   }

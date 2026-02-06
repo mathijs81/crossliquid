@@ -35,8 +35,8 @@ function foundryWithMulticall3(): Chain {
         address: "0xcA11bde05977b3631167028862bE2a173976CA11",
         blockCreated: 0,
       },
-    }
-  }
+    },
+  };
 }
 
 const allChains = new Map<number, Chain>([

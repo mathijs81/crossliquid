@@ -15,7 +15,7 @@
     "chain": "bash anvil.sh",
     "chain:kill": "bash anvil.sh --kill",
     "chain:restart": "bash anvil.sh --restart",
-    "deploy:anvil": "forge script script/Deploy.s.sol --rpc-url localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast && pnpm deploy:uniswap:anvil",
+    "deploy:anvil": "./deploy.sh",
     "deploy:uniswap:anvil": "MINT_TOKENS=true forge script script/DeployUniswapV4.s.sol:DeployUniswapV4 --rpc-url localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast --disable-code-size-limit",
     "deploy:sepolia": "forge script script/Deploy.s.sol --rpc-url sepolia --private-key $PRIVATE_KEY --broadcast --verify",
     "deploy:base-sepolia": "forge script script/Deploy.s.sol --rpc-url base-sepolia --private-key $PRIVATE_KEY --broadcast --verify",

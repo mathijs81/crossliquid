@@ -11,7 +11,7 @@
     "chain": "pnpm -C foundry chain",
     "chain:kill": "pnpm -C foundry chain:kill",
     "chain:restart": "pnpm -C foundry chain:restart",
-    "chain:local_test_setup": "pnpm deploy:anvil;foundry/fundManager.sh",
+    "chain:local_test_setup": "pnpm deploy:anvil && foundry/fundManager.sh",
     "deploy:anvil": "pnpm -C foundry deploy:anvil",
     "deploy:sepolia": "pnpm -C foundry deploy:sepolia",
     "deploy:base-sepolia": "pnpm -C foundry deploy:base-sepolia",

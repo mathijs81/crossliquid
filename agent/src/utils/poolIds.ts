@@ -23,16 +23,21 @@ const FEE_TIER_TO_TICK_SPACING: Record<FeeTier, number> = {
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 
+// Uniswap v4 dynamic fee flag — pool fee must be exactly this when using a fee-override hook
+export const DYNAMIC_FEE_FLAG = 0x800000;
+
 export function createEthUsdcPoolKey(
   usdcAddress: Address,
   feeTier: FeeTier = FeeTier.LOW,
+  hooks: Address = ZERO_ADDRESS,
 ): PoolKey {
+  const isDynamic = hooks !== ZERO_ADDRESS;
   return {
     currency0: ZERO_ADDRESS,
     currency1: usdcAddress,
-    fee: feeTier,
+    fee: isDynamic ? DYNAMIC_FEE_FLAG : feeTier,
     tickSpacing: FEE_TIER_TO_TICK_SPACING[feeTier],
-    hooks: ZERO_ADDRESS,
+    hooks,
   };
 }
 

@@ -23,6 +23,8 @@ export async function addLiquidity(
     tickUpper?: number;
   },
 ) {
+  // TODO: check that the pool we're adding to has a current price that's somewhat decent.
+
   const amount0Desired = parseEther(options.eth);
   const amount1Desired = parseUnits(options.usdc, 6);
 
@@ -36,7 +38,11 @@ export async function addLiquidity(
     "Preparing to add liquidity",
   );
 
-  const poolKey = createEthUsdcPoolKey(options.usdcAddress, FeeTier.LOW, options.hookAddress);
+  const poolKey = createEthUsdcPoolKey(
+    options.usdcAddress,
+    FeeTier.LOW,
+    options.hookAddress,
+  );
   const poolId = createPoolId(poolKey);
   // Get current tick from pool
   let tickLower: number;

@@ -117,18 +117,8 @@ async function main() {
     process.exit(1);
   }
 
-  const positionManagerAddress = process.env.POSITION_MANAGER_ADDRESS as
-    | Address
-    | undefined;
-
-  // TODO: handle this stuff somewhere else
-  if (!positionManagerAddress) {
-    console.error("POSITION_MANAGER_ADDRESS environment variable is required");
-    process.exit(1);
-  }
-
   const chain = Number(process.env.CHAIN_ID) ?? agentConfig.vaultChainId;
-  const service = new PositionManagerService(chain, positionManagerAddress);
+  const service = new PositionManagerService(chain, OUR_ADDRESSES.manager);
 
   const poolManagerAddress = UNIV4_CONTRACTS[chain].poolManager;
   const usdcAddress = UNIV4_CONTRACTS[chain].usdc;

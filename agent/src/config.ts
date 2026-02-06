@@ -103,17 +103,67 @@ export const ETHUSDC_POOLS: Record<number, string[]> = {
   130: [],
 };
 
+const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
+const DYNAMIC_FEE_FLAG = 0x800000;
+
+function getOurAddresses() {
+  const addresses = {
+    vault: ZERO_ADDRESS as Address,
+    manager: ZERO_ADDRESS as Address,
+    hook: ZERO_ADDRESS as Address,
+  };
+
+  if (ENVIRONMENT === "development") {
+    const deployment = readOurDeployment();
+    addresses.vault = deployment.vault;
+    addresses.manager = deployment.manager;
+    addresses.hook = (deployment.hook as Address) ?? ZERO_ADDRESS;
+  } else if (ENVIRONMENT === "production") {
+    logger.warn(
+      "Warning: production addresses of vault/manager not supported yet",
+    );
+    addresses.manager = "0x0e2500ffa1dfe19c21f7f81272b0b4e0fc0b958a";
+  }
+
+  return addresses;
+}
+
+export const OUR_ADDRESSES = getOurAddresses();
+
+/**
+ * Pool keys where we want our funds to be deposited. Note: until we have decent
+ * liquidity in these pools, we probably want to query the regular (no hook) pools
+ * for current prices.
+ */
 export const DEFAULT_POOL_KEYS: Record<number, PoolKey> = Object.fromEntries(
+  Object.keys(UNIV4_CONTRACTS).map((chainId) => {
+    const id = Number(chainId);
+    const hookAddress = OUR_ADDRESSES.hook;
+    const isDynamic = hookAddress !== ZERO_ADDRESS;
+    return [
+      id,
+      {
+        currency0: ZERO_ADDRESS,
+        currency1: UNIV4_CONTRACTS[id].usdc,
+        fee: isDynamic ? DYNAMIC_FEE_FLAG : 500,
+        tickSpacing: 10,
+        hooks: hookAddress,
+      },
+    ];
+  }),
+);
+
+export const QUERY_POOL_KEYS: Record<number, PoolKey> = Object.fromEntries(
   Object.keys(UNIV4_CONTRACTS).map((chainId) => {
     const id = Number(chainId);
     return [
       id,
       {
-        currency0: "0x0000000000000000000000000000000000000000",
+        currency0: ZERO_ADDRESS,
         currency1: UNIV4_CONTRACTS[id].usdc,
         fee: 500,
         tickSpacing: 10,
-        hooks: "0x0000000000000000000000000000000000000000",
+        hooks: ZERO_ADDRESS,
       },
     ];
   }),
@@ -149,23 +199,3 @@ export const createAgentWalletClient = (
     transport: http(),
   });
 };
-
-function getOurAddresses() {
-  let addresses = {
-    vault: "0x0000000000000000000000000000000000000000" as Address,
-    manager: "0x0000000000000000000000000000000000000000" as Address,
-  };
-
-  if (ENVIRONMENT === "development") {
-    addresses = readOurDeployment();
-  } else if (ENVIRONMENT === "production") {
-    logger.warn(
-      "Warning: production addresses of vault/manager not supported yet",
-    );
-    addresses.manager = "0x0e2500ffa1dfe19c21f7f81272b0b4e0fc0b958a";
-  }
-
-  return addresses;
-}
-
-export const OUR_ADDRESSES = getOurAddresses();
