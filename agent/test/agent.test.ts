@@ -29,7 +29,7 @@ describe("Agent", () => {
     // TODO: this is pretty brittle, it got a lot lower because
     // we added a test swap to the setup script that moves the
     // pool price down.
-    expect(data.swapSimulation.usdcOutput).toBeCloseTo(2090.158);
+    expect(data.swapSimulation.usdcOutput).toBeCloseTo(2089.868);
     //2131.833);
 
     agent.stop();

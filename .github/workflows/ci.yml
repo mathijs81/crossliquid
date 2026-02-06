@@ -51,6 +51,9 @@ jobs:
       - name: Run local chain and generate contract abis
         run: just run-chain
 
+      - name: Run agent tests
+        run: pnpm test:agent
+
       - name: Lint
         run: pnpm -C web lint
         
@@ -60,9 +63,6 @@ jobs:
       - name: Run contract tests
         run: pnpm test:contracts
 
-      - name: Run agent tests
-        run: pnpm test:agent
-        
       - name: Build web application
         run: pnpm -C web build
         
