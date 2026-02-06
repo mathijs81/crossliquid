@@ -57,8 +57,6 @@ export function useBalance(
   );
 }
 
-// TODOLLM: add hook to get ERC20 token balance(s)
-
 /**
  * Hook to get the current block number
  *

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -7,7 +8,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Help: `anvil.sh --help`
-if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   echo "Anvil Helper Script - Start, stop, or restart local Foundry node"
   echo
   echo "Usage: ./anvil.sh [OPTION]"
@@ -25,7 +26,7 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
 fi
 
 # Kill anvil: `anvil.sh --kill`
-if [ "$1" = "-k" ] || [ "$1" = "--kill" ]; then
+if [ "${1:-}" = "-k" ] || [ "${1:-}" = "--kill" ]; then
   if pkill -f "anvil"; then
     echo -e "${RED}✗${NC} Anvil killed"
   else
@@ -35,7 +36,7 @@ if [ "$1" = "-k" ] || [ "$1" = "--kill" ]; then
 fi
 
 # Restart anvil: `anvil.sh --restart`
-if [ "$1" = "-r" ] || [ "$1" = "--restart" ]; then
+if [ "${1:-}" = "-r" ] || [ "${1:-}" = "--restart" ]; then
   if pkill -f "anvil"; then
     echo -e "${YELLOW}↻${NC} Restarting Anvil..."
   else
@@ -89,6 +90,10 @@ while [ $COUNTER -lt 10 ]; do
     echo "Trying to query it"
     cast call 0x000000000022D473030F116dDEE9F6B43aC78BA3 "DOMAIN_SEPARATOR()"
     echo "OK"
+
+    echo "Deploying MULTICALL3 code"
+    cast rpc anvil_setCode 0xcA11bde05977b3631167028862bE2a173976CA11 "$(cat Multicall3.code)"
+    echo "MULTICALL3 deployed"
     exit 0
   fi
   sleep 1

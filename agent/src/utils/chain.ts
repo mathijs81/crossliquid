@@ -26,8 +26,21 @@ export const getRpcUrl = (chain: Chain): string => {
   return process.env[`RPC_${upperName}`] || "";
 };
 
+function foundryWithMulticall3(): Chain {
+  return {
+    ...foundry,
+    contracts: {
+      ...foundry.contracts,
+      multicall3: {
+        address: "0xcA11bde05977b3631167028862bE2a173976CA11",
+        blockCreated: 0,
+      },
+    }
+  }
+}
+
 const allChains = new Map<number, Chain>([
-  [foundry.id, foundry],
+  [foundry.id, foundryWithMulticall3()],
   [base.id, base],
   [optimism.id, optimism],
   [mainnet.id, mainnet],

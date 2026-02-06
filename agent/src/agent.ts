@@ -1,4 +1,3 @@
-import type { PublicClient } from "viem";
 import { chains, databasePath } from "./config.js";
 import { logger } from "./logger.js";
 import { closeDatabase, db, initializeDatabase } from "./services/database.js";
@@ -21,19 +20,7 @@ class Agent {
     lastError: null,
   };
 
-  private clients: Map<number, PublicClient> = new Map();
-
-  constructor() {
-    this.initializeClients();
-  }
-
-  private initializeClients(): void {
-    // TODOLLM: just get rid of this extra mapping
-    for (const entry of chains.entries()) {
-      const [chainId, chainConfig] = entry;
-      this.clients.set(chainId, chainConfig.publicClient);
-    }
-  }
+  constructor() {}
 
   async runLoop(): Promise<void> {
     if (!this.isRunning) {
@@ -46,7 +33,7 @@ class Agent {
       const losScores = await calculateLOS();
       const _targetDistribution = getTargetDistribution(losScores);
 
-      for (const [chainId] of this.clients) {
+      for (const [chainId] of chains.entries()) {
         logger.info(`starting chain ${chainId}`);
         try {
           const data = await collectEthUsdcData(chainId);
@@ -102,7 +89,7 @@ class Agent {
   }
 
   private async updateVaultData(vaultAddress: `0x${string}`): Promise<void> {
-    for (const [chainId] of this.clients) {
+    for (const [chainId] of chains.entries()) {
       const state = await getVaultState(chainId, vaultAddress);
       if (!state) {
         logger.warn({ chainId, vaultAddress }, "Failed to fetch vault state");

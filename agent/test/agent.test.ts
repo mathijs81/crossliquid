@@ -25,7 +25,13 @@ describe("Agent", () => {
     // Checking our test chain
     expect(Object.keys(stats.ethUsdcData).length).toBe(1);
     const data = Object.values(stats.ethUsdcData)[0];
-    expect(data.swapSimulation.usdcOutput).toBeCloseTo(2131.833);
+
+    // TODO: this is pretty brittle, it got a lot lower because
+    // we added a test swap to the setup script that moves the
+    // pool price down.
+    expect(data.swapSimulation.usdcOutput).toBeCloseTo(
+      2090.158);
+      //2131.833);
 
     agent.stop();
     expect(agent.getStats().status).toBe("stopped");
