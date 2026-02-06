@@ -162,6 +162,7 @@ async function main() {
           poolManager: poolManagerAddress,
           stateView: UNIV4_CONTRACTS[chain].stateView,
           usdcAddress,
+          hookAddress: OUR_ADDRESSES.hook,
           tickLower: values["tick-lower"]
             ? Number(values["tick-lower"])
             : undefined,

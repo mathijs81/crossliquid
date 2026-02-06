@@ -52,5 +52,6 @@ export function readOurDeployment() {
   return {
     vault: deployment.vault,
     manager: deployment.manager,
+    hook: deployment.hook,
   };
 }

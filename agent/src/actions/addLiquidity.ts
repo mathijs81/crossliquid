@@ -18,6 +18,7 @@ export async function addLiquidity(
     poolManager: Address;
     stateView: Address;
     usdcAddress: Address;
+    hookAddress?: Address;
     tickLower?: number;
     tickUpper?: number;
   },
@@ -35,7 +36,7 @@ export async function addLiquidity(
     "Preparing to add liquidity",
   );
 
-  const poolKey = createEthUsdcPoolKey(options.usdcAddress, FeeTier.LOW);
+  const poolKey = createEthUsdcPoolKey(options.usdcAddress, FeeTier.LOW, options.hookAddress);
   const poolId = createPoolId(poolKey);
   // Get current tick from pool
   let tickLower: number;
