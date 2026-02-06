@@ -5,12 +5,11 @@ import { onMount } from "svelte";
 import { convertSqrtPriceX96ToPrice, type ExchangeRate, type PoolPrice } from "$lib/types/exchangeRate";
 
 interface Props {
-  data: ExchangeRate[];
   poolPrices: PoolPrice[];
   color: string;
 }
 
-let { data, poolPrices, color }: Props = $props();
+let { poolPrices, color }: Props = $props();
 
 let chartContainer: HTMLDivElement;
 let chart: ECharts | null = $state(null);
@@ -28,12 +27,9 @@ onMount(() => {
 });
 
 $effect(() => {
-  if (!chart || !data || data.length === 0) return;
+  if (!chart || !poolPrices || poolPrices.length === 0) return;
 
-  const sortedData = [...data].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   // ECharts time axis expects [timestamp, value] with numeric time (ms)
-  const series = sortedData.map((d) => [new Date(d.timestamp).getTime(), parseFloat(d.usdcOutput)]);
-
   const sortedPoolPrices = [...poolPrices].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
   );
@@ -59,23 +55,6 @@ $effect(() => {
       scale: true,
     },
     series: [
-      {
-        type: "line",
-        name: "Test exchange rate",
-        data: series,
-        smooth: false,
-        symbol: "none",
-        lineStyle: {
-          color: "#888888",
-          width: 2,
-        },
-        // areaStyle: {
-        //   color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-        //     { offset: 0, color: `${color}40` },
-        //     { offset: 1, color: `${color}08` },
-        //   ]),
-        // },
-      },
       {
         type: "line",
         name: "Pool Price",

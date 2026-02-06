@@ -9,21 +9,6 @@ import QueryRenderer from "../QueryRenderer.svelte";
 import ChainPriceChart from "./ChainPriceChart.svelte";
 import { formatUSD } from "$lib/utils/format";
 
-const ratesQuery = createQuery(
-  () => ({
-    queryKey: ["exchangeRates"],
-    queryFn: async (): Promise<ExchangeRate[]> => {
-      const response = await fetch(`/api/rates?limit=360`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch exchange rates");
-      }
-      return response.json();
-    },
-    refetchInterval: 10000, // Refresh every 10 seconds
-  }),
-  getGlobalClient(),
-);
-
 const poolPricesQuery = createQuery(
   () => ({
     queryKey: ["poolPrices"],
@@ -88,13 +73,12 @@ interface ChainStats {
   color: string;
   latestPrice: number;
   latestPoolPrice: number;
-  data: ExchangeRate[];
   priceChange: number;
   priceChangePercent: number;
   minPrice: number;
   maxPrice: number;
   lastUpdated: Date;
-  dataPoints: number;
+  //dataPoints: number;
   poolPrices: PoolPrice[];
   feeApr: number | null;
   liquidityUsd: number | null;
@@ -145,21 +129,19 @@ function computeFeeAndLiquidity(poolPrices: PoolPrice[]): { feeApr: number; liqu
   };
 }
 
-function calculateStats(data: ExchangeRate[], poolPrices: PoolPrice[], metricsData?: MetricsResponse): ChainStats[] {
-  if (!data || !poolPrices) {
+function calculateStats(poolPrices: PoolPrice[], metricsData?: MetricsResponse): ChainStats[] {
+  if (!poolPrices) {
     return [];
   }
-  const grouped = groupBy(data, (rate) => rate.chainId);
   const groupedPoolPrices = groupBy(poolPrices, (price) => price.chainId);
 
-  const allKeys = new Set([...Object.keys(grouped), ...Object.keys(groupedPoolPrices)]);
+  const allKeys = new Set(Object.keys(groupedPoolPrices));
 
   return Array.from(allKeys)
     .map((key) => {
       const chainIdStr = key;
       const chainId = Number(chainIdStr);
       const poolPrices = groupedPoolPrices[chainId] || [];
-      const rates = grouped[chainId] || [];
 
       const chainInfo = CHAIN_INFO[chainId] || {
         id: chainId,
@@ -181,11 +163,7 @@ function calculateStats(data: ExchangeRate[], poolPrices: PoolPrice[], metricsDa
         )
         .sort((a, b) => b.timestamp - a.timestamp);
 
-      const sortedRates = rates.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       const priceValues = prices.map((x) => x.price);
-
-      //   const latestRate = sortedRates[0];
-      //   const oldestRate = sortedRates[sortedRates.length - 1];
 
       const latestPrice = priceValues[0] ?? 0;
       const oldestPrice = priceValues[priceValues.length - 1] ?? 0;
@@ -212,14 +190,12 @@ function calculateStats(data: ExchangeRate[], poolPrices: PoolPrice[], metricsDa
         color: chainInfo.color,
         latestPrice,
         latestPoolPrice: poolPrices.length > 0 ? convertSqrtPriceX96ToPrice(poolPrices[0].sqrtPriceX96) : 0,
-        data: sortedRates.reverse(), // Reverse for chronological order
         poolPrices: poolPrices.reverse(),
         priceChange,
         priceChangePercent,
         minPrice,
         maxPrice,
         lastUpdated: prices.length > 0 ? new Date(prices[0].timestamp) : new Date(),
-        dataPoints: rates.length,
         feeApr,
         liquidityUsd,
         los,
@@ -287,11 +263,10 @@ function getTimeSince(date: Date): { display: string; isFresh: boolean } {
       Real-time APR, LOS scores, and target allocations for 0.05% ETH/USDC v4 pools across chains
     </p>
 
-    <QueryRenderer query={ratesQuery}>
+    <QueryRenderer query={poolPricesQuery}>
       {#snippet children(data)}
         {@const chainStats = calculateStats(
-          data as ExchangeRate[],
-          poolPricesQuery.data as PoolPrice[],
+          data,
           metricsQuery.data as MetricsResponse,
         )}
 
@@ -393,11 +368,11 @@ function getTimeSince(date: Date): { display: string; isFresh: boolean } {
                     <td>
                       <div class="flex justify-center">
                         <div class="w-[200px] h-[50px]">
-                          <ChainPriceChart data={stat.data} poolPrices={stat.poolPrices} color={stat.color} />
+                          <ChainPriceChart poolPrices={stat.poolPrices} color={stat.color} />
                         </div>
                       </div>
                     </td>
-                    <td><span class="text-xs text-base-content/70">
+                    <td class="w-[100px]"><span class="text-xs text-base-content/70">
                       <div
                         class="w-2 h-2 rounded-full inline-block mr-1"
                         class:bg-success={isFresh}
