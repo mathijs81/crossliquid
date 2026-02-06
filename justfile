@@ -16,3 +16,9 @@ push-agent:
 
 run-agent-locally:
     docker run --rm -t --name crossliquid-agent -p 3000:3000 -v /tmp/cl_data:/app/data --env-file .env crossliquid-agent
+
+run-chain:
+    pnpm chain:kill || true
+    pnpm chain
+    pnpm chain:local_test_setup
+    pnpm generate

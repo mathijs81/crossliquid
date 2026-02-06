@@ -1,15 +1,16 @@
 <script lang="ts">
-import { createQueries, createQuery } from "@tanstack/svelte-query";
-import { groupBy, zip } from "es-toolkit";
-import QueryRenderer from "../QueryRenderer.svelte";
-import ChainPriceChart from "./ChainPriceChart.svelte";
+import { getGlobalClient } from "$lib/query/globalClient";
 import type { ExchangeRate, PoolPrice } from "$lib/types/exchangeRate";
 import {
   CHAIN_INFO,
   convertSqrtPriceX96ToPrice,
 } from "$lib/types/exchangeRate";
-import { getGlobalClient } from "$lib/query/globalClient";
+import { createQuery } from "@tanstack/svelte-query";
+import { groupBy } from "es-toolkit";
 import { onMount } from "svelte";
+import QueryRenderer from "../QueryRenderer.svelte";
+import ChainPriceChart from "./ChainPriceChart.svelte";
+import { formatUSD } from "$lib/utils/format";
 
 const ratesQuery = createQuery(
   () => ({
@@ -55,6 +56,61 @@ interface ChainStats {
   lastUpdated: Date;
   dataPoints: number;
   poolPrices: PoolPrice[];
+  feeApr: number | null;
+  liquidityUsd: number | null;
+}
+
+// Compute annualized fee APR from feeGrowthGlobal deltas.
+// Uses the full-range liquidity approximation: capital per unit L = 2 * sqrt(P) / 10^6 USD.
+// This is a fair cross-chain comparison basis (concentrated positions earn proportionally more).
+function computeFeeAndLiquidity(
+  poolPrices: PoolPrice[],
+): { feeApr: number; liquidity: number } | null {
+  if (poolPrices.length < 2) return null;
+
+  const sorted = [...poolPrices]
+    .filter((p) => p.feeGrowthGlobal0 !== "0" && p.feeGrowthGlobal1 !== "0")
+    .sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+    );
+  const oldest = sorted[0];
+  const newest = sorted[sorted.length - 1];
+
+  const timeDeltaSeconds =
+    (new Date(newest.timestamp).getTime() -
+      new Date(oldest.timestamp).getTime()) /
+    1000;
+  if (timeDeltaSeconds < 60) return null;
+
+  //console.log(`From ${new Date(oldest.timestamp).toISOString()} to ${new Date(newest.timestamp).toISOString()} -- ${timeDeltaSeconds} seconds`);
+
+  const deltaFee0 =
+    Number(BigInt(newest.feeGrowthGlobal0) - BigInt(oldest.feeGrowthGlobal0)) /
+    2 ** 128;
+  const deltaFee1 =
+    Number(BigInt(newest.feeGrowthGlobal1) - BigInt(oldest.feeGrowthGlobal1)) /
+    2 ** 128;
+  if (deltaFee0 === 0 && deltaFee1 === 0) return null;
+
+  const price = (Number(newest.sqrtPriceX96) / 2 ** 96) ** 2;
+
+  // Fee per unit L in microUSD
+  const fee0Usd = deltaFee0 * price;
+  const totalFeeUsd = fee0Usd + deltaFee1;
+
+  const liquidity = Number(newest.liquidity);
+  // Capital per unit L in USD (full-range: both sides = sqrt(P)/10^6 each)
+  const capitalUsd = 2 * Math.sqrt(price);
+  //console.log(`liquidity: ${Math.round(liquidity * capitalUsd / 1e6 / 1e3)}K, winning ${totalFeeUsd / 1e6}`);
+
+  if (capitalUsd === 0) return null;
+
+  const secondsPerYear = 365.25 * 24 * 3600;
+  return {
+    feeApr: (totalFeeUsd / capitalUsd / timeDeltaSeconds) * secondsPerYear,
+    liquidity: (liquidity * capitalUsd) / 1e6,
+  };
 }
 
 function calculateStats(
@@ -108,13 +164,17 @@ function calculateStats(
       //   const latestRate = sortedRates[0];
       //   const oldestRate = sortedRates[sortedRates.length - 1];
 
-      const latestPrice = priceValues[0];
-      const oldestPrice = priceValues[priceValues.length - 1];
+      const latestPrice = priceValues[0] ?? 0;
+      const oldestPrice = priceValues[priceValues.length - 1] ?? 0;
       const minPrice = prices.length > 0 ? Math.min(...priceValues) : 0;
       const maxPrice = prices.length > 0 ? Math.max(...priceValues) : 0;
       const priceChange = latestPrice - oldestPrice;
       const priceChangePercent =
         oldestPrice !== 0 ? (priceChange / oldestPrice) * 100 : 0;
+
+      const { feeApr, liquidity: liquidityUsd } = computeFeeAndLiquidity(
+        poolPrices,
+      ) ?? { feeApr: null, liquidity: null };
 
       return {
         chainId,
@@ -131,8 +191,11 @@ function calculateStats(
         priceChangePercent,
         minPrice,
         maxPrice,
-        lastUpdated: new Date(prices[0].timestamp),
+        lastUpdated:
+          prices.length > 0 ? new Date(prices[0].timestamp) : new Date(),
         dataPoints: rates.length,
+        feeApr,
+        liquidityUsd,
       };
     })
     .sort((a, b) => a.chainId - b.chainId);
@@ -165,13 +228,13 @@ onMount(() => {
   };
 });
 
-function getTimeSince(date: Date): string {
+function getTimeSince(date: Date): { display: string; isFresh: boolean } {
   const seconds = Math.floor((time - date.getTime()) / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 60) return { display: `${seconds}s ago`, isFresh: true };
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return { display: `${minutes}m ago`, isFresh: false };
   const hours = Math.floor(minutes / 60);
-  return `${hours}h ago`;
+  return { display: `${hours}h ago`, isFresh: false };
 }
 </script>
 
@@ -179,7 +242,7 @@ function getTimeSince(date: Date): string {
 	<div class="card-body">
 		<h2 class="card-title text-xl">Chain Prices & Volatility</h2>
 		<p class="text-sm text-base-content/70">
-			ETH/USDC prices across chains (0.1 ETH swap simulation)
+			ETH/USDC prices across chains (status of 0.05% ETH/USDC v4 pools)
 		</p>
 
 		<QueryRenderer query={ratesQuery}>
@@ -196,15 +259,17 @@ function getTimeSince(date: Date): string {
 							<thead>
 								<tr>
 									<th>Chain</th>
+									<th class="text-right">Liquidity</th>
+									<th class="text-right">Fee APR</th>
 									<th class="text-right">Latest Price</th>
-									<th class="text-right">Change</th>
 									<th class="text-right">Range</th>
+									<th class="text-right">Change</th>
 									<th class="text-center">Trend</th>
-									<th class="text-right">Last Update</th>
 								</tr>
 							</thead>
 							<tbody>
 								{#each chainStats as stat}
+                {@const { display, isFresh } = getTimeSince(stat.lastUpdated)}
 									<tr>
 										<td>
 											<div class="flex items-center gap-2">
@@ -212,11 +277,35 @@ function getTimeSince(date: Date): string {
 													class="w-3 h-3 rounded-full"
 													style="background-color: {stat.color}"
 												></div>
-												<span class="font-medium">{stat.name}</span>
+                        <div>
+												  <span class="font-medium">{stat.name}</span><br/>
+                        </div>
 											</div>
 										</td>
 										<td class="text-right font-mono text-lg">
-											{formatPrice(stat.latestPrice)}
+											{#if stat.liquidityUsd !== null}
+												{formatUSD(stat.liquidityUsd, 0)}
+											{:else}
+												<span class="text-base-content/50">-</span>
+											{/if}
+										</td>
+
+										<td class="text-right font-mono text-sm">
+											{#if stat.feeApr !== null}
+												<span class="text-accent">{(stat.feeApr * 100).toFixed(2)}%</span>
+											{:else}
+												<span class="text-base-content/50">-</span>
+											{/if}
+										</td>
+                    <td class="text-right font-mono text-lg">
+											{#if stat.latestPrice > 0}
+												  {formatPrice(stat.latestPrice)}
+											{:else}
+												<span class="text-base-content/50">-</span>
+											{/if}
+										</td>
+                    <td class="text-right text-sm text-base-content/70">
+											{formatPrice(stat.minPrice)} - {formatPrice(stat.maxPrice)}
 										</td>
 										<td
 											class="text-right font-mono {getPriceChangeColor(
@@ -228,10 +317,7 @@ function getTimeSince(date: Date): string {
 												stat.priceChangePercent,
 											)}
 										</td>
-										<td class="text-right text-sm text-base-content/70">
-											{formatPrice(stat.minPrice)} - {formatPrice(stat.maxPrice)}
-										</td>
-										<td>
+																				<td>
 											<div class="flex justify-center">
 												<div class="w-[200px] h-[50px]">
 													<ChainPriceChart
@@ -242,9 +328,17 @@ function getTimeSince(date: Date): string {
 												</div>
 											</div>
 										</td>
-										<td class="text-right text-sm text-base-content/70">
-											{getTimeSince(stat.lastUpdated)}
-										</td>
+                    <td>
+                      
+                      <span class="text-xs text-base-content/70">
+                        <div
+													class="w-2 h-2 rounded-full inline-block mr-1"
+													class:bg-success={isFresh}
+													class:bg-warning={!isFresh}
+												></div>
+                        {display} 
+                        </span>
+                    </td>
 									</tr>
 								{/each}
 							</tbody>

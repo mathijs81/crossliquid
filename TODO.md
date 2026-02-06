@@ -15,12 +15,17 @@
 - [x] Automate ABI json generation -> agent (copyAbis.sh)
 - [ ] Working test of li.fi composer
 - [x] offchain agent: collect data, determine liquidity scores
+- [ ] local test setup: add multicall3
 - [ ] offchain agent: route funds from base chain to other chains (in progress)
 - [x] UI: show status across chains
 - [x] Docker build and production deployment 
 - [ ] UI: show feegrowth global
 - [ ] liquidity opportunity: pull in more pools
 - [ ] Calculate final liquidity opportunity score
+- [ ] Chain prices: make clearer what the interval is, make it longer (e.g. 4hr)
+- [ ] Working test of li.fi composer
+- [ ] agent automatically syncs, swaps & deploys
+- [ ] UI Chain prices: make clearer what the interval is, make it longer (e.g. 4hr)
 
 **Nice to have**
 

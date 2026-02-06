@@ -25,6 +25,8 @@ export interface PoolPrice {
   tick: number;
   liquidity: string;
   fee: number;
+  feeGrowthGlobal0: string;
+  feeGrowthGlobal1: string;
 }
 
 export function convertSqrtPriceX96ToPrice(sqrtPriceX96: bigint): number {
