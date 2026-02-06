@@ -1,7 +1,8 @@
 import { type Chain, createPublicClient, http, type PublicClient } from "viem";
-import { base, foundry, mainnet, optimism, unichain } from "viem/chains";
+import { base, baseSepolia, foundry, mainnet, optimism, unichain, unichainSepolia } from "viem/chains";
 import type { ChainConfig, Environment } from "../config.js";
 import { logger } from "../logger.js";
+import { ChainId } from "@lifi/sdk";
 
 export const createClient = (chain: Chain, rpcUrl?: string): PublicClient => {
   return createPublicClient({
@@ -10,64 +11,67 @@ export const createClient = (chain: Chain, rpcUrl?: string): PublicClient => {
   });
 };
 
-export const getRpcUrl = (chainId: number): string => {
-  const envVars: Record<number, string> = {
-    [base.id]: process.env.RPC_BASE || "",
-    [optimism.id]: process.env.RPC_OPTIMISM || "",
-    [mainnet.id]: process.env.RPC_MAINNET || "",
-    [unichain.id]: process.env.RPC_UNICHAIN || "",
-    [foundry.id]: process.env.RPC_FOUNDRY || "",
-  };
-  return envVars[chainId] || "";
+export const getRpcUrl = (chain: Chain): string => {
+  const name = chain.name;
+  const upperName = name.toUpperCase().replaceAll(" ", "_");
+  //console.log(upperName);
+  return process.env[`RPC_${upperName}`] || "";
 };
+
+const allChains = new Map<number, Chain>([
+  [foundry.id, foundry],
+  [base.id, base],
+  [optimism.id, optimism],
+  [mainnet.id, mainnet],
+  [unichain.id, unichain],
+  [baseSepolia.id, baseSepolia],
+  [unichainSepolia.id, unichainSepolia],
+]);
+
+const lifiChains = new Map<number, ChainId>([
+  [foundry.id, ChainId.EVM /* this is wrong, but it won't be used anyway */],
+  [base.id, ChainId.BAS],
+  [optimism.id, ChainId.OPT],
+  [mainnet.id, ChainId.ETH],
+  [unichain.id, ChainId.UNI],
+]);
+
+function getChains(environment: Environment): number[] {
+  switch(environment) {
+    case "development":
+      return [foundry.id];
+    case "production":
+      return [base.id, optimism.id, mainnet.id, unichain.id];
+    case "testnet":
+      return [baseSepolia.id, unichainSepolia.id];
+  }
+}
 
 export const initializeChains = (
   environment: Environment,
 ): Map<number, ChainConfig> => {
+  const useChains = getChains(environment);
+
   const chains = new Map<number, ChainConfig>();
 
-  if (environment === "development") {
-    chains.set(foundry.id, {
-      chainId: foundry.id,
-      chainName: foundry.name,
-      rpcUrl: getRpcUrl(foundry.id),
-      publicClient: createClient(foundry, getRpcUrl(foundry.id)),
+  for (const chainId of useChains) {
+    const viemChain = allChains.get(chainId);
+    if (!viemChain) {
+      throw new Error(`Chain ${chainId} not found`);
+    }
+    const rpcUrl = getRpcUrl(viemChain);
+    chains.set(chainId, {
+      chainId,
+      chainName: viemChain.name,
+      rpcUrl,
+      publicClient: createClient(viemChain, rpcUrl),
+      viemChain,
+      lifiId: lifiChains.get(chainId) || ChainId.EVM,
     });
-    return chains;
   }
-
-  chains.set(base.id, {
-    chainId: base.id,
-    chainName: base.name,
-    rpcUrl: getRpcUrl(base.id),
-    publicClient: createClient(base, getRpcUrl(base.id)),
-  });
-
-  chains.set(optimism.id, {
-    chainId: optimism.id,
-    chainName: optimism.name,
-    rpcUrl: getRpcUrl(optimism.id),
-    publicClient: createClient(optimism, getRpcUrl(optimism.id)),
-  });
-
-  chains.set(mainnet.id, {
-    chainId: mainnet.id,
-    chainName: mainnet.name,
-    rpcUrl: getRpcUrl(mainnet.id),
-    publicClient: createClient(mainnet, getRpcUrl(mainnet.id)),
-  });
-
-  chains.set(unichain.id, {
-    chainId: unichain.id,
-    chainName: unichain.name,
-    rpcUrl: getRpcUrl(unichain.id),
-    publicClient: createClient(unichain, getRpcUrl(unichain.id)),
-  });
-
   logger.info(
     { environment, chains: Array.from(chains.keys()) },
     "Chains initialized",
   );
-
   return chains;
 };

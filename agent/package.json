@@ -19,6 +19,7 @@
     "gen-docker-image": "docker build -f prod/Dockerfile -t crossliquid-agent ."
   },
   "dependencies": {
+    "@lifi/sdk": "^3.15.5",
     "@uniswap/universal-router-sdk": "^4.30.0",
     "@uniswap/v4-sdk": "^1.27.0",
     "better-sqlite3": "^12.6.2",

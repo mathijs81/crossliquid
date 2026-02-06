@@ -13,12 +13,12 @@ import {
   type WalletClient,
 } from "viem";
 import { iUniswapV4Router04Abi } from "../abi/IUniswapV4Router04.js";
-//import { permit2Abi } from "../abi/Permit2.js";
 import { stateViewAbi } from "../abi/StateView.js";
 import { iV4QuoterAbi as v4QuoterAbi } from "../abi/IV4Quoter.js";
 import { DEFAULT_POOL_KEYS, type UniV4Contracts } from "../config.js";
 import { logger } from "../logger.js";
 import { createPoolId, type PoolKey } from "../utils/poolIds.js";
+import { createConfig, getQuote } from "@lifi/sdk";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 const V4_SWAP_COMMAND = "0x10";
@@ -29,7 +29,12 @@ const MAX_UINT128 = (1n << 128n) - 1n;
 const SLIPPAGE_DENOMINATOR = 10_000n;
 const PERMIT2_ADDRESS: Address = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
 
-export type QuoteSource = "local" | "routing-api";
+export type QuoteSource = "local" | "routing-api" | "lifi";
+
+const lifiConfig = createConfig({
+  integrator: "CrossLiquid"
+});
+
 
 export interface SwapQuoteRequest {
   chainId: number;
@@ -37,6 +42,7 @@ export interface SwapQuoteRequest {
   tokenOut: Address;
   amountIn: bigint;
   slippageBps?: number;
+  fromAddress: Address;
   recipient: Address;
   hookData?: Hex;
   poolKey?: PoolKey;
@@ -91,7 +97,8 @@ export class SwappingService {
 
     // Use routing API if explicitly requested or if on production chain
     if (request.useProductionRouting || this.chainId !== 31337) {
-      return this.quoteRoutingApi({ ...request, slippageBps });
+      return this.quoteLifi({ ...request, slippageBps });
+      //return this.quoteRoutingApi({ ...request, slippageBps });
     }
 
     return this.quoteLocal({ ...request, slippageBps });
@@ -129,6 +136,7 @@ export class SwappingService {
         quoteSource: quote.quoteSource,
       };
     }
+
 
     if (!quote.poolKey || quote.zeroForOne === undefined) {
       throw new Error("Local quote missing pool metadata");
@@ -332,6 +340,34 @@ export class SwappingService {
       poolKey,
       zeroForOne,
       hookData,
+    };
+  }
+
+  private async quoteLifi(request: SwapQuoteRequest & { slippageBps: number }): Promise<SwapQuoteResult> {
+    const quote = await getQuote({
+      fromChain: request.chainId,
+      toChain: request.chainId,
+      fromAddress: request.fromAddress,
+      fromToken: request.tokenIn,
+      toToken: request.tokenOut,
+      toAddress: request.recipient,
+      fromAmount: request.amountIn.toString(),
+    });
+    console.log(quote);
+    return {
+      chainId: request.chainId,
+      tokenIn: request.tokenIn,
+      tokenOut: request.tokenOut,
+      amountIn: request.amountIn,
+      amountOut: BigInt(quote.estimate.toAmount),
+      slippageBps: request.slippageBps,
+      recipient: request.recipient,
+      quoteSource: "lifi",
+      routing: {
+        calldata: "0x" as Hex,
+        value: 0n,
+        to: '0x000',
+      }
     };
   }
 

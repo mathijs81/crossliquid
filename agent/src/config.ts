@@ -1,9 +1,10 @@
-import { createWalletClient, http, type PublicClient } from "viem";
+import { Chain, createWalletClient, http, type PublicClient } from "viem";
 import { initializeChains } from "./utils/chain.js";
 import { validateAddress, validatePrivateKey } from "./utils/validation.js";
 import { type Address, privateKeyToAccount } from "viem/accounts";
 import { readOurDeployment, readUniswapDeployments } from "./dev/dev-config.js";
 import { logger } from "./logger.js";
+import { ChainId } from "@lifi/sdk";
 
 export type Environment = "development" | "production" | "testnet";
 
@@ -16,6 +17,8 @@ export interface ChainConfig {
   chainName: string;
   rpcUrl: string;
   publicClient: PublicClient;
+  viemChain: Chain;
+  lifiId: ChainId;
 }
 
 export interface UniV4Contracts {
@@ -159,6 +162,7 @@ function getOurAddresses() {
     logger.warn(
       "Warning: production addresses of vault/manager not supported yet",
     );
+    addresses.manager = "0x0e2500ffa1dfe19c21f7f81272b0b4e0fc0b958a";
   }
 
   return addresses;
