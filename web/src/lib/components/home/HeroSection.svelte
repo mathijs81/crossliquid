@@ -1,5 +1,5 @@
 <script lang="ts">
-import CodeIcon from "phosphor-svelte/lib/CodeIcon";
+import SpeedometerIcon from "phosphor-svelte/lib/SpeedometerIcon";
 import GithubLogoIcon from "phosphor-svelte/lib/GithubLogoIcon";
 import ShuffleAngularIcon from "phosphor-svelte/lib/ShuffleAngularIcon";
 import { createConnection } from "$lib/web3/createConnection.svelte";
@@ -10,7 +10,7 @@ const connection = createConnection();
 <div class="hero min-h-[calc(60vh-4rem)]">
   <div class="hero-content text-center">
     <div class="max-w-3xl">
-      <p class="py-4 text-sm text-base-content/50">HackMoney 2026 submission</p>
+      <p class="py-4 text-sm text-base-content/50">HackMoney 2026 </p>
       <h1
         class="text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent flex justify-center items-center gap-2"
       >
@@ -21,9 +21,9 @@ const connection = createConnection();
       </p>
 
       <div class="flex flex-wrap gap-4 justify-center">
-        <a href="/cross-liquid" class="btn btn-primary btn-lg">
-          <CodeIcon class="h-6 w-6" />
-          Deposit to Vault
+        <a href="/chains" class="btn btn-primary btn-lg">
+          <SpeedometerIcon class="h-6 w-6" />
+          See cross-chain liquidity opportunities
         </a>
         <a
           href="https://github.com/mathijs81/crossliquid"

@@ -11,7 +11,7 @@ export interface ChainInfo {
 }
 
 export const CHAIN_INFO: Record<number, ChainInfo> = {
-  1: { id: 1, name: "Ethereum", color: "#627EEA" },
+  1: { id: 1, name: "Mainnet", color: "#627EEA" },
   10: { id: 10, name: "Optimism", color: "#FF0420" },
   8453: { id: 8453, name: "Base", color: "#0052FF" },
   130: { id: 130, name: "Unichain", color: "#FF007A" },

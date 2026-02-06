@@ -10,7 +10,7 @@ import ShuffleAngularIcon from "phosphor-svelte/lib/ShuffleAngularIcon";
 import PiggyBankIcon from "phosphor-svelte/lib/PiggyBankIcon";
 import BugIcon from "phosphor-svelte/lib/BugIcon";
 import ChartLineIcon from "phosphor-svelte/lib/ChartLineIcon";
-import CurrencyCircleDollarIcon from "phosphor-svelte/lib/CurrencyCircleDollarIcon";
+import SpeedometerIcon from "phosphor-svelte/lib/SpeedometerIcon";
 import type { Component } from "svelte";
 
 const connection = createConnection();
@@ -49,7 +49,7 @@ async function disconnectWallet() {
 }
 
 const baseDestinations = [
-  [CurrencyCircleDollarIcon, "Crosschain Liquidity", "/chains"],
+  [SpeedometerIcon, "Crosschain Liquidity", "/chains"],
   [PiggyBankIcon, "Deposit to Vault", "/cross-liquid"],
   [ChartLineIcon, "Position Stats", "/stats"],
   [BugIcon, "Debug", "/debug"],
