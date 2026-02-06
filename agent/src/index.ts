@@ -37,6 +37,56 @@ fastify.get("/pool-prices", async (request) => {
   return db.getRecentPoolPrices(parsedLimit);
 });
 
+// Comprehensive metrics endpoint - combines metrics, LOS, and pool prices
+fastify.get("/metrics", async (request) => {
+  const { limit, chainId } = request.query as {
+    limit?: string;
+    chainId?: string;
+  };
+  const parsedLimit = limit ? Number.parseInt(limit, 10) : 256;
+  const parsedChainId = chainId ? Number.parseInt(chainId, 10) : undefined;
+
+  // Import here to avoid circular dependencies
+  const { MetricsService } = await import("./services/metrics.js");
+  const { calculateLOS } = await import("./services/los.js");
+  const { chains } = await import("./config.js");
+
+  // Get pool prices
+  const poolPrices = db.getRecentPoolPrices(parsedLimit);
+
+  // Calculate metrics for all chains or specific chain
+  const chainIds = parsedChainId
+    ? [parsedChainId]
+    : Array.from(chains.keys());
+  const metricsMap = await MetricsService.calculateMetricsForAllChains(
+    chainIds,
+  );
+
+  // Calculate LOS scores
+  const losMap = await calculateLOS();
+
+  // Combine into response
+  const chainMetrics = Array.from(metricsMap.entries()).map(
+    ([chainId, metrics]) => {
+      const los = losMap.get(chainId);
+      return {
+        chainId,
+        chainName: chains.get(chainId)?.chainName || "Unknown",
+        metrics,
+        los: los || null,
+      };
+    },
+  );
+
+  return {
+    timestamp: new Date().toISOString(),
+    chains: chainMetrics,
+    poolPrices: parsedChainId
+      ? poolPrices.filter((p) => p.chainId === parsedChainId)
+      : poolPrices,
+  };
+});
+
 // Start server
 const start = async () => {
   try {

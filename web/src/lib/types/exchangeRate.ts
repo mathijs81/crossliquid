@@ -21,7 +21,7 @@ export interface PoolPrice {
   timestamp: string;
   chainId: number;
   poolAddress: string;
-  sqrtPriceX96: bigint;
+  sqrtPriceX96: string;
   tick: number;
   liquidity: string;
   fee: number;
@@ -29,7 +29,9 @@ export interface PoolPrice {
   feeGrowthGlobal1: string;
 }
 
-export function convertSqrtPriceX96ToPrice(sqrtPriceX96: bigint): number {
+export function convertSqrtPriceX96ToPrice(
+  sqrtPriceX96: string | bigint,
+): number {
   // sqrtPriceX96 = sqrt(ratio) * 2 ^ 96, so to go back we need to do (X / 2^96) ^ 2
   // ratio is also 10^12 because of the decimals difference between USDC and ETH
   return (Number(sqrtPriceX96) / 2.0 ** 96) ** 2 * 10 ** 12;

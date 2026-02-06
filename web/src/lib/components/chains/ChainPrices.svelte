@@ -39,6 +39,49 @@ const poolPricesQuery = createQuery(
   getGlobalClient(),
 );
 
+interface LOSScore {
+  chainId: number;
+  chainName: string;
+  score: number;
+  components: {
+    feeYieldRate: number;
+    volatility: number;
+    gasFactor: number;
+  };
+  targetAllocation: number;
+  lastUpdated: string;
+}
+
+interface MetricsResponse {
+  timestamp: string;
+  chains: Array<{
+    chainId: number;
+    chainName: string;
+    metrics: {
+      apr30min: { feeApr: number; liquidityUsd: number } | null;
+      apr4hr: { feeApr: number; liquidityUsd: number } | null;
+      apr1day: { feeApr: number; liquidityUsd: number } | null;
+    };
+    los: LOSScore | null;
+  }>;
+  poolPrices: PoolPrice[];
+}
+
+const metricsQuery = createQuery(
+  () => ({
+    queryKey: ["metrics"],
+    queryFn: async (): Promise<MetricsResponse> => {
+      const response = await fetch(`/api/metrics?limit=360`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch metrics");
+      }
+      return response.json();
+    },
+    refetchInterval: 10000, // Refresh every 10 seconds
+  }),
+  getGlobalClient(),
+);
+
 interface ChainStats {
   chainId: number;
   name: string;
@@ -55,6 +98,10 @@ interface ChainStats {
   poolPrices: PoolPrice[];
   feeApr: number | null;
   liquidityUsd: number | null;
+  los: LOSScore | null;
+  apr30min: number | null;
+  apr4hr: number | null;
+  apr1day: number | null;
 }
 
 // Compute annualized fee APR from feeGrowthGlobal deltas.
@@ -98,7 +145,7 @@ function computeFeeAndLiquidity(poolPrices: PoolPrice[]): { feeApr: number; liqu
   };
 }
 
-function calculateStats(data: ExchangeRate[], poolPrices: PoolPrice[]): ChainStats[] {
+function calculateStats(data: ExchangeRate[], poolPrices: PoolPrice[], metricsData?: MetricsResponse): ChainStats[] {
   if (!data || !poolPrices) {
     return [];
   }
@@ -152,6 +199,13 @@ function calculateStats(data: ExchangeRate[], poolPrices: PoolPrice[]): ChainSta
         liquidity: null,
       };
 
+      // Get metrics data for this chain if available
+      const chainMetrics = metricsData?.chains.find((c) => c.chainId === chainId);
+      const los = chainMetrics?.los || null;
+      const apr30min = chainMetrics?.metrics.apr30min?.feeApr || null;
+      const apr4hr = chainMetrics?.metrics.apr4hr?.feeApr || null;
+      const apr1day = chainMetrics?.metrics.apr1day?.feeApr || null;
+
       return {
         chainId,
         name: chainInfo.name,
@@ -168,6 +222,10 @@ function calculateStats(data: ExchangeRate[], poolPrices: PoolPrice[]): ChainSta
         dataPoints: rates.length,
         feeApr,
         liquidityUsd,
+        los,
+        apr30min,
+        apr4hr,
+        apr1day,
       };
     })
     .sort((a, b) => a.chainId - b.chainId);
@@ -186,6 +244,18 @@ function getPriceChangeColor(change: number): string {
   if (change > 0) return "text-success";
   if (change < 0) return "text-error";
   return "text-base-content";
+}
+
+function getLOSColor(score: number): string {
+  if (score > 7) return "text-success";
+  if (score > 3) return "text-warning";
+  return "text-error";
+}
+
+function getTargetAllocationColor(allocation: number): string {
+  if (allocation > 30) return "text-success";
+  if (allocation > 15) return "text-info";
+  return "text-base-content/70";
 }
 
 let time = $state(Date.now());
@@ -212,12 +282,18 @@ function getTimeSince(date: Date): { display: string; isFresh: boolean } {
 
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body">
-    <h2 class="card-title text-xl">Chain Prices & Volatility</h2>
-    <p class="text-sm text-base-content/70">ETH/USDC prices across chains (status of 0.05% ETH/USDC v4 pools)</p>
+    <h2 class="card-title text-xl">Chain Metrics & Liquidity Opportunity Score</h2>
+    <p class="text-sm text-base-content/70">
+      Real-time APR, LOS scores, and target allocations for 0.05% ETH/USDC v4 pools across chains
+    </p>
 
     <QueryRenderer query={ratesQuery}>
       {#snippet children(data)}
-        {@const chainStats = calculateStats(data as ExchangeRate[], poolPricesQuery.data as PoolPrice[])}
+        {@const chainStats = calculateStats(
+          data as ExchangeRate[],
+          poolPricesQuery.data as PoolPrice[],
+          metricsQuery.data as MetricsResponse,
+        )}
 
         {#if chainStats.length === 0}
           <div class="alert alert-info"><span>No exchange rate data available yet</span></div>
@@ -229,6 +305,8 @@ function getTimeSince(date: Date): { display: string; isFresh: boolean } {
                   <th>Chain</th>
                   <th class="text-right">Liquidity</th>
                   <th class="text-right">Fee APR</th>
+                  <th class="text-right">LOS Score</th>
+                  <th class="text-right">Target %</th>
                   <th class="text-right">Latest Price</th>
                   <th class="text-right">Range</th>
                   <th class="text-right">Change</th>
@@ -257,12 +335,41 @@ function getTimeSince(date: Date): { display: string; isFresh: boolean } {
                     </td>
 
                     <td class="text-right font-mono text-sm">
-                      {#if stat.feeApr !== null}
-                        <span class="text-accent">{(stat.feeApr * 100).toFixed(2)}%</span>
+                      {#if stat.apr30min !== null || stat.apr4hr !== null || stat.apr1day !== null}
+                        <div class="flex flex-col items-end gap-0.5">
+                          <span
+                            class="text-accent font-semibold"
+                            title="4hr APR: {((stat.apr4hr ?? 0)*100).toFixed(1)}%, 30min APR: {((stat.apr30min ?? 0)*100).toFixed(1)}%, 1day APR: {((stat.apr1day ?? 0)*100).toFixed(1)}%"
+                            >{((stat.apr4hr ?? 0)*100).toFixed(1)}%</span
+                          >
+                        </div>
                       {:else}
                         <span class="text-base-content/50">-</span>
                       {/if}
                     </td>
+
+                    <td class="text-right font-mono">
+                      {#if stat.los !== null}
+                        <div class="flex flex-col items-end gap-0.5">
+                          <span class="{getLOSColor(stat.los.score)} font-bold text-lg"
+                            >{stat.los.score.toFixed(2)}</span
+                          >
+                        </div>
+                      {:else}
+                        <span class="text-base-content/50">-</span>
+                      {/if}
+                    </td>
+
+                    <td class="text-right font-mono">
+                      {#if stat.los !== null && stat.los.targetAllocation > 0}
+                        <span class="{getTargetAllocationColor(stat.los.targetAllocation)} font-bold text-lg">
+                          {stat.los.targetAllocation.toFixed(1)}%
+                        </span>
+                      {:else}
+                        <span class="text-base-content/50">-</span>
+                      {/if}
+                    </td>
+
                     <td class="text-right font-mono text-lg">
                       {#if stat.latestPrice > 0}
                         {formatPrice(stat.latestPrice)}
@@ -305,11 +412,29 @@ function getTimeSince(date: Date): { display: string; isFresh: boolean } {
           </div>
 
           <!-- Summary Stats -->
-          <div class="stats stats-vertical sm:stats-horizontal shadow bg-base-200/50 w-full mt-4">
+          {#snippet statCards()}
+            {@const chainsWithLOS = chainStats.filter((s) => s.los !== null)}
+            {@const bestChain = chainsWithLOS.length > 0
+              ? chainsWithLOS.reduce((best, current) =>
+                  (current.los?.score || 0) > (best.los?.score || 0) ? current : best
+                )
+              : null}
+
             <div class="stat place-items-center sm:place-items-start">
               <div class="stat-title">Chains</div>
               <div class="stat-value text-2xl text-primary">{chainStats.length}</div>
             </div>
+
+            {#if bestChain}
+              <div class="stat place-items-center sm:place-items-start">
+                <div class="stat-title">Best Opportunity</div>
+                <div class="stat-value text-2xl text-success">{bestChain.name}</div>
+                <div class="stat-desc">
+                  LOS: {bestChain.los?.score.toFixed(2)} | Target: {bestChain.los?.targetAllocation.toFixed(1)}%
+                </div>
+              </div>
+            {/if}
+
             <div class="stat place-items-center sm:place-items-start">
               <div class="stat-title">Highest Price</div>
               <div class="stat-value text-2xl text-success">
@@ -323,19 +448,7 @@ function getTimeSince(date: Date): { display: string; isFresh: boolean } {
 								)?.name}
               </div>
             </div>
-            <div class="stat place-items-center sm:place-items-start">
-              <div class="stat-title">Lowest Price</div>
-              <div class="stat-value text-2xl text-error">
-                {formatPrice(Math.min(...chainStats.map((s) => s.latestPrice)))}
-              </div>
-              <div class="stat-desc">
-                {chainStats.find(
-									(s) =>
-										s.latestPrice ===
-										Math.min(...chainStats.map((s) => s.latestPrice)),
-								)?.name}
-              </div>
-            </div>
+
             <div class="stat place-items-center sm:place-items-start">
               <div class="stat-title">Price Spread</div>
               <div class="stat-value text-2xl text-info">
@@ -349,6 +462,10 @@ function getTimeSince(date: Date): { display: string; isFresh: boolean } {
               </div>
               <div class="stat-desc">Arbitrage opportunity</div>
             </div>
+          {/snippet}
+
+          <div class="stats stats-vertical sm:stats-horizontal shadow bg-base-200/50 w-full mt-4">
+            {@render statCards()}
           </div>
         {/if}
       {/snippet}

@@ -134,6 +134,23 @@ class DatabaseService {
     return stmt.all(limit) as ExchangeRateRecord[];
   }
 
+  getPoolPricesForChain(
+    chainId: number,
+    minTimestamp: string,
+    maxTimestamp?: string,
+  ): PoolPriceRecord[] {
+    const stmt = this.db.prepare<[number, string, string]>(`
+      SELECT timestamp, chainId, poolAddress, sqrtPriceX96, tick, liquidity, fee, feeGrowthGlobal0, feeGrowthGlobal1 FROM pool_prices
+      WHERE chainId = ? AND timestamp >= ? AND timestamp <= ?
+      ORDER BY timestamp DESC
+    `);
+    return stmt.all(
+      chainId,
+      minTimestamp,
+      maxTimestamp ?? "9999-99-99",
+    ) as PoolPriceRecord[];
+  }
+
   getRecentPoolPrices(limit = 256): PoolPriceRecord[] {
     const stmt = this.db.prepare<[number]>(`
       SELECT timestamp, chainId, poolAddress, sqrtPriceX96, tick, liquidity, fee, feeGrowthGlobal0, feeGrowthGlobal1 FROM pool_prices
