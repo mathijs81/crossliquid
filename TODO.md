@@ -37,3 +37,4 @@
 - [ ] whitelist target chain swap calls? with timelock?
 - [ ] set mint / redeem per time limits?
 - [ ] pause minting / redeeming 
+- [ ] do the conversion rate in the vault vs. a "liquidity unit" (e.g. $ sqrt(price) + 1/sqrt(price) ETH) instead of full ETH

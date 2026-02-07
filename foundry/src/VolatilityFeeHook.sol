@@ -32,15 +32,24 @@ contract VolatilityFeeHook is BaseOverrideFee, BaseHookFee, Ownable, IUnlockCall
     uint24 public maxFee = 10_000; // 1%
     uint24 public protocolFee = 10; // 0.001% of swap output
 
+    address public operator;
+
     mapping(PoolId => uint24) public targetFees;
 
     event TargetFeeSet(PoolId indexed poolId, uint24 fee);
     event BoundsUpdated(uint24 minFee, uint24 maxFee);
     event ProtocolFeeUpdated(uint24 feeBps);
+    event OperatorUpdated(address indexed oldOperator, address indexed newOperator);
 
     error FeeTooLow(uint24 fee, uint24 minimum);
     error FeeTooHigh(uint24 fee, uint24 maximum);
     error InvalidBounds();
+    error NotOperatorOrOwner();
+
+    modifier onlyOperatorOrOwner() {
+        if (msg.sender != operator && msg.sender != owner()) revert NotOperatorOrOwner();
+        _;
+    }
 
     constructor(IPoolManager _poolManager, address _owner) BaseHook(_poolManager) Ownable(_owner) {}
 
@@ -96,7 +105,7 @@ contract VolatilityFeeHook is BaseOverrideFee, BaseHookFee, Ownable, IUnlockCall
     }
 
     // --- Owner admin functions ---
-    function setTargetFee(PoolKey calldata key, uint24 fee) external onlyOwner {
+    function setTargetFee(PoolKey calldata key, uint24 fee) external onlyOperatorOrOwner {
         if (fee < minFee) revert FeeTooLow(fee, minFee);
         if (fee > maxFee) revert FeeTooHigh(fee, maxFee);
 
@@ -124,7 +133,7 @@ contract VolatilityFeeHook is BaseOverrideFee, BaseHookFee, Ownable, IUnlockCall
     }
 
     // --- Withdraw accumulated ERC-6909 claims as real tokens ---
-    function handleHookFees(Currency[] memory currencies) public override onlyOwner {
+    function handleHookFees(Currency[] memory currencies) public override onlyOperatorOrOwner {
         poolManager.unlock(abi.encode(currencies, owner()));
     }
 
@@ -140,6 +149,13 @@ contract VolatilityFeeHook is BaseOverrideFee, BaseHookFee, Ownable, IUnlockCall
             }
         }
         return "";
+    }
+
+    // --- Operator management (owner-only) ---
+    function setOperator(address newOperator) external onlyOwner {
+        address oldOperator = operator;
+        operator = newOperator;
+        emit OperatorUpdated(oldOperator, newOperator);
     }
 
     // --- Merged permissions from BaseOverrideFee + BaseHookFee ---
