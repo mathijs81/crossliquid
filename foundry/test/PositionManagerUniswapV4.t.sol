@@ -17,6 +17,8 @@ import { StateLibrary } from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import { LiquidityAmounts } from "@uniswap/v4-core/test/utils/LiquidityAmounts.sol";
 
 import { Deployers } from "./utils/Deployers.sol";
+import { PoolSwapTest } from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
+import { SwapParams } from "@uniswap/v4-core/src/types/PoolOperation.sol";
 
 /// @notice Tests that our PositionManager can add/remove liquidity on Uniswap v4
 /// with a native ETH/USDC pool, using real Uniswap v4 infrastructure.
@@ -238,5 +240,66 @@ contract PositionManagerUniswapV4Test is Test, Deployers {
         assertGt(pos.liquidity, 0, "Position should have liquidity");
         assertEq(sqrtPriceX96, SQRT_PRICE_ETH_USDC, "Price should match init price");
         assertTrue(inRange, "Full-range position should be in range");
+    }
+
+    function testGetAllPositionsDetailed() public {
+        int24 tickLower = TickMath.minUsableTick(TICK_SPACING);
+        int24 tickUpper = TickMath.maxUsableTick(TICK_SPACING);
+
+        vm.prank(operator);
+        (uint128 liquidity,,) = clManager.depositToUniswap(
+            address(poolManager), ethUsdcPoolKey, tickLower, tickUpper, 5 ether, 10_675 * 1e6, 0, 0
+        );
+
+        (
+            bytes32[] memory ids,
+            CLPositionManager.Position[] memory positionList,
+            int24[] memory currentTicks,
+            bool[] memory inRangeList,
+            CLPositionManager.PositionDetails[] memory details
+        ) = clManager.getAllPositionsDetailed();
+
+        assertEq(ids.length, 1, "Should have one position");
+        assertEq(positionList[0].liquidity, liquidity, "Liquidity should match");
+        assertTrue(inRangeList[0], "Full-range position should be in range");
+
+        // Current amounts should be non-zero for an in-range position
+        assertGt(details[0].currentAmount0, 0, "Should have current ETH amount");
+        assertGt(details[0].currentAmount1, 0, "Should have current USDC amount");
+
+        // No swaps happened, so fees should be zero
+        assertEq(details[0].feesOwed0, 0, "No fees without swaps");
+        assertEq(details[0].feesOwed1, 0, "No fees without swaps");
+    }
+
+    function testGetAllPositionsDetailedWithFees() public {
+        int24 tickLower = TickMath.minUsableTick(TICK_SPACING);
+        int24 tickUpper = TickMath.maxUsableTick(TICK_SPACING);
+
+        vm.prank(operator);
+        clManager.depositToUniswap(
+            address(poolManager), ethUsdcPoolKey, tickLower, tickUpper, 5 ether, 10_675 * 1e6, 0, 0
+        );
+
+        // Execute a swap to generate fees
+        PoolSwapTest swapTest = new PoolSwapTest(poolManager);
+        address swapper = makeAddr("swapper");
+        vm.deal(swapper, 10 ether);
+
+        vm.prank(swapper);
+        swapTest.swap{value: 1 ether}(
+            ethUsdcPoolKey,
+            SwapParams({
+                zeroForOne: true,
+                amountSpecified: -1 ether,
+                sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+            }),
+            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
+            ""
+        );
+
+        (,,,, CLPositionManager.PositionDetails[] memory details) = clManager.getAllPositionsDetailed();
+
+        assertGt(details[0].feesOwed0, 0, "Should have ETH fees after swap");
     }
 }

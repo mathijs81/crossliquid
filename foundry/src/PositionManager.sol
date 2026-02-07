@@ -17,6 +17,8 @@ import { PoolId, PoolIdLibrary } from "v4-core/types/PoolId.sol";
 import { StateLibrary } from "v4-core/libraries/StateLibrary.sol";
 import { UniswapUtil } from "./UniswapUtil.sol";
 import { ModifyLiquidityParams } from "v4-core/types/PoolOperation.sol";
+import { FullMath } from "v4-core/libraries/FullMath.sol";
+import { FixedPoint128 } from "v4-core/libraries/FixedPoint128.sol";
 
 /// PositionManager for CrossLiquid
 /// Keeps funds, deploys them to uniswap, bridges funds to other chains.
@@ -464,6 +466,83 @@ contract PositionManager is
             positionList[i] = position;
             currentTicks[i] = currentTick;
             inRangeList[i] = currentTick >= position.tickLower && currentTick < position.tickUpper;
+        }
+    }
+
+    struct PositionDetails {
+        uint256 currentAmount0;
+        uint256 currentAmount1;
+        uint256 feesOwed0;
+        uint256 feesOwed1;
+    }
+
+    /// Returns all positions with current amounts (computed from liquidity + price)
+    /// and accrued fees (computed from fee growth deltas).
+    /// This is a richer alternative to getAllPositionsWithPoolState.
+    function getAllPositionsDetailed()
+        external
+        view
+        returns (
+            bytes32[] memory ids,
+            Position[] memory positionList,
+            int24[] memory currentTicks,
+            bool[] memory inRangeList,
+            PositionDetails[] memory details
+        )
+    {
+        uint256 count = positionIds.length;
+        ids = new bytes32[](count);
+        positionList = new Position[](count);
+        currentTicks = new int24[](count);
+        inRangeList = new bool[](count);
+        details = new PositionDetails[](count);
+
+        for (uint256 i = 0; i < count; i++) {
+            Position memory position = positions[positionIds[i]];
+            ids[i] = positionIds[i];
+            positionList[i] = position;
+
+            IPoolManager poolManager = IPoolManager(position.poolManager);
+            PoolId poolId = position.poolKey.toId();
+            (uint160 sqrtPriceX96, int24 currentTick,,) = poolManager.getSlot0(poolId);
+
+            currentTicks[i] = currentTick;
+            inRangeList[i] = currentTick >= position.tickLower && currentTick < position.tickUpper;
+
+            (details[i].currentAmount0, details[i].currentAmount1) = UniswapUtil.getAmountsForLiquidity(
+                sqrtPriceX96, position.tickLower, position.tickUpper, position.liquidity
+            );
+
+            details[i].feesOwed0 = _computeFee0(poolManager, poolId, position);
+            details[i].feesOwed1 = _computeFee1(poolManager, poolId, position);
+        }
+    }
+
+    function _computeFee0(IPoolManager poolManager, PoolId poolId, Position memory position)
+        internal
+        view
+        returns (uint256)
+    {
+        (uint256 feeGrowthInside0X128,) =
+            poolManager.getFeeGrowthInside(poolId, position.tickLower, position.tickUpper);
+        (, uint256 cached0,) =
+            poolManager.getPositionInfo(poolId, address(this), position.tickLower, position.tickUpper, bytes32(0));
+        unchecked {
+            return FullMath.mulDiv(feeGrowthInside0X128 - cached0, position.liquidity, FixedPoint128.Q128);
+        }
+    }
+
+    function _computeFee1(IPoolManager poolManager, PoolId poolId, Position memory position)
+        internal
+        view
+        returns (uint256)
+    {
+        (, uint256 feeGrowthInside1X128) =
+            poolManager.getFeeGrowthInside(poolId, position.tickLower, position.tickUpper);
+        (,, uint256 cached1) =
+            poolManager.getPositionInfo(poolId, address(this), position.tickLower, position.tickUpper, bytes32(0));
+        unchecked {
+            return FullMath.mulDiv(feeGrowthInside1X128 - cached1, position.liquidity, FixedPoint128.Q128);
         }
     }
 

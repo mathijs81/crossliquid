@@ -90,7 +90,7 @@ export async function addLiquidity(
     tickUpper,
     amount0Desired,
     amount1Desired,
-    amount0Min: 0n,
+    amount0Min: 0n, // FIXME: add slippage protection, 95% of desired?
     amount1Min: 0n,
   });
 
