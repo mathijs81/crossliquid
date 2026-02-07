@@ -20,6 +20,7 @@ export async function syncVault(
   if (!publicClient) {
     throw new Error(`No public client for chain ${chain.id}`);
   }
+  const publicClient_ = publicClient;
 
   const { vaultBalance, managerBalance } = await printBalances();
 
@@ -53,10 +54,10 @@ export async function syncVault(
   return (await printBalances()).managerBalance;
 
   async function printBalances() {
-    const balance = await publicClient.getBalance({
+    const balance = await publicClient_.getBalance({
       address: ourAddresses.vault,
     });
-    const managerBalance = await publicClient.getBalance({
+    const managerBalance = await publicClient_.getBalance({
       address: ourAddresses.manager,
     });
 
