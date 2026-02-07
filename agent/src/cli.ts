@@ -10,7 +10,7 @@ import {
   agentConfig,
   chains,
   createAgentWalletClient,
-  OUR_ADDRESSES,
+  getOurAddressesForChain,
   UNIV4_CONTRACTS,
 } from "./config.js";
 import { logger } from "./logger.js";
@@ -118,7 +118,8 @@ async function main() {
   }
 
   const chain = Number(process.env.CHAIN_ID) ?? agentConfig.vaultChainId;
-  const service = new PositionManagerService(chain, OUR_ADDRESSES.manager);
+  const ourAddresses = getOurAddressesForChain(chain);
+  const service = new PositionManagerService(chain, ourAddresses.manager);
 
   const poolManagerAddress = UNIV4_CONTRACTS[chain].poolManager;
   const usdcAddress = UNIV4_CONTRACTS[chain].usdc;
@@ -147,12 +148,13 @@ async function main() {
         }
 
         await addLiquidity(service, {
+          chainId: chain,
           eth: values.eth,
           usdc: values.usdc,
           poolManager: poolManagerAddress,
           stateView: UNIV4_CONTRACTS[chain].stateView,
           usdcAddress,
-          hookAddress: OUR_ADDRESSES.hook,
+          hookAddress: ourAddresses.hook,
           tickLower: values["tick-lower"]
             ? Number(values["tick-lower"])
             : undefined,
@@ -285,14 +287,14 @@ async function main() {
         const recipient = values.recipient
           ? resolveRecipientAddress(values.recipient)
           : forManager
-            ? OUR_ADDRESSES.manager
+            ? ourAddresses.manager
             : walletClient.account?.address;
 
         if (!recipient) {
           throw new Error("Recipient address is required");
         }
 
-        const positionManagerAddress = OUR_ADDRESSES.manager;
+        const positionManagerAddress = ourAddresses.manager;
         const dryRunProduction = values["dry-run-production"] as boolean;
 
         // dry-run-production implies quote-only

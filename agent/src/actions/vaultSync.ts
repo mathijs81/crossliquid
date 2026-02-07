@@ -1,11 +1,5 @@
-import {
-  type Account,
-  createPublicClient,
-  formatEther,
-  http,
-  type WalletClient,
-} from "viem";
-import { OUR_ADDRESSES } from "../config.js";
+import { type Account, formatEther, type WalletClient } from "viem";
+import { chains, getOurAddressesForChain } from "../config.js";
 import { logger } from "../logger.js";
 
 import { positionManagerAbi } from "../abi/PositionManager.js";
@@ -20,11 +14,12 @@ export async function syncVault(
 ): Promise<bigint> {
   const chain = walletClient.chain!;
   logger.info(`Syncing vault on chain ${chain.name}`);
+  const ourAddresses = getOurAddressesForChain(chain.id);
 
-  const publicClient = createPublicClient({
-    chain,
-    transport: http(),
-  });
+  const publicClient = chains.get(chain.id)?.publicClient;
+  if (!publicClient) {
+    throw new Error(`No public client for chain ${chain.id}`);
+  }
 
   const { vaultBalance, managerBalance } = await printBalances();
 
@@ -45,7 +40,7 @@ export async function syncVault(
     const hash = await walletClient.writeContract({
       chain,
       account: walletClient.account as Account,
-      address: OUR_ADDRESSES.manager,
+      address: ourAddresses.manager,
       abi: positionManagerAbi,
       functionName: "withdrawFromVault",
       args: [transferAmount],
@@ -59,10 +54,10 @@ export async function syncVault(
 
   async function printBalances() {
     const balance = await publicClient.getBalance({
-      address: OUR_ADDRESSES.vault,
+      address: ourAddresses.vault,
     });
     const managerBalance = await publicClient.getBalance({
-      address: OUR_ADDRESSES.manager,
+      address: ourAddresses.manager,
     });
 
     logger.info(`Vault balance: ${formatEther(balance)}`);

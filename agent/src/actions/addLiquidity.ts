@@ -13,6 +13,7 @@ import {
 export async function addLiquidity(
   service: PositionManagerService,
   options: {
+    chainId: number;
     eth: string;
     usdc: string;
     poolManager: Address;
@@ -34,6 +35,7 @@ export async function addLiquidity(
       usdc: options.usdc,
       amount0Desired: amount0Desired.toString(),
       amount1Desired: amount1Desired.toString(),
+      hookAddress: options.hookAddress,
     },
     "Preparing to add liquidity",
   );
@@ -53,7 +55,7 @@ export async function addLiquidity(
     tickUpper = options.tickUpper;
   } else {
     const currentTick = await getPoolCurrentTick(
-      31337,
+      options.chainId,
       options.stateView,
       poolId,
     );

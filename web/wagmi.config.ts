@@ -1,5 +1,6 @@
 import { defineConfig } from "@wagmi/cli";
 import { foundry, actions } from "@wagmi/cli/plugins";
+import { readdirSync, readFileSync } from "node:fs";
 
 // TODO: add prod chains
 import latestDeploy from "../foundry/broadcast/Deploy.s.sol/31337/run-latest.json";
@@ -10,34 +11,63 @@ import latestDeploy from "../foundry/broadcast/Deploy.s.sol/31337/run-latest.jso
 let lastContractName: string | undefined;
 let lastContractAddress: `0x${string}` | undefined;
 
-const deployments: Record<string, Record<number, `0x${string}`>> = {};
+const deployments: Record<string, Record<number, `0x${string}`>> = {
+  "CrossLiquidVault": {},
+  "PositionManager": {},
+  "VolatilityFeeHook": {},
+};
 
-for (const transaction of latestDeploy.transactions) {
-  if (transaction.transactionType === "CREATE") {
-    if (lastContractName !== undefined) {
+const isProduction = process.env.NODE_ENV === "production";
+
+if (!isProduction) {
+  for (const transaction of latestDeploy.transactions) {
+    if (transaction.transactionType === "CREATE") {
+      if (lastContractName !== undefined) {
+        deployments[lastContractName] = {
+          // biome-ignore lint/style/noNonNullAssertion: guaranteed set here
+          [latestDeploy.chain]: lastContractAddress!,
+        };
+      }
+      lastContractName = transaction.contractName;
+      lastContractAddress = transaction.contractAddress as `0x${string}`;
+    } else if (
+      transaction.transactionType === "CREATE2" &&
+      lastContractName !== undefined
+    ) {
       deployments[lastContractName] = {
-        // biome-ignore lint/style/noNonNullAssertion: guaranteed set here
-        [latestDeploy.chain]: lastContractAddress!,
+        [latestDeploy.chain]: transaction.contractAddress as `0x${string}`,
       };
+      lastContractName = undefined;
+      lastContractAddress = undefined;
     }
-    lastContractName = transaction.contractName;
-    lastContractAddress = transaction.contractAddress as `0x${string}`;
-  } else if (
-    transaction.transactionType === "CREATE2" &&
-    lastContractName !== undefined
-  ) {
-    deployments[lastContractName] = {
-      [latestDeploy.chain]: transaction.contractAddress as `0x${string}`,
-    };
-    lastContractName = undefined;
-    lastContractAddress = undefined;
   }
+} else {
+  // We also need to iterate ../foundry/broadcast/uniswapContracts/[* that's not 31337] for production contracts
+  readdirSync("../foundry/broadcast/uniswapContracts").forEach((chainId) => {
+    if (chainId === "31337") return;
+    const deployment = JSON.parse(
+      readFileSync(
+        `../foundry/broadcast/uniswapContracts/${chainId}/deployedCrossLiquid.json`,
+        "utf8",
+      ),
+    );
+    // We need to remap the names to the exact contract name
+    const nameMap = {
+      vault: "CrossLiquidVault",
+      manager: "PositionManager",
+      hook: "VolatilityFeeHook",
+    };
+    for (const [key, value] of Object.entries(deployment)) {
+      const deploymentMap = deployments[nameMap[key]] ?? {};
+      deploymentMap[chainId] = value;
+      deployments[nameMap[key]] = deploymentMap;
+    }
+  });
 }
 
-//console.log(deployments);
+console.log(deployments);
 
 export default defineConfig(() => {
-  const isProduction = process.env.NODE_ENV === "production";
   return {
     out: `src/lib/contracts/generated.${isProduction ? "prod" : "local"}.ts`,
     contracts: [],

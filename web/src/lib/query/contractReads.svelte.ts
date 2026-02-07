@@ -1,8 +1,4 @@
 import type { ContractName } from "$lib/contracts/deployedContracts";
-import {
-  crossLiquidVaultAbi,
-  crossLiquidVaultAddress,
-} from "$lib/contracts/generated.local";
 import { createErrorQuery } from "$lib/utils/query";
 import type { WagmiChain } from "$lib/utils/types";
 import { vaultChainId } from "$lib/wagmi/chains";
@@ -13,6 +9,8 @@ import { readContractQueryOptions } from "@wagmi/core/query";
 import type { Abi, ContractFunctionArgs, ContractFunctionName } from "viem";
 import { DEFAULT_WATCH_INTERVAL } from "./config";
 import { getGlobalClient } from "./globalClient";
+
+import { crossLiquidVaultAbi, crossLiquidVaultAddress } from "@generated";
 
 export interface ReadQueryOptions {
   contract: `0x${string}` | ContractName;

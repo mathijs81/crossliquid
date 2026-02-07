@@ -1,6 +1,12 @@
 import adapter from "@sveltejs/adapter-static";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+const generatedPath = isProduction
+  ? "src/lib/contracts/generated.prod.ts"
+  : "src/lib/contracts/generated.local.ts";
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   // Consult https://svelte.dev/docs/kit/integrations
@@ -15,6 +21,9 @@ const config = {
       precompress: false,
       strict: true,
     }),
+    alias: {
+      "@generated": generatedPath,
+    },
   },
 };
 

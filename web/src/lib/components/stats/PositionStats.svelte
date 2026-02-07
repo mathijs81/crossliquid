@@ -32,6 +32,7 @@ function formatPositionId(positionId: `0x${string}`): string {
 }
 
 const managerAddress = deployedContracts.positionManager.deployments[vaultChain.id];
+// FIXME: get right usdc address for chain
 const usdcAddress = "0x0165878A594ca255338adfa4d48449f69242Eb8F";
 
 // Register known tokens so getTokenMeta can resolve them
@@ -52,6 +53,13 @@ function rangeBarPercent(tickLower: number, tickUpper: number, currentTick: numb
   if (tickUpper === tickLower) return 50;
   const clamped = Math.max(tickLower, Math.min(tickUpper, currentTick));
   return ((clamped - tickLower) / (tickUpper - tickLower)) * 100;
+}
+
+function formatFee(fee: number): string {
+  if (fee === 0x800000) {
+    return "Dynamic";
+  }
+  return `${fee / 10000}%`;
 }
 </script>
 
@@ -108,7 +116,7 @@ function rangeBarPercent(tickLower: number, tickUpper: number, currentTick: numb
                       <div class="flex items-center gap-2">
                         <span class="font-mono text-xs opacity-60">{formatPositionId(id)}</span>
                         <Badge variant={position.poolKey.fee === 500 ? "primary" : "neutral"}>
-                          {position.poolKey.fee / 10000}% fee
+                          {formatFee(position.poolKey.fee)} fee
                         </Badge>
                       </div>
                       {#if inRange}

@@ -1,10 +1,11 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { playwright } from "@vitest/browser-playwright";
+import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [tailwindcss(), sveltekit()],
+  plugins: [tailwindcss(), sveltekit(), tsconfigPaths()],
   server: {
     proxy: {
       "/api": {
@@ -53,12 +54,6 @@ export default defineConfig({
     reporters: ["default"],
   },
   resolve: {
-    alias: {
-      "./src/lib/contracts/generated.local":
-        process.env.NODE_ENV === "production"
-          ? "./src/lib/contracts/generated.prod"
-          : "./src/lib/contracts/generated.local",
-    },
     // Tell Vitest to use the `browser` entry points in `package.json` files, even though it's running in Node
     ...(process.env.VITEST
       ? {

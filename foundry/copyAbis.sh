@@ -18,3 +18,5 @@ import type { Abi } from 'viem'
 export const ${contract,}Abi = $(cat "out/${contract}.sol/${contract}.json" | jq .abi) as const satisfies Abi
 EOF
 done
+
+./merge_deployments.py
