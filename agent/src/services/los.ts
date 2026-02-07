@@ -171,19 +171,3 @@ const computeScoreForChain = (
     lastUpdated: now,
   };
 };
-
-export const getTargetDistribution = (
-  _scores: Map<number, LiquidityOpportunityScore>,
-): Map<number, number> => {
-  // TODO: Convert LOS scores into target fund distribution percentages
-  // Should factor in:
-  // - Minimum viable liquidity per chain
-  // - Gas costs of rebalancing
-  // - Risk diversification
-
-  const distribution = new Map<number, number>();
-  for (const [chainId] of chains) {
-    distribution.set(chainId, 0);
-  }
-  return distribution;
-};

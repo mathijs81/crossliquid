@@ -348,6 +348,11 @@ async function main() {
         const sqrtPriceX96 = ethPriceToSqrtPriceX96(price);
         console.log(`ETH Price: ${price}`);
         console.log(`sqrtPriceX96: ${sqrtPriceX96}`);
+
+        // Also show the ticks. This is basically 1.0001^tick = price
+        // so log(price) / log(1.0001) = tick
+        const tick = Math.log(price / 10**18 * 10**6) / Math.log(1.0001);
+        console.log(`Tick: ${tick.toFixed(0)}`);
         break;
       }
 
@@ -411,7 +416,7 @@ function resolveRecipientAddress(value: string): Address {
  * @returns Formatted sqrtPriceX96 value with underscores every 3 digits
  */
 export function ethPriceToSqrtPriceX96(ethPrice: number): string {
-  const sqrtPrice = Math.sqrt(ethPrice);
+  const sqrtPrice = Math.sqrt(ethPrice / 10 ** 18 * 10 ** 6);
   const sqrtPriceX96 = sqrtPrice * 2 ** 96;
   const sqrtPriceX96BigInt = BigInt(Math.floor(sqrtPriceX96));
 

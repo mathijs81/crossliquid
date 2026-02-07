@@ -110,7 +110,7 @@ interface DeployedContracts {
   hook: `0x${string}`;
 }
 
-const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
+export const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 const DYNAMIC_FEE_FLAG = 0x800000;
 
 export function getOurAddressesForChain(chainId: number): DeployedContracts {

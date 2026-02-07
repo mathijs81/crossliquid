@@ -136,6 +136,25 @@ export class SwappingService {
       };
     }
 
+    if (quote.quoteSource === "lifi") {
+      if (!quote.routing?.calldata || !quote.routing.to) {
+        throw new Error("LI.FI quote missing data");
+      }
+
+      return {
+        chainId: this.chainId,
+        to: quote.routing.to,
+        data: quote.routing.calldata,
+        value: quote.routing.value,
+        deadline,
+        tokenIn: quote.tokenIn,
+        approvalAmount: 0n,
+        amountIn: quote.amountIn,
+        amountOut: quote.amountOut,
+        quoteSource: quote.quoteSource,
+      };
+    }
+
     if (!quote.poolKey || quote.zeroForOne === undefined) {
       throw new Error("Local quote missing pool metadata");
     }
@@ -354,6 +373,13 @@ export class SwappingService {
       fromAmount: request.amountIn.toString(),
     });
     console.log(quote);
+
+    if (!quote.transactionRequest) {
+      throw new Error("LI.FI quote missing transaction request");
+    }
+
+    // lifi returns value as a 0x string, convert to bigint
+    const value = BigInt(quote.transactionRequest.value as `0x${string}`);
     return {
       chainId: request.chainId,
       tokenIn: request.tokenIn,
@@ -364,9 +390,9 @@ export class SwappingService {
       recipient: request.recipient,
       quoteSource: "lifi",
       routing: {
-        calldata: "0x" as Hex,
-        value: 0n,
-        to: "0x000",
+        calldata: quote.transactionRequest.data as `0x${string}`,
+        value,
+        to: quote.transactionRequest.to as Address,
       },
     };
   }
