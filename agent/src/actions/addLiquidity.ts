@@ -1,8 +1,8 @@
-import type { Address } from "viem/accounts";
-import type { PositionManagerService } from "../services/positionManager.js";
 import { formatEther, formatUnits, parseEther, parseUnits } from "viem";
+import type { Address } from "viem/accounts";
 import { logger } from "../logger.js";
 import { getPoolCurrentTick } from "../services/pool.js";
+import type { PositionManagerService } from "../services/positionManager.js";
 import { calculateTickRange } from "../services/positionManager.js";
 import {
   createEthUsdcPoolKey,
@@ -24,8 +24,6 @@ export async function addLiquidity(
     tickUpper?: number;
   },
 ) {
-  // TODO: check that the pool we're adding to has a current price that's somewhat decent.
-
   const amount0Desired = parseEther(options.eth);
   const amount1Desired = parseUnits(options.usdc, 6);
 
@@ -59,8 +57,24 @@ export async function addLiquidity(
       options.stateView,
       poolId,
     );
+
+    const otherTick = await getPoolCurrentTick(
+      options.chainId,
+      options.stateView,
+      createPoolId(createEthUsdcPoolKey(
+        options.usdcAddress,
+        FeeTier.LOW
+      )),
+    )
+    if (!otherTick) {
+      throw new Error("Failed to fetch current tick from pool");
+    }
     if (!currentTick) {
       throw new Error("Failed to fetch current tick from pool");
+    }
+
+    if (Math.abs(currentTick - otherTick) > 100) {
+      throw new Error(`Current tick (${currentTick}) is too far from other tick (${otherTick}).`);
     }
     const range = calculateTickRange(currentTick, 10);
     tickLower = range.tickLower;

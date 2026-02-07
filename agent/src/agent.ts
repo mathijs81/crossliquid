@@ -31,7 +31,6 @@ class Agent {
       logger.info("Starting loop");
 
       const losScores = await calculateLOS();
-      const _targetDistribution = getTargetDistribution(losScores);
 
       for (const [chainId] of chains.entries()) {
         logger.info(`starting chain ${chainId}`);
