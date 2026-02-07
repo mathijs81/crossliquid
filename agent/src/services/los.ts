@@ -1,7 +1,7 @@
 import type { PublicClient } from "viem";
 import { chains } from "../config.js";
-import { MetricsService, type ChainMetrics } from "./metrics.js";
 import { logger } from "../logger.js";
+import { MetricsService, type ChainMetrics } from "./metrics.js";
 
 export interface LiquidityOpportunityScore {
   chainId: number;
@@ -32,6 +32,8 @@ const GAS_SCORES: Record<number, number> = {
   10: 10, // Optimism - very cheap, usually 0.00[x] gwei
   8453: 8, // Base - cheap, 0.0x gwei
   130: 10, // Unichain - very cheap, 0.00x
+
+  31337: 5, // dev mode
 };
 
 export const calculateLOS = async (): Promise<

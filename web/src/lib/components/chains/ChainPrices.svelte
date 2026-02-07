@@ -95,7 +95,7 @@ function computeFeeAndLiquidity(poolPrices: PoolPrice[]): { feeApr: number; liqu
   if (poolPrices.length < 2) return null;
 
   const sorted = [...poolPrices]
-    .filter((p) => p.feeGrowthGlobal0 !== "0" && p.feeGrowthGlobal1 !== "0")
+    .filter((p) => p.feeGrowthGlobal0 !== "0" || p.feeGrowthGlobal1 !== "0")
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   const oldest = sorted[0];
   const newest = sorted[sorted.length - 1];
@@ -107,7 +107,6 @@ function computeFeeAndLiquidity(poolPrices: PoolPrice[]): { feeApr: number; liqu
 
   const deltaFee0 = Number(BigInt(newest.feeGrowthGlobal0) - BigInt(oldest.feeGrowthGlobal0)) / 2 ** 128;
   const deltaFee1 = Number(BigInt(newest.feeGrowthGlobal1) - BigInt(oldest.feeGrowthGlobal1)) / 2 ** 128;
-  if (deltaFee0 === 0 && deltaFee1 === 0) return null;
 
   const price = (Number(newest.sqrtPriceX96) / 2 ** 96) ** 2;
 
