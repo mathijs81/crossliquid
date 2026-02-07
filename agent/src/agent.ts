@@ -2,7 +2,7 @@ import { chains, databasePath } from "./config.js";
 import { logger } from "./logger.js";
 import { closeDatabase, db, initializeDatabase } from "./services/database.js";
 import { collectEthUsdcData, type EthUsdcData } from "./services/ethusdc.js";
-import { calculateLOS, getTargetDistribution } from "./services/los.js";
+import { calculateLOS } from "./services/los.js";
 import { getVaultState } from "./services/vault.js";
 
 export interface AgentStats {

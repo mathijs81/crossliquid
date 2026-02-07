@@ -1,0 +1,1 @@
+../../../../agent/src/contracts/base-contract-addresses.ts

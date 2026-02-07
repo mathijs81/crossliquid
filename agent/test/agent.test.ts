@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { agent } from "../src/agent.js";
-import { ENVIRONMENT } from "../src/config.js";
+import { ENVIRONMENT } from "../src/env.js";
 
 describe("Agent", () => {
   beforeEach(() => {

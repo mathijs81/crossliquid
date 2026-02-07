@@ -52,7 +52,7 @@ const baseDestinations = [
   [SpeedometerIcon, "Crosschain Liquidity", "/chains"],
   [PiggyBankIcon, "Deposit to Vault", "/cross-liquid"],
   [ChartLineIcon, "Position Stats", "/stats"],
-  ...(import.meta.env.DEV ? [[BugIcon, "Debug", "/debug"]] : []),
+  ...(import.meta.env.DEV ? [[BugIcon, "Debug", "/debug"] as const] : []),
 ] as const;
 
 const destinations = $derived(

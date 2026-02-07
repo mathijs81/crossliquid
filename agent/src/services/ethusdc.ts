@@ -5,11 +5,11 @@ import {
   chains,
   QUERY_POOL_KEYS,
   type PoolKey,
-  UNIV4_CONTRACTS,
 } from "../config.js";
 import { logger } from "../logger.js";
 import { createPoolId } from "../utils/poolIds.js";
 import { defaultReadRetryer } from "../utils/retryer.js";
+import { UNIV4_CONTRACTS } from "../contracts/contract-addresses.js";
 
 export interface EthUsdcPoolPrice {
   poolId: `0x${string}`;
@@ -41,7 +41,7 @@ export async function simulateEthToUsdcSwap(
     throw new Error(`Chain ${chainId} not initialized`);
   }
 
-  const contracts = UNIV4_CONTRACTS[chainId];
+  const contracts = UNIV4_CONTRACTS[chainId as keyof typeof UNIV4_CONTRACTS];
   if (!contracts) {
     throw new Error(`UniV4 contracts not configured for chain ${chainId}`);
   }

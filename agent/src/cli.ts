@@ -2,6 +2,7 @@
 
 import { parseArgs } from "node:util";
 import { erc20Abi, isAddress, type Address } from "viem";
+import { getContractEvents } from "viem/actions";
 import { addLiquidity } from "./actions/addLiquidity.js";
 import { removeLiquidity } from "./actions/removeLiquidity.js";
 import { swapTokens } from "./actions/swap.js";
@@ -11,15 +12,14 @@ import {
   chains,
   createAgentWalletClient,
   getOurAddressesForChain,
-  UNIV4_CONTRACTS,
 } from "./config.js";
+import { UNIV4_CONTRACTS } from "./contracts/contract-addresses.js";
 import { logger } from "./logger.js";
 import {
   formatPosition,
   PositionManagerService,
 } from "./services/positionManager.js";
 import { SwappingService } from "./services/swapping.js";
-import { getContractEvents } from "viem/actions";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 
@@ -353,7 +353,7 @@ async function main() {
 
         // Also show the ticks. This is basically 1.0001^tick = price
         // so log(price) / log(1.0001) = tick
-        const tick = Math.log(price / 10**18 * 10**6) / Math.log(1.0001);
+        const tick = Math.log((price / 10 ** 18) * 10 ** 6) / Math.log(1.0001);
         console.log(`Tick: ${tick.toFixed(0)}`);
         break;
       }
@@ -418,7 +418,7 @@ function resolveRecipientAddress(value: string): Address {
  * @returns Formatted sqrtPriceX96 value with underscores every 3 digits
  */
 export function ethPriceToSqrtPriceX96(ethPrice: number): string {
-  const sqrtPrice = Math.sqrt(ethPrice / 10 ** 18 * 10 ** 6);
+  const sqrtPrice = Math.sqrt((ethPrice / 10 ** 18) * 10 ** 6);
   const sqrtPriceX96 = sqrtPrice * 2 ** 96;
   const sqrtPriceX96BigInt = BigInt(Math.floor(sqrtPriceX96));
 

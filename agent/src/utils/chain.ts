@@ -1,3 +1,4 @@
+import { ChainId } from "@lifi/sdk";
 import { type Chain, createPublicClient, http, type PublicClient } from "viem";
 import {
   base,
@@ -8,9 +9,9 @@ import {
   unichain,
   unichainSepolia,
 } from "viem/chains";
-import type { ChainConfig, Environment } from "../config.js";
+import type { ChainConfig } from "../config.js";
 import { logger } from "../logger.js";
-import { ChainId } from "@lifi/sdk";
+import { Environment, ENVIRONMENT } from "../env.js";
 
 export const createClient = (chain: Chain, rpcUrl?: string): PublicClient => {
   return createPublicClient({
@@ -63,8 +64,6 @@ function getChains(environment: Environment): number[] {
       return [foundry.id];
     case "production":
       return [base.id, optimism.id, mainnet.id, unichain.id];
-    case "testnet":
-      return [baseSepolia.id, unichainSepolia.id];
   }
 }
 

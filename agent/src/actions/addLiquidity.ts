@@ -62,11 +62,8 @@ export async function addLiquidity(
     const otherTick = await getPoolCurrentTick(
       options.chainId,
       options.stateView,
-      createPoolId(createEthUsdcPoolKey(
-        options.usdcAddress,
-        FeeTier.LOW
-      )),
-    )
+      createPoolId(createEthUsdcPoolKey(options.usdcAddress, FeeTier.LOW)),
+    );
     if (!otherTick) {
       throw new Error("Failed to fetch current tick from pool");
     }
@@ -76,7 +73,9 @@ export async function addLiquidity(
 
     const tickDifference = currentTick - otherTick;
     if (Math.abs(tickDifference) > (options.maxTickDiff ?? 100)) {
-      throw new Error(`Current tick (${currentTick}) is too far from other tick (${otherTick}), difference is ${tickDifference}.`);
+      throw new Error(
+        `Current tick (${currentTick}) is too far from other tick (${otherTick}), difference is ${tickDifference}.`,
+      );
     }
     const range = calculateTickRange(currentTick, 10);
     tickLower = range.tickLower;

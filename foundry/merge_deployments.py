@@ -1,5 +1,9 @@
 #! /usr/bin/env python3
 
+# Script to copy deployment addresses from foundry to agent/
+# web/ is handled by wagmi (both abis and addresses)
+# abis to agent/ is handled by copyAbis.sh
+
 import json
 import os
 
@@ -10,10 +14,6 @@ for chainId in os.listdir("broadcast/uniswapContracts"):
         continue
     with open(f"broadcast/uniswapContracts/{chainId}/deployedCrossLiquid.json", "r") as f:
         deployments[chainId] = json.load(f)
-
-# create contracts dir if not exists
-if not os.path.exists("../agent/src/contracts"):
-    os.makedirs("../agent/src/contracts")
 
 with open("../agent/src/contracts/deployed.ts", "w") as f:
     f.write("export const deployedContracts = {\n")

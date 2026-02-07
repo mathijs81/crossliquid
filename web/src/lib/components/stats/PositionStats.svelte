@@ -16,6 +16,7 @@ import QueryRenderer from "../QueryRenderer.svelte";
 import Alert from "../atoms/Alert.svelte";
 import Badge from "../atoms/Badge.svelte";
 import { useBalance } from "$lib/query/networkInfo.svelte";
+import { UNIV4_CONTRACTS } from "$lib/contracts/contract-addresses";
 
 const positionsQuery = $derived(
   createReadQuery({
@@ -32,8 +33,7 @@ function formatPositionId(positionId: `0x${string}`): string {
 }
 
 const managerAddress = deployedContracts.positionManager.deployments[vaultChain.id];
-// FIXME: get right usdc address for chain
-const usdcAddress = "0x0165878A594ca255338adfa4d48449f69242Eb8F";
+const usdcAddress = UNIV4_CONTRACTS[vaultChain.id as keyof typeof UNIV4_CONTRACTS].usdc as `0x${string}`;
 
 // Register known tokens so getTokenMeta can resolve them
 registerToken(usdcAddress, "USDC", 6);
