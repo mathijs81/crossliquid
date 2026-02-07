@@ -31,6 +31,7 @@ const COMMANDS = {
   "sync-vault":
     "Sync funds between the $CLQ vault and the pool manager on Base",
   "dump-usdc-transfers": "Dump all USDC transfers from the manager",
+  "price-to-sqrt": "Convert ETH price to sqrtPriceX96 format",
   help: "Show this help message",
 } as const;
 
@@ -78,6 +79,9 @@ function showHelp() {
   console.log();
   console.log("  # Swap ETH for USDC");
   console.log("  pnpm cli swap --amount 0.1 --token-in eth --token-out usdc");
+  console.log();
+  console.log("  # Convert ETH price to sqrtPriceX96");
+  console.log("  pnpm cli price-to-sqrt --price 2042");
 }
 
 async function listPositions(service: PositionManagerService) {
@@ -322,6 +326,31 @@ async function main() {
         break;
       }
 
+      case "price-to-sqrt": {
+        const { values } = parseArgs({
+          args: args.slice(1),
+          options: {
+            price: { type: "string" },
+          },
+        });
+
+        if (!values.price) {
+          console.error("--price is required (e.g., --price 2042)");
+          process.exit(1);
+        }
+
+        const price = Number(values.price);
+        if (Number.isNaN(price) || price <= 0) {
+          console.error("Price must be a positive number");
+          process.exit(1);
+        }
+
+        const sqrtPriceX96 = ethPriceToSqrtPriceX96(price);
+        console.log(`ETH Price: ${price}`);
+        console.log(`sqrtPriceX96: ${sqrtPriceX96}`);
+        break;
+      }
+
       case "help": {
         showHelp();
         break;
@@ -372,6 +401,24 @@ function resolveRecipientAddress(value: string): Address {
   }
 
   throw new Error(`Invalid recipient address: ${value}`);
+}
+
+/**
+ * Convert an ETH price (e.g., 2042 USDC per ETH) to Uniswap v4's sqrtPriceX96 format.
+ * Formula: sqrtPriceX96 = sqrt(price) * 2^96
+ *
+ * @param ethPrice - Price of ETH in USDC (e.g., 2042)
+ * @returns Formatted sqrtPriceX96 value with underscores every 3 digits
+ */
+export function ethPriceToSqrtPriceX96(ethPrice: number): string {
+  const sqrtPrice = Math.sqrt(ethPrice);
+  const sqrtPriceX96 = sqrtPrice * 2 ** 96;
+  const sqrtPriceX96BigInt = BigInt(Math.floor(sqrtPriceX96));
+
+  const numStr = sqrtPriceX96BigInt.toString();
+  const formatted = numStr.replace(/\B(?=(\d{3})+(?!\d))/g, "_");
+
+  return formatted;
 }
 
 main();
