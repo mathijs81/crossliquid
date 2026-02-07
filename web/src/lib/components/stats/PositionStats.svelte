@@ -10,6 +10,7 @@ import {
   registerToken,
   tickToPrice,
 } from "$lib/utils/format";
+import { getAmountsForLiquidity } from "$lib/utils/uniswapMath";
 import { vaultChain } from "$lib/wagmi/chains";
 import { erc20Abi, formatUnits } from "viem";
 import QueryRenderer from "../QueryRenderer.svelte";
@@ -108,6 +109,7 @@ function formatFee(fee: number): string {
                 {@const priceHigh = tickToPrice(position.tickUpper, meta0.decimals, meta1.decimals)}
                 {@const priceCurrent = tickToPrice(currentTick, meta0.decimals, meta1.decimals)}
                 {@const percent = rangeBarPercent(position.tickLower, position.tickUpper, currentTick)}
+                {@const currentAmounts = getAmountsForLiquidity(currentTick, position.tickLower, position.tickUpper, position.liquidity)}
 
                 <div class="card bg-base-200/50 shadow-sm">
                   <div class="card-body p-4 gap-3">
@@ -164,15 +166,15 @@ function formatFee(fee: number): string {
                       {/if}
                     </div>
 
-                    <!-- Amounts -->
+                    <!-- Current Amounts -->
                     <div class="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div class="opacity-60 text-xs">{meta0.symbol}</div>
-                        <div class="font-medium">{formatTokenAmount(position.amount0, meta0.decimals)}</div>
+                        <div class="font-medium" title="{formatTokenAmount(currentAmounts.amount0, meta0.decimals, 10)}">{formatTokenAmount(currentAmounts.amount0, meta0.decimals, 2)}</div>
                       </div>
                       <div>
                         <div class="opacity-60 text-xs">{meta1.symbol}</div>
-                        <div class="font-medium">{formatTokenAmount(position.amount1, meta1.decimals, 2)}</div>
+                        <div class="font-medium" title="{formatTokenAmount(currentAmounts.amount1, meta1.decimals, 10)}">{formatTokenAmount(currentAmounts.amount1, meta1.decimals, 2)}</div>
                       </div>
                       <div>
                         <div class="opacity-60 text-xs">Liquidity</div>
