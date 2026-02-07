@@ -143,6 +143,7 @@ async function main() {
             usdc: { type: "string" },
             "tick-lower": { type: "string" },
             "tick-upper": { type: "string" },
+            "max-tick-diff": { type: "string", default: "200" },
           },
         });
 
@@ -165,6 +166,7 @@ async function main() {
           tickUpper: values["tick-upper"]
             ? Number(values["tick-upper"])
             : undefined,
+          maxTickDiff: Number(values["max-tick-diff"]),
         });
         break;
       }

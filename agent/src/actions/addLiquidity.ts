@@ -22,6 +22,7 @@ export async function addLiquidity(
     hookAddress?: Address;
     tickLower?: number;
     tickUpper?: number;
+    maxTickDiff?: number;
   },
 ) {
   const amount0Desired = parseEther(options.eth);
@@ -73,8 +74,9 @@ export async function addLiquidity(
       throw new Error("Failed to fetch current tick from pool");
     }
 
-    if (Math.abs(currentTick - otherTick) > 100) {
-      throw new Error(`Current tick (${currentTick}) is too far from other tick (${otherTick}).`);
+    const tickDifference = currentTick - otherTick;
+    if (Math.abs(tickDifference) > (options.maxTickDiff ?? 100)) {
+      throw new Error(`Current tick (${currentTick}) is too far from other tick (${otherTick}), difference is ${tickDifference}.`);
     }
     const range = calculateTickRange(currentTick, 10);
     tickLower = range.tickLower;
