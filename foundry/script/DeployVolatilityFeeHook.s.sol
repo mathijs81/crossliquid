@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {Script, console} from "forge-std/Script.sol";
-import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
-import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
-import {HookMiner} from "@uniswap/v4-periphery/src/utils/HookMiner.sol";
-import {VolatilityFeeHook} from "../src/VolatilityFeeHook.sol";
-import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
-import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
-import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
-import {LPFeeLibrary} from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
+import { Script, console } from "forge-std/Script.sol";
+import { Hooks } from "@uniswap/v4-core/src/libraries/Hooks.sol";
+import { IPoolManager } from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import { IHooks } from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import { HookMiner } from "@uniswap/v4-periphery/src/utils/HookMiner.sol";
+import { VolatilityFeeHook } from "../src/VolatilityFeeHook.sol";
+import { PoolKey } from "@uniswap/v4-core/src/types/PoolKey.sol";
+import { PoolId, PoolIdLibrary } from "@uniswap/v4-core/src/types/PoolId.sol";
+import { Currency } from "@uniswap/v4-core/src/types/Currency.sol";
+import { LPFeeLibrary } from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
 
 /// @notice Deploys VolatilityFeeHook and initializes an ETH/USDC pool with it.
 /// Uses CREATE2 with HookMiner to get an address whose lower bits encode the hook permissions.
@@ -48,7 +48,7 @@ contract DeployVolatilityFeeHook is Script {
 
         vm.startBroadcast();
 
-        VolatilityFeeHook hook = new VolatilityFeeHook{salt: salt}(poolManager, owner);
+        VolatilityFeeHook hook = new VolatilityFeeHook{ salt: salt }(poolManager, owner);
         require(address(hook) == hookAddress, "DeployVolatilityFeeHook: address mismatch");
 
         // Initialize ETH/USDC pool with the hook

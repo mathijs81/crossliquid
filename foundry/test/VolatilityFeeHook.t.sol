@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {Test, console} from "forge-std/Test.sol";
-import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
-import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
-import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
-import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
-import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
-import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
-import {LPFeeLibrary} from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
-import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
-import {SwapParams, ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
-import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
-import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
-import {PoolManager} from "@uniswap/v4-core/src/PoolManager.sol";
-import {PoolModifyLiquidityTest} from "@uniswap/v4-core/src/test/PoolModifyLiquidityTest.sol";
-import {VolatilityFeeHook} from "../src/VolatilityFeeHook.sol";
+import { Test, console } from "forge-std/Test.sol";
+import { IHooks } from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import { Hooks } from "@uniswap/v4-core/src/libraries/Hooks.sol";
+import { PoolSwapTest } from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
+import { IPoolManager } from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import { Currency } from "@uniswap/v4-core/src/types/Currency.sol";
+import { PoolKey } from "@uniswap/v4-core/src/types/PoolKey.sol";
+import { PoolId, PoolIdLibrary } from "@uniswap/v4-core/src/types/PoolId.sol";
+import { LPFeeLibrary } from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
+import { StateLibrary } from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
+import { SwapParams, ModifyLiquidityParams } from "@uniswap/v4-core/src/types/PoolOperation.sol";
+import { TickMath } from "@uniswap/v4-core/src/libraries/TickMath.sol";
+import { MockERC20 } from "solmate/src/test/utils/mocks/MockERC20.sol";
+import { PoolManager } from "@uniswap/v4-core/src/PoolManager.sol";
+import { PoolModifyLiquidityTest } from "@uniswap/v4-core/src/test/PoolModifyLiquidityTest.sol";
+import { VolatilityFeeHook } from "../src/VolatilityFeeHook.sol";
 
 contract VolatilityFeeHookVest is Test {
     using StateLibrary for IPoolManager;
@@ -32,7 +32,7 @@ contract VolatilityFeeHookVest is Test {
     PoolKey public poolKey;
 
     bytes constant ZERO_BYTES = bytes("");
-    uint160 constant SQRT_PRICE_1_1 = 79228162514264337593543950336;
+    uint160 constant SQRT_PRICE_1_1 = 79_228_162_514_264_337_593_543_950_336;
 
     address owner = address(this);
     address notOwner = address(0xBEEF);
@@ -49,9 +49,7 @@ contract VolatilityFeeHookVest is Test {
         );
         address hookAddr = address(flags);
 
-        deployCodeTo(
-            "VolatilityFeeHook.sol:VolatilityFeeHook", abi.encode(address(manager), owner), hookAddr
-        );
+        deployCodeTo("VolatilityFeeHook.sol:VolatilityFeeHook", abi.encode(address(manager), owner), hookAddr);
         hook = VolatilityFeeHook(hookAddr);
 
         MockERC20 tokenA = new MockERC20("TokenA", "A", 18);
@@ -81,7 +79,7 @@ contract VolatilityFeeHookVest is Test {
         token1.approve(address(modifyLiquidityRouter), type(uint256).max);
         modifyLiquidityRouter.modifyLiquidity(
             poolKey,
-            ModifyLiquidityParams({tickLower: -600, tickUpper: 600, liquidityDelta: 100 ether, salt: 0}),
+            ModifyLiquidityParams({ tickLower: -600, tickUpper: 600, liquidityDelta: 100 ether, salt: 0 }),
             ZERO_BYTES
         );
     }
@@ -176,13 +174,13 @@ contract VolatilityFeeHookVest is Test {
         token1.approve(address(swapRouter), type(uint256).max);
 
         PoolSwapTest.TestSettings memory settings =
-            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false});
+            PoolSwapTest.TestSettings({ takeClaims: false, settleUsingBurn: false });
 
         uint160 priceLimit = zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
 
         swapRouter.swap(
             poolKey,
-            SwapParams({zeroForOne: zeroForOne, amountSpecified: -amount, sqrtPriceLimitX96: priceLimit}),
+            SwapParams({ zeroForOne: zeroForOne, amountSpecified: -amount, sqrtPriceLimitX96: priceLimit }),
             settings,
             ZERO_BYTES
         );

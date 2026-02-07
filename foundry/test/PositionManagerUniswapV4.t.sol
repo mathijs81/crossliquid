@@ -56,11 +56,7 @@ contract PositionManagerUniswapV4Test is Test, Deployers {
         Currency usdcCurrency = Currency.wrap(address(usdc));
 
         ethUsdcPoolKey = PoolKey({
-            currency0: eth,
-            currency1: usdcCurrency,
-            fee: FEE,
-            tickSpacing: TICK_SPACING,
-            hooks: IHooks(address(0))
+            currency0: eth, currency1: usdcCurrency, fee: FEE, tickSpacing: TICK_SPACING, hooks: IHooks(address(0))
         });
 
         poolManager.initialize(ethUsdcPoolKey, SQRT_PRICE_ETH_USDC);
@@ -138,9 +134,8 @@ contract PositionManagerUniswapV4Test is Test, Deployers {
 
         // Withdraw all liquidity
         vm.prank(operator);
-        (uint256 withdrawnEth, uint256 withdrawnUsdc) = clManager.withdrawFromUniswap(
-            address(poolManager), ethUsdcPoolKey, tickLower, tickUpper, liquidity, 0, 0
-        );
+        (uint256 withdrawnEth, uint256 withdrawnUsdc) =
+            clManager.withdrawFromUniswap(address(poolManager), ethUsdcPoolKey, tickLower, tickUpper, liquidity, 0, 0);
 
         assertGt(withdrawnEth, 0, "Should have received ETH back");
         assertGt(withdrawnUsdc, 0, "Should have received USDC back");
@@ -165,9 +160,7 @@ contract PositionManagerUniswapV4Test is Test, Deployers {
         // Withdraw half
         uint128 halfLiquidity = liquidity / 2;
         vm.prank(operator);
-        clManager.withdrawFromUniswap(
-            address(poolManager), ethUsdcPoolKey, tickLower, tickUpper, halfLiquidity, 0, 0
-        );
+        clManager.withdrawFromUniswap(address(poolManager), ethUsdcPoolKey, tickLower, tickUpper, halfLiquidity, 0, 0);
 
         // Position should still exist with remaining liquidity
         assertEq(clManager.getPositionCount(), 1, "Position should still exist");
@@ -208,7 +201,7 @@ contract PositionManagerUniswapV4Test is Test, Deployers {
         vm.prank(rando);
         vm.expectRevert(CLPositionManager.NotOperatorOrOwner.selector);
         clManager.depositToUniswap(
-            address(poolManager), ethUsdcPoolKey, tickLower, tickUpper, 1 ether, 2_135 * 1e6, 0, 0
+            address(poolManager), ethUsdcPoolKey, tickLower, tickUpper, 1 ether, 2135 * 1e6, 0, 0
         );
     }
 
@@ -219,9 +212,7 @@ contract PositionManagerUniswapV4Test is Test, Deployers {
         address rando = makeAddr("rando");
         vm.prank(rando);
         vm.expectRevert(CLPositionManager.NotOperatorOrOwner.selector);
-        clManager.withdrawFromUniswap(
-            address(poolManager), ethUsdcPoolKey, tickLower, tickUpper, 100, 0, 0
-        );
+        clManager.withdrawFromUniswap(address(poolManager), ethUsdcPoolKey, tickLower, tickUpper, 100, 0, 0);
     }
 
     function testGetPositionWithPoolState() public {
@@ -287,14 +278,10 @@ contract PositionManagerUniswapV4Test is Test, Deployers {
         vm.deal(swapper, 10 ether);
 
         vm.prank(swapper);
-        swapTest.swap{value: 1 ether}(
+        swapTest.swap{ value: 1 ether }(
             ethUsdcPoolKey,
-            SwapParams({
-                zeroForOne: true,
-                amountSpecified: -1 ether,
-                sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
-            }),
-            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
+            SwapParams({ zeroForOne: true, amountSpecified: -1 ether, sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1 }),
+            PoolSwapTest.TestSettings({ takeClaims: false, settleUsingBurn: false }),
             ""
         );
 

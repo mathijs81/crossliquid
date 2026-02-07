@@ -20,6 +20,17 @@ import { ModifyLiquidityParams } from "v4-core/types/PoolOperation.sol";
 import { FullMath } from "v4-core/libraries/FullMath.sol";
 import { FixedPoint128 } from "v4-core/libraries/FixedPoint128.sol";
 
+//    _____                   _      _             _     _
+//   / ____|                 | |    (_)           (_)   | |
+//  | |     _ __ ___  ___ ___| |     _  __ _ _   _ _  __| |
+//  | |    | '__/ _ \/ __/ __| |    | |/ _` | | | | |/ _` |
+//  | |____| | | (_) \__ \__ \ |____| | (_| | |_| | | (_| |
+//   \_____|_|  \___/|___/___/______|_|\__, |\__,_|_|\__,_|
+//                                        | |
+//                                        |_|
+// HackMoney 2026
+// https://www.github.com/mathijs81/crossliquid
+
 /// PositionManager for CrossLiquid
 /// Keeps funds, deploys them to uniswap, bridges funds to other chains.
 /// Deployed on all chains with same bytecode. On "parent chain", vault is set.
@@ -388,7 +399,7 @@ contract PositionManager is
 
     function _settle(IPoolManager poolManager, Currency currency, uint256 amount) internal {
         if (currency.isAddressZero()) {
-            poolManager.settle{value: amount}();
+            poolManager.settle{ value: amount }();
         } else {
             poolManager.sync(currency);
             IERC20(Currency.unwrap(currency)).safeTransfer(address(poolManager), amount);
@@ -523,8 +534,7 @@ contract PositionManager is
         view
         returns (uint256)
     {
-        (uint256 feeGrowthInside0X128,) =
-            poolManager.getFeeGrowthInside(poolId, position.tickLower, position.tickUpper);
+        (uint256 feeGrowthInside0X128,) = poolManager.getFeeGrowthInside(poolId, position.tickLower, position.tickUpper);
         (, uint256 cached0,) =
             poolManager.getPositionInfo(poolId, address(this), position.tickLower, position.tickUpper, bytes32(0));
         unchecked {
@@ -556,12 +566,11 @@ contract PositionManager is
     /// Note: under the hood this is just a generic call-any-contract function.
     /// Real production use case should have a whitelist so the operator can't
     /// call any contract without approval first from the owner (with e.g. timelock)
-    function bridgeToChain(
-        address bridge,
-        uint256 destinationChainId,
-        uint256 amount,
-        bytes calldata bridgeCallData
-    ) external onlyOperatorOrOwner nonReentrant {
+    function bridgeToChain(address bridge, uint256 destinationChainId, uint256 amount, bytes calldata bridgeCallData)
+        external
+        onlyOperatorOrOwner
+        nonReentrant
+    {
         if (address(this).balance < amount) revert InsufficientBalance();
 
         (bool success,) = bridge.call{ value: amount }(bridgeCallData);

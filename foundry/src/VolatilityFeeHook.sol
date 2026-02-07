@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
-import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
-import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
-import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
-import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
-import {LPFeeLibrary} from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
-import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
-import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import {IUnlockCallback} from "@uniswap/v4-core/src/interfaces/callback/IUnlockCallback.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {BeforeSwapDelta} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
-import {BaseOverrideFee} from "../lib/uniswap-hooks/src/fee/BaseOverrideFee.sol";
-import {BaseHookFee} from "../lib/uniswap-hooks/src/fee/BaseHookFee.sol";
-import {BaseHook} from "../lib/uniswap-hooks/src/base/BaseHook.sol";
+import { Hooks } from "@uniswap/v4-core/src/libraries/Hooks.sol";
+import { PoolKey } from "@uniswap/v4-core/src/types/PoolKey.sol";
+import { PoolId, PoolIdLibrary } from "@uniswap/v4-core/src/types/PoolId.sol";
+import { Currency } from "@uniswap/v4-core/src/types/Currency.sol";
+import { BalanceDelta } from "@uniswap/v4-core/src/types/BalanceDelta.sol";
+import { LPFeeLibrary } from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
+import { SwapParams } from "@uniswap/v4-core/src/types/PoolOperation.sol";
+import { IPoolManager } from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import { IUnlockCallback } from "@uniswap/v4-core/src/interfaces/callback/IUnlockCallback.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { BeforeSwapDelta } from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
+import { BaseOverrideFee } from "../lib/uniswap-hooks/src/fee/BaseOverrideFee.sol";
+import { BaseHookFee } from "../lib/uniswap-hooks/src/fee/BaseHookFee.sol";
+import { BaseHook } from "../lib/uniswap-hooks/src/base/BaseHook.sol";
 
 /// @title VolatilityFeeHook
 /// @notice Combines two fee mechanisms:
@@ -51,7 +51,7 @@ contract VolatilityFeeHook is BaseOverrideFee, BaseHookFee, Ownable, IUnlockCall
         _;
     }
 
-    constructor(IPoolManager _poolManager, address _owner) BaseHook(_poolManager) Ownable(_owner) {}
+    constructor(IPoolManager _poolManager, address _owner) BaseHook(_poolManager) Ownable(_owner) { }
 
     // --- Diamond inheritance: route each hook to the correct base ---
 
@@ -63,12 +63,11 @@ contract VolatilityFeeHook is BaseOverrideFee, BaseHookFee, Ownable, IUnlockCall
         return BaseOverrideFee._afterInitialize(sender, key, sqrtPriceX96, tick);
     }
 
-    function _beforeSwap(
-        address sender,
-        PoolKey calldata key,
-        SwapParams calldata params,
-        bytes calldata hookData
-    ) internal override(BaseOverrideFee, BaseHook) returns (bytes4, BeforeSwapDelta, uint24) {
+    function _beforeSwap(address sender, PoolKey calldata key, SwapParams calldata params, bytes calldata hookData)
+        internal
+        override(BaseOverrideFee, BaseHook)
+        returns (bytes4, BeforeSwapDelta, uint24)
+    {
         return BaseOverrideFee._beforeSwap(sender, key, params, hookData);
     }
 

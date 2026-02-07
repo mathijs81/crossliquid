@@ -115,12 +115,9 @@ contract Deploy is Script {
         return address(hook);
     }
 
-    function deployParentChain(
-        bytes32 vaultSalt,
-        bytes32 managerSalt,
-        IPoolManager poolManager,
-        address usdcAddress
-    ) internal {
+    function deployParentChain(bytes32 vaultSalt, bytes32 managerSalt, IPoolManager poolManager, address usdcAddress)
+        internal
+    {
         address deployer = msg.sender;
         console.log("Deploying on parent chain (Base)...");
 

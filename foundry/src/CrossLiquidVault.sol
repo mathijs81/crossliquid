@@ -10,8 +10,19 @@ import {
     ERC20PermitUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 
+//    _____                   _      _             _     _
+//   / ____|                 | |    (_)           (_)   | |
+//  | |     _ __ ___  ___ ___| |     _  __ _ _   _ _  __| |
+//  | |    | '__/ _ \/ __/ __| |    | |/ _` | | | | |/ _` |
+//  | |____| | | (_) \__ \__ \ |____| | (_| | |_| | | (_| |
+//   \_____|_|  \___/|___/___/______|_|\__, |\__,_|_|\__,_|
+//                                        | |
+//                                        |_|
+// HackMoney 2026
+// https://www.github.com/mathijs81/crossliquid
+
 /// Mint/retrieve assets for CLQ tokens
-/// The offchain brain bot will regularly update the conversion rate
+/// The offchain agent will manage liquidity positions across chains.
 /// We keep this as a multiplier vs. oracle ETH price
 contract CrossLiquidVault is
     Initializable,
