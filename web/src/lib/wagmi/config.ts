@@ -21,17 +21,18 @@ export let config = createConfig({
 
     // Mainnets
     1: http(), // Ethereum mainnet
-    42161: http(), // Arbitrum
+    //42161: http(), // Arbitrum
     10: http(), // Optimism
     8453: http(), // Base
-    137: http(), // Polygon
+    //137: http(), // Polygon
+    130: http(), // Unichain
 
     // Testnets
-    11155111: http(), // Sepolia
-    421614: http(), // Arbitrum Sepolia
-    11155420: http(), // Optimism Sepolia
-    84532: http(), // Base Sepolia
-    80002: http(), // Polygon Amoy
+    // 11155111: http(), // Sepolia
+    // 421614: http(), // Arbitrum Sepolia
+    // 11155420: http(), // Optimism Sepolia
+    // 84532: http(), // Base Sepolia
+    // 80002: http(), // Polygon Amoy
   },
 });
 

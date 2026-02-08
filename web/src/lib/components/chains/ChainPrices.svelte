@@ -8,6 +8,7 @@ import { onMount } from "svelte";
 import QueryRenderer from "../QueryRenderer.svelte";
 import ChainPriceChart from "./ChainPriceChart.svelte";
 import { formatUSD } from "$lib/utils/format";
+import { getIcon } from "$lib/wagmi/chains";
 
 const poolPricesQuery = createQuery(
   () => ({
@@ -70,6 +71,7 @@ const metricsQuery = createQuery(
 interface ChainStats {
   chainId: number;
   name: string;
+  icon: string;
   color: string;
   latestPrice: number;
   latestPoolPrice: number;
@@ -186,6 +188,7 @@ function calculateStats(poolPrices: PoolPrice[], metricsData?: MetricsResponse):
       return {
         chainId,
         name: chainInfo.name,
+        icon: getIcon(chainId),
         color: chainInfo.color,
         latestPrice,
         latestPoolPrice: poolPrices.length > 0 ? convertSqrtPriceX96ToPrice(poolPrices[0].sqrtPriceX96) : 0,
@@ -293,7 +296,8 @@ function getTimeSince(date: Date): { display: string; isFresh: boolean } {
                   <tr>
                     <td>
                       <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full" style="background-color: {stat.color}"></div>
+                        <!-- <div class="w-3 h-3 rounded-full" style="background-color: {stat.color}"></div> -->
+                        <img src={stat.icon} alt={stat.name} class="w-6 h-6">
                         <div>
                           <span class="font-medium">{stat.name}</span>
                           <br>

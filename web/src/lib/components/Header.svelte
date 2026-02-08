@@ -50,8 +50,8 @@ async function disconnectWallet() {
 
 const baseDestinations = [
   [SpeedometerIcon, "Crosschain Liquidity", "/chains"],
-  [PiggyBankIcon, "Deposit to Vault", "/cross-liquid"],
   [ChartLineIcon, "Position Stats", "/stats"],
+  [PiggyBankIcon, "Deposit to Vault", "/cross-liquid"],
   ...(import.meta.env.DEV ? [[BugIcon, "Debug", "/debug"] as const] : []),
 ] as const;
 

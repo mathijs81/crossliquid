@@ -3,7 +3,7 @@ const Q96 = 1n << 96n;
 // Compute sqrtPriceX96 from a tick: sqrt(1.0001^tick) * 2^96
 // Uses floating point intermediate — precision loss is negligible for display purposes
 export function getSqrtPriceAtTick(tick: number): bigint {
-  const sqrtPrice = Math.pow(1.0001, tick / 2);
+  const sqrtPrice = 1.0001 ** (tick / 2);
   return BigInt(Math.round(sqrtPrice * Number(Q96)));
 }
 

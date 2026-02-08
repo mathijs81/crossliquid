@@ -7,7 +7,10 @@ import PositionStats from "$lib/components/stats/PositionStats.svelte";
   <div class="flex flex-col gap-4">
     <div>
       <h1 class="text-4xl font-bold">Position Stats</h1>
-      <p class="text-base-content/70 mt-2">View deployed liquidity positions and their current state</p>
+      <p class="text-base-content/70 mt-2">
+        The CrossLiquid Position Manager is deployed on Base and Unichain. These are the positions it's currently
+        holding:
+      </p>
     </div>
 
     <WalletWarning />

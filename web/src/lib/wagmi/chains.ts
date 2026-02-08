@@ -40,12 +40,30 @@ export const chains = [
     ? []
     : [
         viemChains.unichain,
-        viemChains.arbitrum,
+        // viemChains.arbitrum,
         viemChains.optimism,
-        viemChains.polygon,
-        viemChains.ink,
+        // viemChains.polygon,
+        // viemChains.ink,
       ]),
 ] as readonly [viemChains.Chain, ...viemChains.Chain[]];
+
+import unichainIcon from "$lib/assets/unichain.svg";
+import baseIcon from "$lib/assets/base.svg";
+import optimismIcon from "$lib/assets/optimism.svg";
+import ethereumIcon from "$lib/assets/ethereum.svg";
+
+export const getIcon = (chainId: number) => {
+  switch (chainId) {
+    case 130:
+      return unichainIcon;
+    case 8453:
+      return baseIcon;
+    case 10:
+      return optimismIcon;
+    default:
+      return ethereumIcon;
+  }
+};
 
 export const vaultChain = chains[0];
 export const vaultChainId = vaultChain.id;
