@@ -1,4 +1,3 @@
-import { timeout } from "es-toolkit";
 import { chains, databasePath } from "./config.js";
 import { logger } from "./logger.js";
 import { closeDatabase, db, initializeDatabase } from "./services/database.js";
@@ -25,6 +24,7 @@ class Agent {
   };
   private actionRunner: ActionRunner | null = null;
   private taskStore: TaskStore | null = null;
+  private actionLoopRunning = false;
 
   constructor() {}
 
@@ -90,18 +90,41 @@ class Agent {
   }
 
   private async runActionLoop(actionIntervalMs: number): Promise<void> {
+    if (this.actionLoopRunning) {
+      logger.warn("Action loop still running, skipping");
+      if (this.isRunning) {
+        setTimeout(
+          () => this.runActionLoop(actionIntervalMs),
+          actionIntervalMs,
+        );
+      }
+      return;
+    }
+
+    this.actionLoopRunning = true;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
     try {
       logger.info("running action loop");
-      await Promise.race([timeout(30_000), this.actionRunner?.runActionLoop()])
+      await this.actionRunner?.runActionLoop(controller.signal);
       logger.info("action loop completed");
     } catch (error) {
-      logger.error({ error: error instanceof Error ? error.message : String(error) }, "Error in action loop");
+      if (controller.signal.aborted) {
+        logger.warn("Action loop aborted after timeout");
+      } else {
+        logger.error(
+          { error: error instanceof Error ? error.message : String(error) },
+          "Error in action loop",
+        );
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      this.actionLoopRunning = false;
     }
+
     if (this.isRunning) {
-      // Schedule next run
-      setTimeout(() => {
-        this.runActionLoop(actionIntervalMs);
-      }, actionIntervalMs);
+      setTimeout(() => this.runActionLoop(actionIntervalMs), actionIntervalMs);
     }
   }
 

@@ -16,7 +16,8 @@ export async function getVaultBalance(chainId: number): Promise<bigint> {
 }
 
 export async function sendSyncTransaction(
-  walletClient: WalletClient, transferAmount: bigint,
+  walletClient: WalletClient,
+  transferAmount: bigint,
 ): Promise<`0x${string}`> {
   const chain = walletClient.chain!;
   const ourAddresses = getOurAddressesForChain(chain.id);

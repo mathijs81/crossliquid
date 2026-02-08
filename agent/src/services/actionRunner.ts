@@ -114,7 +114,7 @@ export class ActionRunner {
     );
   }
 
-  async runActionLoop() {
+  async runActionLoop(signal?: AbortSignal) {
     const activeTasks = await this.taskStore.getActiveTasks();
 
     logger.info(
@@ -162,6 +162,8 @@ export class ActionRunner {
         task !== null && isActiveStatus(task.status),
     );
 
+    if (signal?.aborted) return;
+
     // Collect locked resources from still-active tasks
     const lockedResources = new Set(
       stillActive.flatMap((task) => task.resourcesTaken),
@@ -177,6 +179,7 @@ export class ActionRunner {
 
     // Start new tasks sequentially (new tasks may conflict with each other)
     for (const candidateAction of candidateActions) {
+      if (signal?.aborted) break;
       if (
         candidateAction
           .lockResources()
