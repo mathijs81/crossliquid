@@ -2,8 +2,11 @@ import Database from "better-sqlite3";
 import { logger } from "../logger.js";
 import path from "path";
 import { existsSync, mkdirSync } from "fs";
+import JSONbig from "json-bigint";
 import type { TaskStore, TaskInfoUnknown } from "./actionRunner.js";
 import { taskDbPath } from "../config.js";
+
+const jsonBigInt = JSONbig({ useNativeBigInt: true });
 
 class TaskDatabaseService implements TaskStore {
   private db: Database.Database;
@@ -92,8 +95,8 @@ class TaskDatabaseService implements TaskStore {
       taskInfo.finishedAt,
       taskInfo.status,
       taskInfo.statusMessage,
-      JSON.stringify(taskInfo.taskData),
-      JSON.stringify(taskInfo.resourcesTaken),
+      jsonBigInt.stringify(taskInfo.taskData),
+      jsonBigInt.stringify(taskInfo.resourcesTaken),
     );
 
     logger.debug(
@@ -123,8 +126,8 @@ class TaskDatabaseService implements TaskStore {
       taskInfo.finishedAt,
       taskInfo.status,
       taskInfo.statusMessage,
-      JSON.stringify(taskInfo.taskData),
-      JSON.stringify(taskInfo.resourcesTaken),
+      jsonBigInt.stringify(taskInfo.taskData),
+      jsonBigInt.stringify(taskInfo.resourcesTaken),
       taskInfo.id,
     ).changes;
 
@@ -158,8 +161,8 @@ class TaskDatabaseService implements TaskStore {
       finishedAt: row.finishedAt,
       status: row.status,
       statusMessage: row.statusMessage,
-      taskData: JSON.parse(row.taskData),
-      resourcesTaken: JSON.parse(row.resourcesTaken),
+      taskData: jsonBigInt.parse(row.taskData),
+      resourcesTaken: jsonBigInt.parse(row.resourcesTaken),
     };
   }
 

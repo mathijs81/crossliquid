@@ -211,13 +211,13 @@ export class ActionRunner {
         updated.lastUpdatedAt = Date.now();
         await this.taskStore.updateTask(updated);
       } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
         logger.error(
-          { task: result.id, error },
+          { task: result.id, error: msg },
           "Failed first update after start",
         );
         result.status = "error";
-        result.statusMessage =
-          error instanceof Error ? error.message : String(error);
+        result.statusMessage = msg;
         result.finishedAt = Date.now();
         await this.taskStore.updateTask(result);
       }
