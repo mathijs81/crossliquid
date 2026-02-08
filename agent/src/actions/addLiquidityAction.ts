@@ -12,7 +12,7 @@ import {
 } from "../services/actionRunner.js";
 import { getPoolCurrentTick } from "../services/pool.js";
 import { calculateTickRange } from "../services/positionManager.js";
-import { createPoolId, type PoolKey } from "../utils/poolIds.js";
+import { createEthUsdcPoolKey, createPoolId, FeeTier, type PoolKey } from "../utils/poolIds.js";
 import { getManagerBalances } from "./managerBalances.js";
 import { pollTxReceipt, type TxTaskData } from "./txLifecycle.js";
 
@@ -69,9 +69,22 @@ export class AddLiquidityAction implements ActionDefinition<AddLiquidityTaskData
     const poolKey = DEFAULT_POOL_KEYS[this.chainId];
     if (!poolKey) throw new Error(`No pool key for chain ${this.chainId}`);
 
+    const contracts = UNIV4_CONTRACTS[this.chainId];
+
     const poolId = createPoolId(poolKey);
-    const currentTick = await getPoolCurrentTick(this.chainId, UNIV4_CONTRACTS[this.chainId].stateView, poolId);
+    const currentTick = await getPoolCurrentTick(this.chainId, contracts.stateView, poolId);
     if (currentTick === null) throw new Error(`Failed to get current tick for chain ${this.chainId}`);
+
+    const otherTick = await getPoolCurrentTick(
+      this.chainId,
+      contracts.stateView,
+      createPoolId(createEthUsdcPoolKey(contracts.usdc, FeeTier.LOW)),
+    );
+    if (otherTick === null) throw new Error(`Failed to get current tick for chain ${this.chainId}`);
+    if (Math.abs(currentTick - otherTick) > 200) {
+      logger.warn(`Current tick is too far from other tick: ${currentTick} - ${otherTick}`);
+      return { message: "Current tick is too far from other tick" };
+    }
 
     // TODO: could look for existing position at a similar range and add to it
     // instead of always creating a new one
