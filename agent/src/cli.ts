@@ -1,7 +1,7 @@
 #!/usr/bin/env -S tsx --env-file=.env
 
 import { parseArgs } from "node:util";
-import { erc20Abi, isAddress, type Address } from "viem";
+import { erc20Abi, isAddress, parseUnits, type Address } from "viem";
 import { getContractEvents } from "viem/actions";
 import { addLiquidity } from "./actions/addLiquidity.js";
 import { removeLiquidity } from "./actions/removeLiquidity.js";
@@ -20,6 +20,7 @@ import {
   PositionManagerService,
 } from "./services/positionManager.js";
 import { SwappingService } from "./services/swapping.js";
+import { moveManagerEthCrossChain } from "./actions/lifiCrossChain.js";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 
@@ -32,6 +33,7 @@ const COMMANDS = {
     "Sync funds between the $CLQ vault and the pool manager on Base",
   "dump-usdc-transfers": "Dump all USDC transfers from the manager",
   "price-to-sqrt": "Convert ETH price to sqrtPriceX96 format",
+  "move-cross-chain": "Move manager funds between chains using LiFi",
   help: "Show this help message",
 } as const;
 
@@ -105,6 +107,11 @@ async function listPositions(service: PositionManagerService) {
   }
 }
 
+function createManagerService(chainId: number) {
+  const ourAddresses = getOurAddressesForChain(chainId);
+  return new PositionManagerService(chainId, ourAddresses.manager);
+}
+
 async function main() {
   const args = process.argv.slice(2);
 
@@ -122,8 +129,8 @@ async function main() {
   }
 
   const chain = Number(process.env.CHAIN_ID) ?? agentConfig.vaultChainId;
-  const ourAddresses = getOurAddressesForChain(chain);
-  const service = new PositionManagerService(chain, ourAddresses.manager);
+  // const ourAddresses = getOurAddressesForChain(chain);
+  // const service = new PositionManagerService(chain, ourAddresses.manager);
 
   const poolManagerAddress = UNIV4_CONTRACTS[chain].poolManager;
   const usdcAddress = UNIV4_CONTRACTS[chain].usdc;
@@ -131,7 +138,7 @@ async function main() {
   try {
     switch (command) {
       case "list-positions": {
-        await listPositions(service);
+        await listPositions(createManagerService(chain));
         break;
       }
 
@@ -151,6 +158,9 @@ async function main() {
           console.error("--eth and --usdc are required");
           process.exit(1);
         }
+
+        const service = createManagerService(chain);
+        const ourAddresses = getOurAddressesForChain(chain);
 
         await addLiquidity(service, {
           chainId: chain,
@@ -185,6 +195,7 @@ async function main() {
           process.exit(1);
         }
 
+        const service = createManagerService(chain);
         await removeLiquidity(service, {
           positionIndex: Number(values["position-id"]),
           amount: values.amount,
@@ -290,6 +301,7 @@ async function main() {
           chainContracts,
         );
 
+        const ourAddresses = getOurAddressesForChain(chain);
         const recipient = values.recipient
           ? resolveRecipientAddress(values.recipient)
           : forManager
@@ -355,6 +367,36 @@ async function main() {
         // so log(price) / log(1.0001) = tick
         const tick = Math.log((price / 10 ** 18) * 10 ** 6) / Math.log(1.0001);
         console.log(`Tick: ${tick.toFixed(0)}`);
+        break;
+      }
+
+      case "move-cross-chain": {
+        const { values } = parseArgs({
+          args: args.slice(1),
+          options: {
+            "from-chain": { type: "string" },
+            "to-chain": { type: "string" },
+            amount: { type: "string" },
+            "dry-run": { type: "boolean", default: true },
+          },
+          allowNegative: true, // To allow --no-dry-run
+        });
+        if (!values["from-chain"] || !values["to-chain"] || !values.amount) {
+          console.error("--from-chain, --to-chain, and --amount are required");
+          process.exit(1);
+        }
+        const fromChain = Number(values["from-chain"]);
+        const toChain = Number(values["to-chain"]);
+        const amount = parseUnits(values.amount, 18);
+        const dryRun = values["dry-run"] as boolean;
+        const output = await moveManagerEthCrossChain(
+          fromChain,
+          toChain,
+          createAgentWalletClient(fromChain),
+          amount,
+          dryRun,
+        );
+        console.log(`Output: ${output}`);
         break;
       }
 

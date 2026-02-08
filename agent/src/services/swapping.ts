@@ -1,9 +1,11 @@
-import { Actions, V4Planner } from "@uniswap/v4-sdk";
+import { createConfig, getQuote, type TransactionRequest } from "@lifi/sdk";
 import {
   UNIVERSAL_ROUTER_ADDRESS,
   UniversalRouterVersion,
 } from "@uniswap/universal-router-sdk";
+import { Actions, V4Planner } from "@uniswap/v4-sdk";
 import {
+  type Account,
   encodeFunctionData,
   parseAbi,
   type Address,
@@ -13,12 +15,13 @@ import {
   type WalletClient,
 } from "viem";
 import { iUniswapV4Router04Abi } from "../abi/IUniswapV4Router04.js";
-import { stateViewAbi } from "../abi/StateView.js";
 import { iV4QuoterAbi as v4QuoterAbi } from "../abi/IV4Quoter.js";
-import { QUERY_POOL_KEYS, type UniV4Contracts } from "../config.js";
+import { stateViewAbi } from "../abi/StateView.js";
+import { chains, getOurAddressesForChain, QUERY_POOL_KEYS } from "../config.js";
 import { logger } from "../logger.js";
 import { createPoolId, type PoolKey } from "../utils/poolIds.js";
-import { createConfig, getQuote } from "@lifi/sdk";
+import type { UniV4Contracts } from "../contracts/base-contract-addresses.js";
+import { executeAsManager } from "../utils/executeAsManager.js";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 const V4_SWAP_COMMAND = "0x10";
@@ -31,8 +34,8 @@ const PERMIT2_ADDRESS: Address = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
 
 export type QuoteSource = "local" | "routing-api" | "lifi";
 
-const lifiConfig = createConfig({
-  integrator: "CrossLiquid",
+createConfig({
+  integrator: "Cross_Liquid",
 });
 
 export interface SwapQuoteRequest {
@@ -650,5 +653,83 @@ export class SwappingService {
     }
 
     return null;
+  }
+}
+
+// Cross chain swapping
+
+export interface CrossChainRequest {
+  fromChain: number;
+  toChain: number;
+  fromAddress: Address;
+  toAddress: Address;
+  amount: bigint;
+  fromToken: Address;
+  toToken: Address;
+}
+
+export interface CrossChainQuote {
+  request: CrossChainRequest;
+  expectedReceive: bigint;
+  minReceive: bigint;
+  transactionRequest: TransactionRequest;
+}
+
+export async function getCrossChainQuote(
+  request: CrossChainRequest,
+): Promise<CrossChainQuote> {
+  const quote = await getQuote({
+    fromChain: request.fromChain,
+    toChain: request.toChain,
+    fromAddress: request.fromAddress,
+    fromToken: request.fromToken,
+    toToken: request.toToken,
+    toAddress: request.toAddress,
+    fromAmount: request.amount.toString(),
+  });
+
+  if (!quote.transactionRequest) {
+    throw new Error("No transaction request found");
+  }
+
+  return {
+    request,
+    expectedReceive: BigInt(quote.estimate.toAmount),
+    minReceive: BigInt(quote.estimate.toAmountMin),
+    transactionRequest: quote.transactionRequest,
+  };
+}
+
+export async function executeCrossChainSwap(
+  walletClient: WalletClient,
+  quote: CrossChainQuote,
+  forManager: boolean,
+): Promise<string> {
+  const publicClient = chains.get(quote.request.fromChain)?.publicClient;
+  if (!publicClient) {
+    throw new Error(
+      `Public client not found for chain ${quote.request.fromChain}`,
+    );
+  }
+  if (forManager) {
+    const positionManagerAddress = getOurAddressesForChain(
+      quote.request.fromChain,
+    ).manager;
+    return await executeAsManager(
+      publicClient,
+      walletClient,
+      positionManagerAddress,
+      quote.transactionRequest.to as Address,
+      quote.transactionRequest.data as Hex,
+      BigInt(quote.transactionRequest.value as string),
+    );
+  } else {
+    return await walletClient.sendTransaction({
+      account: walletClient.account as Account,
+      chain: chains.get(quote.request.fromChain)?.viemChain,
+      to: quote.transactionRequest.to as Address,
+      data: quote.transactionRequest.data as Hex,
+      value: BigInt(quote.transactionRequest.value as string),
+    });
   }
 }

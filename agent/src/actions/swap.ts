@@ -109,6 +109,7 @@ export async function swapTokens(
 
   let hash: string;
   if (options.forManager) {
+    // TODO: integrate this into swapping.ts code!
     console.log("\n⚙ Executing swap through PositionManager...");
     hash = await executeAsManager(
       publicClient,

@@ -1,11 +1,7 @@
 import { formatUnits, parseEther } from "viem";
 import { iV4QuoterAbi as quoterAbi } from "../abi/IV4Quoter.js";
 import { stateViewAbi } from "../abi/StateView.js";
-import {
-  chains,
-  QUERY_POOL_KEYS,
-  type PoolKey,
-} from "../config.js";
+import { chains, QUERY_POOL_KEYS, type PoolKey } from "../config.js";
 import { logger } from "../logger.js";
 import { createPoolId } from "../utils/poolIds.js";
 import { defaultReadRetryer } from "../utils/retryer.js";

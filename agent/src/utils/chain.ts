@@ -11,7 +11,7 @@ import {
 } from "viem/chains";
 import type { ChainConfig } from "../config.js";
 import { logger } from "../logger.js";
-import { Environment, ENVIRONMENT } from "../env.js";
+import { type Environment, ENVIRONMENT } from "../env.js";
 
 export const createClient = (chain: Chain, rpcUrl?: string): PublicClient => {
   return createPublicClient({

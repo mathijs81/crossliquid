@@ -6,7 +6,8 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignoreUnknown": false
+    "ignoreUnknown": false,
+    "includes": ["**/*.ts", "!src/contracts/deployed.ts"]
   },
   "formatter": {
     "enabled": true,
