@@ -6,7 +6,7 @@ import JSONbig from "json-bigint";
 import type { TaskStore, TaskInfoUnknown } from "./actionRunner.js";
 import { taskDbPath } from "../config.js";
 
-const jsonBigInt = JSONbig({ useNativeBigInt: true });
+export const jsonBigInt = JSONbig({ useNativeBigInt: true });
 
 class TaskDatabaseService implements TaskStore {
   private db: Database.Database;

@@ -12,6 +12,9 @@ import {
   type TaskInfoUnknown,
   type ActionDefinition,
 } from "../services/actionRunner.js";
+import { AddLiquidityAction } from "./addLiquidityAction.js";
+import { RemoveLiquidityAction } from "./removeLiquidityAction.js";
+import { SwapForBalanceAction } from "./swapForBalanceAction.js";
 import { pollTxReceipt } from "./txLifecycle.js";
 import { getVaultBalance, sendSyncTransaction } from "./vaultSync.js";
 
@@ -26,9 +29,9 @@ export function createAgentActions(): ActionDefinition<unknown>[] {
       actions.push(new VaultSyncAction(chainId));
     }
     if (getOurAddressesForChain(chainId)?.manager) {
-      //   actions.push(createRemoveOutofRangeLiquidityAction(chainId));
-      //   actions.push(swapInbalancedTokensAction(chainId));
-      //   actions.push(createAddLiquidityAction(chainId));
+      actions.push(new RemoveLiquidityAction(chainId));
+      actions.push(new SwapForBalanceAction(chainId));
+      actions.push(new AddLiquidityAction(chainId));
     }
     if (getOurAddressesForChain(chainId)?.hook) {
       // TODO: adjust hook fee

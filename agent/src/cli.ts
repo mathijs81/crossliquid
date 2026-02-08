@@ -13,7 +13,7 @@ import { logger } from "./logger.js";
 import { formatPosition, PositionManagerService } from "./services/positionManager.js";
 import { SwappingService } from "./services/swapping.js";
 import { moveManagerEthCrossChain } from "./actions/lifiCrossChain.js";
-import { initializeTaskDatabase } from "./services/taskStore.js";
+import { initializeTaskDatabase, jsonBigInt } from "./services/taskStore.js";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 
@@ -402,6 +402,9 @@ async function main() {
           }
           if (task.resourcesTaken.length > 0) {
             console.log(`  Resources: ${task.resourcesTaken.join(", ")}`);
+          }
+          if (task.taskData) {
+            console.log(`  Data: ${jsonBigInt.stringify(task.taskData)}`);
           }
           console.log();
         }
