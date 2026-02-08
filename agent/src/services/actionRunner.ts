@@ -137,9 +137,14 @@ export class ActionRunner {
         // The runtime contract is that tasks are created by their matching definition.
         const updatedTask = await definition.update(task);
         updatedTask.lastUpdatedAt = Date.now();
+        if (!isActiveStatus(updatedTask.status)) {
+          updatedTask.finishedAt = Date.now();
+        }
         await this.taskStore.updateTask(updatedTask);
         return updatedTask;
       } catch (error) {
+        // TODO: we could store this and maybe retry later, because the in-task logic
+        // would set an error itself if it was an expected error
         logger.error({ task: task.id, error }, "Failed to update task");
         task.status = "error";
         task.statusMessage =

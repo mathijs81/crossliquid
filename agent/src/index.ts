@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import { agent } from "./agent.js";
 import { logger } from "./logger.js";
 import { db } from "./services/database.js";
+import { ENVIRONMENT } from "./env.js";
 
 const fastify = Fastify({
   loggerInstance: logger,
@@ -94,7 +95,7 @@ const start = async () => {
     logger.info({ port, host }, "Agent server listening");
 
     // Start the agent loop
-    agent.start();
+    agent.start(30_000, ENVIRONMENT === "production" ? 5 * 60 * 1000 : 10_000);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

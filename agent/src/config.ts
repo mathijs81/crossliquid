@@ -1,16 +1,13 @@
 import type { ChainId } from "@lifi/sdk";
 import { type Chain, createWalletClient, http, type PublicClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import {
-  UNIV4_CONTRACTS,
-  ZERO_ADDRESS,
-} from "./contracts/contract-addresses.js";
+import { UNIV4_CONTRACTS, ZERO_ADDRESS } from "./contracts/contract-addresses.js";
 import { deployedContracts } from "./contracts/deployed.js";
 import { readOurDeployment } from "./dev/dev-config.js";
+import { ENVIRONMENT } from "./env.js";
 import { logger } from "./logger.js";
 import { initializeChains } from "./utils/chain.js";
 import { validateAddress, validatePrivateKey } from "./utils/validation.js";
-import { ENVIRONMENT } from "./env.js";
 
 export interface ChainConfig {
   chainId: number;
@@ -20,6 +17,7 @@ export interface ChainConfig {
   viemChain: Chain;
   lifiId: ChainId;
 }
+
 
 export interface PoolKey {
   currency0: `0x${string}`;

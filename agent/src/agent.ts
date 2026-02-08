@@ -1,9 +1,13 @@
+import { timeout } from "es-toolkit";
 import { chains, databasePath } from "./config.js";
 import { logger } from "./logger.js";
 import { closeDatabase, db, initializeDatabase } from "./services/database.js";
 import { collectEthUsdcData, type EthUsdcData } from "./services/ethusdc.js";
 import { calculateLOS } from "./services/los.js";
 import { getVaultState } from "./services/vault.js";
+import { ActionRunner, type TaskStore } from "./services/actionRunner.js";
+import { initializeTaskDatabase } from "./services/taskStore.js";
+import { createAgentActions } from "./actions/agentActions.js";
 
 export interface AgentStats {
   status: "running" | "stopped";
@@ -12,17 +16,19 @@ export interface AgentStats {
 }
 
 class Agent {
-  private intervalId: NodeJS.Timeout | null = null;
+  private statsIntervalId: NodeJS.Timeout | null = null;
   private isRunning = false;
   private stats: AgentStats = {
     status: "stopped",
     ethUsdcData: {},
     lastError: null,
   };
+  private actionRunner: ActionRunner | null = null;
+  private taskStore: TaskStore | null = null;
 
   constructor() {}
 
-  async runLoop(): Promise<void> {
+  async runStatsLoop(): Promise<void> {
     if (!this.isRunning) {
       return;
     }
@@ -30,8 +36,7 @@ class Agent {
     try {
       logger.info("Starting loop");
 
-      const losScores = await calculateLOS();
-
+      // Collect eth-usdc data for global stats
       for (const [chainId] of chains.entries()) {
         logger.info(`starting chain ${chainId}`);
         try {
@@ -66,18 +71,6 @@ class Agent {
         }
       }
 
-      // const vaultAddress = process.env.VAULT_ADDRESS as
-      //   | `0x${string}`
-      //   | undefined;
-      // if (vaultAddress) {
-      //   await this.updateVaultData(vaultAddress);
-      // }
-
-      // const poolAddress = process.env.POOL_ADDRESS as `0x${string}` | undefined;
-      // if (poolAddress) {
-      //   await this.updatePoolData(poolAddress);
-      // }
-
       this.stats.lastError = null;
     } catch (error) {
       const errorMessage =
@@ -96,9 +89,25 @@ class Agent {
     }
   }
 
-  start(intervalMs = 30_000): void {
+  private async runActionLoop(actionIntervalMs: number): Promise<void> {
+    try {
+      logger.info("running action loop");
+      await Promise.race([timeout(30_000), this.actionRunner?.runActionLoop()])
+      logger.info("action loop completed");
+    } catch (error) {
+      logger.error({ error: error instanceof Error ? error.message : String(error) }, "Error in action loop");
+    }
+    if (this.isRunning) {
+      // Schedule next run
+      setTimeout(() => {
+        this.runActionLoop(actionIntervalMs);
+      }, actionIntervalMs);
+    }
+  }
+
+  start(statIntervalMs = 30_000, actionIntervalMs = 5 * 60 * 1000): void {
     initializeDatabase(databasePath);
-    if (this.isRunning || this.intervalId !== null) {
+    if (this.isRunning || this.statsIntervalId !== null) {
       logger.info("Agent already running");
       return;
     }
@@ -106,26 +115,31 @@ class Agent {
     this.isRunning = true;
     this.stats.status = "running";
 
-    this.runLoop();
+    this.runStatsLoop();
 
-    this.intervalId = setInterval(() => {
-      this.runLoop();
-    }, intervalMs);
+    this.statsIntervalId = setInterval(() => {
+      this.runStatsLoop();
+    }, statIntervalMs);
 
-    logger.info({ intervalMs }, "Agent started");
+    // Set up action loop
+    this.taskStore = initializeTaskDatabase();
+    this.actionRunner = new ActionRunner(this.taskStore, createAgentActions());
+    this.runActionLoop(actionIntervalMs);
+
+    logger.info({ statIntervalMs, actionIntervalMs }, "Agent started");
   }
 
   stop(): void {
-    if (!this.isRunning && this.intervalId === null) {
+    if (!this.isRunning && this.statsIntervalId === null) {
       return;
     }
 
     this.isRunning = false;
     this.stats.status = "stopped";
 
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    if (this.statsIntervalId) {
+      clearInterval(this.statsIntervalId);
+      this.statsIntervalId = null;
     }
 
     closeDatabase();
