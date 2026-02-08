@@ -15,11 +15,7 @@ import type {
 export type ContractCallParams<
   TAbi extends Abi,
   TFunctionName extends ContractFunctionName<TAbi, "nonpayable" | "payable">,
-  TArgs extends ContractFunctionArgs<
-    TAbi,
-    "nonpayable" | "payable",
-    TFunctionName
-  >,
+  TArgs extends ContractFunctionArgs<TAbi, "nonpayable" | "payable", TFunctionName>,
 > = {
   address: Address;
   abi: TAbi;
@@ -32,22 +28,13 @@ export type ContractCallParams<
 export async function executeContractWrite<
   const TAbi extends Abi,
   TFunctionName extends ContractFunctionName<TAbi, "nonpayable" | "payable">,
-  TArgs extends ContractFunctionArgs<
-    TAbi,
-    "payable" | "nonpayable",
-    TFunctionName
-  >,
+  TArgs extends ContractFunctionArgs<TAbi, "payable" | "nonpayable", TFunctionName>,
 >(
   publicClient: PublicClient,
   walletClient: WalletClient,
   params: ContractCallParams<TAbi, TFunctionName, TArgs>,
 ): Promise<{
-  result: ContractFunctionReturnType<
-    TAbi,
-    "nonpayable" | "payable",
-    TFunctionName,
-    TArgs
-  >;
+  result: ContractFunctionReturnType<TAbi, "nonpayable" | "payable", TFunctionName, TArgs>;
   hash: Hash;
   receipt: TransactionReceipt;
 }> {
@@ -59,9 +46,7 @@ export async function executeContractWrite<
     account: params.account,
     value: params.value,
   });
-  const hash = await walletClient.writeContract(
-    request as WriteContractParameters<TAbi, TFunctionName, TArgs>,
-  );
+  const hash = await walletClient.writeContract(request as WriteContractParameters<TAbi, TFunctionName, TArgs>);
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
   if (receipt.status === "reverted") {
@@ -69,12 +54,7 @@ export async function executeContractWrite<
   }
 
   return {
-    result: result as ContractFunctionReturnType<
-      TAbi,
-      "nonpayable" | "payable",
-      TFunctionName,
-      TArgs
-    >,
+    result: result as ContractFunctionReturnType<TAbi, "nonpayable" | "payable", TFunctionName, TArgs>,
     hash,
     receipt,
   };

@@ -22,9 +22,7 @@ export async function removeLiquidity(
   const liquidityToRemove = BigInt(options.amount);
 
   if (liquidityToRemove > position.liquidity) {
-    throw new Error(
-      `Requested liquidity ${liquidityToRemove} exceeds position liquidity ${position.liquidity}`,
-    );
+    throw new Error(`Requested liquidity ${liquidityToRemove} exceeds position liquidity ${position.liquidity}`);
   }
 
   logger.info(

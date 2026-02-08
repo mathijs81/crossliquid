@@ -53,12 +53,6 @@ export function encodePoolKey(poolKey: PoolKey): `0x${string}` {
       { name: "tickSpacing", type: "int24" },
       { name: "hooks", type: "address" },
     ],
-    [
-      poolKey.currency0,
-      poolKey.currency1,
-      poolKey.fee,
-      poolKey.tickSpacing,
-      poolKey.hooks,
-    ],
+    [poolKey.currency0, poolKey.currency1, poolKey.fee, poolKey.tickSpacing, poolKey.hooks],
   );
 }

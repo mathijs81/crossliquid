@@ -92,26 +92,22 @@ export class PositionManagerService {
       throw new Error("Wallet client not initialized");
     }
 
-    const { result, hash } = await executeContractWrite(
-      this.publicClient,
-      this.walletClient,
-      {
-        address: this.positionManagerAddress,
-        abi: positionManagerAbi,
-        functionName: "depositToUniswap",
-        args: [
-          params.poolManagerAddress,
-          params.poolKey,
-          params.tickLower,
-          params.tickUpper,
-          params.amount0Desired,
-          params.amount1Desired,
-          params.amount0Min,
-          params.amount1Min,
-        ],
-        account: this.walletClient.account,
-      },
-    );
+    const { result, hash } = await executeContractWrite(this.publicClient, this.walletClient, {
+      address: this.positionManagerAddress,
+      abi: positionManagerAbi,
+      functionName: "depositToUniswap",
+      args: [
+        params.poolManagerAddress,
+        params.poolKey,
+        params.tickLower,
+        params.tickUpper,
+        params.amount0Desired,
+        params.amount1Desired,
+        params.amount0Min,
+        params.amount1Min,
+      ],
+      account: this.walletClient.account,
+    });
 
     const [liquidityAdded, amount0, amount1] = result;
 
@@ -144,25 +140,21 @@ export class PositionManagerService {
       throw new Error("Wallet client not initialized");
     }
 
-    const { result, hash } = await executeContractWrite(
-      this.publicClient,
-      this.walletClient,
-      {
-        address: this.positionManagerAddress,
-        abi: positionManagerAbi,
-        functionName: "withdrawFromUniswap",
-        args: [
-          params.poolManagerAddress,
-          params.poolKey,
-          params.tickLower,
-          params.tickUpper,
-          params.liquidity,
-          params.amount0Min,
-          params.amount1Min,
-        ],
-        account: this.walletClient.account,
-      },
-    );
+    const { result, hash } = await executeContractWrite(this.publicClient, this.walletClient, {
+      address: this.positionManagerAddress,
+      abi: positionManagerAbi,
+      functionName: "withdrawFromUniswap",
+      args: [
+        params.poolManagerAddress,
+        params.poolKey,
+        params.tickLower,
+        params.tickUpper,
+        params.liquidity,
+        params.amount0Min,
+        params.amount1Min,
+      ],
+      account: this.walletClient.account,
+    });
 
     const [amount0, amount1] = result;
 

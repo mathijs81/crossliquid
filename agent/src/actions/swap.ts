@@ -1,16 +1,7 @@
-import {
-  formatUnits,
-  parseUnits,
-  type Address,
-  type PublicClient,
-  type WalletClient,
-} from "viem";
+import { formatUnits, parseUnits, type Address, type PublicClient, type WalletClient } from "viem";
 import { eRC20Abi } from "../abi/ERC20.js";
 import { logger } from "../logger.js";
-import type {
-  SwapQuoteRequest,
-  SwappingService,
-} from "../services/swapping.js";
+import type { SwapQuoteRequest, SwappingService } from "../services/swapping.js";
 import { executeAsManager } from "../utils/executeAsManager.js";
 import { waitForTransactionReceipt } from "viem/actions";
 
@@ -41,9 +32,7 @@ export async function swapTokens(
 
   const parsedAmountIn = parseUnits(options.amountIn, tokenInDecimals);
 
-  const fromAddress = options.forManager
-    ? options.positionManagerAddress
-    : walletClient.account?.address;
+  const fromAddress = options.forManager ? options.positionManagerAddress : walletClient.account?.address;
   if (!fromAddress) {
     throw new Error("From address is required");
   }
@@ -79,9 +68,7 @@ export async function swapTokens(
 
   console.log("\n✓ Quote ready");
   console.log(`Source: ${quote.quoteSource}`);
-  console.log(
-    `Execution Mode: ${options.forManager ? "via PositionManager" : "direct from wallet"}`,
-  );
+  console.log(`Execution Mode: ${options.forManager ? "via PositionManager" : "direct from wallet"}`);
   console.log(`Amount In: ${formattedAmountIn}`);
   console.log(`Amount Out: ${formattedAmountOut}`);
   if (quote.gasEstimate !== undefined) {
@@ -98,9 +85,7 @@ export async function swapTokens(
   console.log(`Target: ${plan.to}`);
   console.log(`Value: ${plan.value}`);
   console.log(`Calldata length: ${plan.data.length} bytes`);
-  console.log(
-    `Approval needed: ${plan.approvalAmount > 0n ? plan.approvalAmount.toString() : "none"}`,
-  );
+  console.log(`Approval needed: ${plan.approvalAmount > 0n ? plan.approvalAmount.toString() : "none"}`);
 
   if (options.quoteOnly) {
     console.log("\n(Quote only - no execution)");
@@ -133,10 +118,7 @@ export async function swapTokens(
   console.log("Receipt:", receipt);
 }
 
-async function getTokenDecimals(
-  publicClient: PublicClient,
-  token: Address,
-): Promise<number> {
+async function getTokenDecimals(publicClient: PublicClient, token: Address): Promise<number> {
   if (token.toLowerCase() === ZERO_ADDRESS) {
     return 18;
   }

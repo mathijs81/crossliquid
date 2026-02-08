@@ -10,8 +10,7 @@ const DEFAULT_TX_TIMEOUT_MS = 3 * 60 * 1000;
 export async function pollTxReceipt<T extends TxTaskData>(
   publicClient: PublicClient,
   taskInfo: TaskInfo<T>,
-  successMessageGenerator: (receipt: TransactionReceipt) => string = () =>
-    "Transaction confirmed",
+  successMessageGenerator: (receipt: TransactionReceipt) => string = () => "Transaction confirmed",
   timeoutMs = DEFAULT_TX_TIMEOUT_MS,
 ): Promise<TaskInfo<T>> {
   if (!taskInfo.taskData.hash) {

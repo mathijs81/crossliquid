@@ -7,18 +7,10 @@ import { addLiquidity } from "./actions/addLiquidity.js";
 import { removeLiquidity } from "./actions/removeLiquidity.js";
 import { swapTokens } from "./actions/swap.js";
 import { syncVault } from "./actions/vaultSync.js";
-import {
-  agentConfig,
-  chains,
-  createAgentWalletClient,
-  getOurAddressesForChain,
-} from "./config.js";
+import { agentConfig, chains, createAgentWalletClient, getOurAddressesForChain } from "./config.js";
 import { UNIV4_CONTRACTS } from "./contracts/contract-addresses.js";
 import { logger } from "./logger.js";
-import {
-  formatPosition,
-  PositionManagerService,
-} from "./services/positionManager.js";
+import { formatPosition, PositionManagerService } from "./services/positionManager.js";
 import { SwappingService } from "./services/swapping.js";
 import { moveManagerEthCrossChain } from "./actions/lifiCrossChain.js";
 import { initializeTaskDatabase } from "./services/taskStore.js";
@@ -30,8 +22,7 @@ const COMMANDS = {
   "add-liquidity": "Add liquidity to a pool",
   "remove-liquidity": "Remove liquidity from a pool",
   swap: "Swap tokens through the Universal Router",
-  "sync-vault":
-    "Sync funds between the $CLQ vault and the pool manager on Base",
+  "sync-vault": "Sync funds between the $CLQ vault and the pool manager on Base",
   "dump-usdc-transfers": "Dump all USDC transfers from the manager",
   "price-to-sqrt": "Convert ETH price to sqrtPriceX96 format",
   "move-cross-chain": "Move manager funds between chains using LiFi",
@@ -49,28 +40,14 @@ function showHelp() {
     console.log(`  ${cmd.padEnd(20)} ${desc}`);
   }
   console.log("\nEnvironment Variables:");
-  console.log(
-    "  POSITION_MANAGER_ADDRESS  Address of PositionManager contract (required)",
-  );
-  console.log(
-    "  POOL_MANAGER_ADDRESS      Address of PoolManager contract (required)",
-  );
+  console.log("  POSITION_MANAGER_ADDRESS  Address of PositionManager contract (required)");
+  console.log("  POOL_MANAGER_ADDRESS      Address of PoolManager contract (required)");
   console.log("  USDC_ADDRESS              Address of USDC token (required)");
-  console.log(
-    "  OPERATOR_PRIVATE_KEY      Private key for signing transactions (required for write ops)",
-  );
-  console.log(
-    "  CHAIN_ID                  Chain ID (default: 31337 for local)",
-  );
-  console.log(
-    "  UNISWAP_API_KEY           API key for Uniswap routing API (optional)",
-  );
-  console.log(
-    "  UNIVERSAL_ROUTER_ADDRESS  Local Universal Router address (chain 31337)",
-  );
-  console.log(
-    "  PERMIT2_ADDRESS           Local Permit2 address (chain 31337)",
-  );
+  console.log("  OPERATOR_PRIVATE_KEY      Private key for signing transactions (required for write ops)");
+  console.log("  CHAIN_ID                  Chain ID (default: 31337 for local)");
+  console.log("  UNISWAP_API_KEY           API key for Uniswap routing API (optional)");
+  console.log("  UNIVERSAL_ROUTER_ADDRESS  Local Universal Router address (chain 31337)");
+  console.log("  PERMIT2_ADDRESS           Local Permit2 address (chain 31337)");
   console.log("\nExamples:");
   console.log("  # List all positions");
   console.log("  pnpm cli list-positions");
@@ -93,8 +70,7 @@ function showHelp() {
 
 async function listPositions(service: PositionManagerService) {
   logger.info("Fetching all positions...");
-  const { ids, positions, currentTicks, inRange } =
-    await service.getAllPositions();
+  const { ids, positions, currentTicks, inRange } = await service.getAllPositions();
 
   if (positions.length === 0) {
     console.log("No positions found");
@@ -175,12 +151,8 @@ async function main() {
           stateView: UNIV4_CONTRACTS[chain].stateView,
           usdcAddress,
           hookAddress: ourAddresses.hook,
-          tickLower: values["tick-lower"]
-            ? Number(values["tick-lower"])
-            : undefined,
-          tickUpper: values["tick-upper"]
-            ? Number(values["tick-upper"])
-            : undefined,
+          tickLower: values["tick-lower"] ? Number(values["tick-lower"]) : undefined,
+          tickUpper: values["tick-upper"] ? Number(values["tick-upper"]) : undefined,
           maxTickDiff: Number(values["max-tick-diff"]),
         });
         break;
@@ -217,10 +189,7 @@ async function main() {
             "dry-run": { type: "boolean", default: false },
           },
         });
-        await syncVault(
-          createAgentWalletClient(agentConfig.vaultChainId),
-          values["dry-run"] as boolean,
-        );
+        await syncVault(createAgentWalletClient(agentConfig.vaultChainId), values["dry-run"] as boolean);
         break;
       }
 
@@ -261,12 +230,8 @@ async function main() {
           process.exit(1);
         }
 
-        const slippageBps = values["slippage-bps"]
-          ? Number(values["slippage-bps"])
-          : 50;
-        const deadlineSeconds = values["deadline-seconds"]
-          ? Number(values["deadline-seconds"])
-          : 1800;
+        const slippageBps = values["slippage-bps"] ? Number(values["slippage-bps"]) : 50;
+        const deadlineSeconds = values["deadline-seconds"] ? Number(values["deadline-seconds"]) : 1800;
 
         if (Number.isNaN(slippageBps) || slippageBps < 0) {
           throw new Error("Invalid --slippage-bps value");
@@ -282,16 +247,8 @@ async function main() {
 
         const forManager = values["for-manager"] as boolean;
 
-        const tokenIn = resolveTokenAddress(
-          values["token-in"],
-          chainContracts,
-          ZERO_ADDRESS,
-        );
-        const tokenOut = resolveTokenAddress(
-          values["token-out"],
-          chainContracts,
-          chainContracts.usdc,
-        );
+        const tokenIn = resolveTokenAddress(values["token-in"], chainContracts, ZERO_ADDRESS);
+        const tokenOut = resolveTokenAddress(values["token-out"], chainContracts, chainContracts.usdc);
 
         const publicClient = chains.get(chain)?.publicClient;
         if (!publicClient) {
@@ -299,12 +256,7 @@ async function main() {
         }
 
         const walletClient = createAgentWalletClient(chain);
-        const swapService = new SwappingService(
-          publicClient,
-          walletClient,
-          chain,
-          chainContracts,
-        );
+        const swapService = new SwappingService(publicClient, walletClient, chain, chainContracts);
 
         const ourAddresses = getOurAddressesForChain(chain);
         const recipient = values.recipient
@@ -324,9 +276,7 @@ async function main() {
         const quoteOnly = (values["quote-only"] as boolean) || dryRunProduction;
 
         if (dryRunProduction) {
-          console.log(
-            "\n🧪 Dry-run production mode: simulating production chain behavior\n",
-          );
+          console.log("\n🧪 Dry-run production mode: simulating production chain behavior\n");
         }
 
         await swapTokens(swapService, publicClient, walletClient, {
@@ -420,8 +370,7 @@ async function main() {
           process.exit(1);
         }
 
-        const dbPath = values["db-path"] ?? "./dockdata/tasks.db";
-        const taskStore = initializeTaskDatabase(dbPath);
+        const taskStore = initializeTaskDatabase();
         const tasks = await taskStore.getRecentTasks(limit);
 
         if (tasks.length === 0) {
@@ -432,9 +381,7 @@ async function main() {
         console.log(`\nFound ${tasks.length} task(s):\n`);
         for (const task of tasks) {
           const startedDate = new Date(task.startedAt).toISOString();
-          const duration = task.finishedAt
-            ? `${((task.finishedAt - task.startedAt) / 1000).toFixed(1)}s`
-            : "ongoing";
+          const duration = task.finishedAt ? `${((task.finishedAt - task.startedAt) / 1000).toFixed(1)}s` : "ongoing";
 
           const statusIcon =
             task.status === "completed"
@@ -468,10 +415,7 @@ async function main() {
     }
   } catch (error) {
     logger.error({ error }, "Command failed");
-    console.error(
-      "\n✗ Error:",
-      error instanceof Error ? error.message : String(error),
-    );
+    console.error("\n✗ Error:", error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }

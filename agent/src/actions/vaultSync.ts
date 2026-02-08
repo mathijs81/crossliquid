@@ -15,10 +15,7 @@ export async function getVaultBalance(chainId: number): Promise<bigint> {
   return vaultBalance;
 }
 
-export async function sendSyncTransaction(
-  walletClient: WalletClient,
-  transferAmount: bigint,
-): Promise<`0x${string}`> {
+export async function sendSyncTransaction(walletClient: WalletClient, transferAmount: bigint): Promise<`0x${string}`> {
   const chain = walletClient.chain!;
   const ourAddresses = getOurAddressesForChain(chain.id);
   const publicClient = chains.get(chain.id)?.publicClient;
@@ -41,10 +38,7 @@ export async function sendSyncTransaction(
  * Syncs funds between vault and the manager.
  * Returns the balance of the manager after sync
  */
-export async function syncVault(
-  walletClient: WalletClient,
-  dryRun: boolean = false,
-): Promise<bigint> {
+export async function syncVault(walletClient: WalletClient, dryRun: boolean = false): Promise<bigint> {
   const chain = walletClient.chain!;
   logger.info(`Syncing vault on chain ${chain.name}`);
   const ourAddresses = getOurAddressesForChain(chain.id);
@@ -60,14 +54,10 @@ export async function syncVault(
   if (vaultBalance > 0) {
     // TODO: leave certain % of TVL to allow redeems
     const transferAmount = vaultBalance;
-    logger.info(
-      `Claiming ${formatEther(transferAmount)} from vault => manager`,
-    );
+    logger.info(`Claiming ${formatEther(transferAmount)} from vault => manager`);
 
     if (dryRun) {
-      logger.info(
-        `Dry run: would claim ${formatEther(transferAmount)} from vault => manager`,
-      );
+      logger.info(`Dry run: would claim ${formatEther(transferAmount)} from vault => manager`);
       return managerBalance;
     }
     const hash = await sendSyncTransaction(walletClient, transferAmount);

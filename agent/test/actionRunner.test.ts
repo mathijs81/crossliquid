@@ -6,11 +6,7 @@ import type {
   TaskInfoUnknown,
   TaskStore,
 } from "../src/services/actionRunner.js";
-import {
-  ActionRunner,
-  createNewTask,
-  isActiveStatus,
-} from "../src/services/actionRunner.js";
+import { ActionRunner, createNewTask, isActiveStatus } from "../src/services/actionRunner.js";
 
 // --- In-memory TaskStore ---
 
@@ -19,9 +15,7 @@ class InMemoryTaskStore implements TaskStore {
 
   async getAllTasks(beginTimestamp: number, endTimestamp?: number) {
     return this.tasks.filter(
-      (t) =>
-        t.startedAt >= beginTimestamp &&
-        (endTimestamp === undefined || t.startedAt <= endTimestamp),
+      (t) => t.startedAt >= beginTimestamp && (endTimestamp === undefined || t.startedAt <= endTimestamp),
     );
   }
 
@@ -64,10 +58,7 @@ function makeCounterAction(
   updatesUntilDone: number,
   opts?: {
     shouldStart?: (activeTasks: TaskInfoUnknown[]) => boolean;
-    start?: (
-      activeTasks: TaskInfoUnknown[],
-      force: boolean,
-    ) => Promise<TaskInfo<CounterTaskData> | NotStartedTask>;
+    start?: (activeTasks: TaskInfoUnknown[], force: boolean) => Promise<TaskInfo<CounterTaskData> | NotStartedTask>;
   },
 ): ActionDefinition<CounterTaskData> {
   const definition: ActionDefinition<CounterTaskData> = {
@@ -80,8 +71,7 @@ function makeCounterAction(
 
     start:
       opts?.start ??
-      (async (_activeTasks, _force) =>
-        createNewTask(name, resources, { updatesRemaining: updatesUntilDone })),
+      (async (_activeTasks, _force) => createNewTask(name, resources, { updatesRemaining: updatesUntilDone })),
 
     update: async (taskInfo) => {
       // First update: transition from pre-start to running
@@ -143,15 +133,9 @@ function makeOneTimeAction(
  * for ActionRunner. This is safe because ActionRunner's runtime contract ensures
  * tasks match their definition's type.
  */
-function createActionRunner<T>(
-  store: TaskStore,
-  ...actions: Array<ActionDefinition<T>>
-): ActionRunner {
+function createActionRunner<T>(store: TaskStore, ...actions: Array<ActionDefinition<T>>): ActionRunner {
   // Cast is safe: ActionRunner's runtime contract ensures tasks match their definition's type
-  return new ActionRunner(
-    store,
-    actions as unknown as Array<ActionDefinition<unknown>>,
-  );
+  return new ActionRunner(store, actions as unknown as Array<ActionDefinition<unknown>>);
 }
 
 // --- Tests ---
@@ -171,9 +155,7 @@ describe("ActionRunner", () => {
       // Tick 2: update (2 → 1)
       await runner.runActionLoop();
       expect(store.tasks[0].status).toBe("running");
-      expect(
-        (store.tasks[0].taskData as CounterTaskData).updatesRemaining,
-      ).toBe(1);
+      expect((store.tasks[0].taskData as CounterTaskData).updatesRemaining).toBe(1);
 
       // Tick 3: update (1 → 0 → completed)
       await runner.runActionLoop();
@@ -217,8 +199,7 @@ describe("ActionRunner", () => {
         name: "picky",
         lockResources: () => ["res:a"],
         shouldStart: async () => true,
-        start: async (_activeTasks, _force) =>
-          ({ message: "conditions not met" }) as NotStartedTask,
+        start: async (_activeTasks, _force) => ({ message: "conditions not met" }) as NotStartedTask,
         update: async (t) => t,
         stop: async () => {},
       };
@@ -255,21 +236,14 @@ describe("ActionRunner", () => {
 
     it("allows concurrent execution when resources don't overlap", async () => {
       const store = new InMemoryTaskStore();
-      const vaultSync = makeOneTimeAction(
-        "vault-sync",
-        ["chain:8453:vault"],
-        2,
-      );
+      const vaultSync = makeOneTimeAction("vault-sync", ["chain:8453:vault"], 2);
       const hookFee = makeOneTimeAction("hook-fee", ["chain:8453:hook"], 2);
 
       const runner = createActionRunner(store, vaultSync, hookFee);
 
       await runner.runActionLoop();
       expect(store.tasks).toHaveLength(2);
-      expect(store.tasks.map((t) => t.definitionName).sort()).toEqual([
-        "hook-fee",
-        "vault-sync",
-      ]);
+      expect(store.tasks.map((t) => t.definitionName).sort()).toEqual(["hook-fee", "vault-sync"]);
     });
 
     it("prevents duplicate tasks via resource lock", async () => {
@@ -288,21 +262,9 @@ describe("ActionRunner", () => {
 
     it("blocks all actions when multi-resource lock overlaps", async () => {
       const store = new InMemoryTaskStore();
-      const bridge = makeOneTimeAction(
-        "bridge",
-        ["chain:8453:liquidity", "chain:10:liquidity"],
-        2,
-      );
-      const baseDeposit = makeCounterAction(
-        "base-deposit",
-        ["chain:8453:liquidity"],
-        1,
-      );
-      const opDeposit = makeCounterAction(
-        "op-deposit",
-        ["chain:10:liquidity"],
-        1,
-      );
+      const bridge = makeOneTimeAction("bridge", ["chain:8453:liquidity", "chain:10:liquidity"], 2);
+      const baseDeposit = makeCounterAction("base-deposit", ["chain:8453:liquidity"], 1);
+      const opDeposit = makeCounterAction("op-deposit", ["chain:10:liquidity"], 1);
 
       const runner = createActionRunner(store, bridge, baseDeposit, opDeposit);
 
@@ -369,14 +331,9 @@ describe("ActionRunner", () => {
         return result;
       };
 
-      const addLiq = makeCounterAction(
-        "add-liquidity",
-        ["chain:8453:liquidity"],
-        1,
-        {
-          shouldStart: () => swapDone,
-        },
-      );
+      const addLiq = makeCounterAction("add-liquidity", ["chain:8453:liquidity"], 1, {
+        shouldStart: () => swapDone,
+      });
 
       const runner = createActionRunner(store, swap, addLiq);
 

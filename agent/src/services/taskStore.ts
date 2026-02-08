@@ -43,10 +43,7 @@ class TaskDatabaseService implements TaskStore {
     `);
   }
 
-  async getAllTasks(
-    beginTimestamp: number,
-    endTimestamp?: number,
-  ): Promise<TaskInfoUnknown[]> {
+  async getAllTasks(beginTimestamp: number, endTimestamp?: number): Promise<TaskInfoUnknown[]> {
     const stmt = this.db.prepare<[number, number]>(`
       SELECT * FROM tasks
       WHERE startedAt >= ? AND startedAt <= ?
@@ -99,10 +96,7 @@ class TaskDatabaseService implements TaskStore {
       jsonBigInt.stringify(taskInfo.resourcesTaken),
     );
 
-    logger.debug(
-      { taskId: taskInfo.id, definitionName: taskInfo.definitionName },
-      "Task added to store",
-    );
+    logger.debug({ taskId: taskInfo.id, definitionName: taskInfo.definitionName }, "Task added to store");
   }
 
   async updateTask(taskInfo: TaskInfoUnknown): Promise<void> {
@@ -134,10 +128,7 @@ class TaskDatabaseService implements TaskStore {
     if (changes === 0) {
       logger.warn({ taskId: taskInfo.id }, "Task not found for update");
     } else {
-      logger.debug(
-        { taskId: taskInfo.id, status: taskInfo.status },
-        "Task updated in store",
-      );
+      logger.debug({ taskId: taskInfo.id, status: taskInfo.status }, "Task updated in store");
     }
   }
 

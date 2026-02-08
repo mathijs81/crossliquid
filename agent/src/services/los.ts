@@ -36,22 +36,15 @@ const GAS_SCORES: Record<number, number> = {
   31337: 5, // dev mode
 };
 
-export const calculateLOS = async (): Promise<
-  Map<number, LiquidityOpportunityScore>
-> => {
+export const calculateLOS = async (): Promise<Map<number, LiquidityOpportunityScore>> => {
   const scores = new Map<number, LiquidityOpportunityScore>();
 
   const chainIds = Array.from(chains.keys());
-  const metricsMap =
-    await MetricsService.calculateMetricsForAllChains(chainIds);
+  const metricsMap = await MetricsService.calculateMetricsForAllChains(chainIds);
 
   for (const [chainId, config] of chains) {
     const metrics = metricsMap.get(chainId);
-    const score = computeScoreForChain(
-      chainId,
-      config.publicClient,
-      metrics || null,
-    );
+    const score = computeScoreForChain(chainId, config.publicClient, metrics || null);
     scores.set(chainId, score);
   }
 
@@ -71,10 +64,7 @@ export const calculateLOS = async (): Promise<
   for (const [chainId, score] of scoreMap) {
     scoreMap.set(chainId, Math.exp(score - maxScore));
   }
-  const totalSoftmaxScore = Array.from(scoreMap.values()).reduce(
-    (sum, s) => sum + s,
-    0,
-  );
+  const totalSoftmaxScore = Array.from(scoreMap.values()).reduce((sum, s) => sum + s, 0);
   for (const [chainId, score] of scoreMap) {
     const allocation = (score / totalSoftmaxScore) * 100;
     // Don't allocate less than 5% to any chain
@@ -86,10 +76,7 @@ export const calculateLOS = async (): Promise<
   }
 
   // Rescale in case we didn't get to 100 because of the 5% threshold
-  const totalAllocation = Array.from(scoreMap.values()).reduce(
-    (sum, s) => sum + s,
-    0,
-  );
+  const totalAllocation = Array.from(scoreMap.values()).reduce((sum, s) => sum + s, 0);
   for (const [chainId, score] of scoreMap) {
     scoreMap.set(chainId, (score / totalAllocation) * 100);
   }
@@ -127,14 +114,11 @@ const computeScoreForChain = (
 
   // Component 1: Fee yield rate (70% weight)
   // Use 4hr window as the primary signal (balances responsiveness with stability)
-  const feeYieldRate =
-    (metrics.apr4hr || metrics.apr30min || metrics.apr1day)?.feeApr || 0;
+  const feeYieldRate = (metrics.apr4hr || metrics.apr30min || metrics.apr1day)?.feeApr || 0;
 
   // Component 2: Volatility (20% weight)
   // Higher volatility = more trading = more fees
-  const volatility =
-    (metrics.volatility4hr || metrics.volatility30min || metrics.volatility1day)
-      ?.priceVolatility || 0;
+  const volatility = (metrics.volatility4hr || metrics.volatility30min || metrics.volatility1day)?.priceVolatility || 0;
 
   // Component 3: Gas cost factor (10% weight)
   // Penalize expensive chains

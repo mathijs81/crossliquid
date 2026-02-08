@@ -1,14 +1,6 @@
 import { ChainId } from "@lifi/sdk";
 import { type Chain, createPublicClient, http, type PublicClient } from "viem";
-import {
-  base,
-  baseSepolia,
-  foundry,
-  mainnet,
-  optimism,
-  unichain,
-  unichainSepolia,
-} from "viem/chains";
+import { base, baseSepolia, foundry, mainnet, optimism, unichain, unichainSepolia } from "viem/chains";
 import type { ChainConfig } from "../config.js";
 import type { Environment } from "../env.js";
 import { logger } from "../logger.js";
@@ -67,9 +59,7 @@ function getChains(environment: Environment): number[] {
   }
 }
 
-export const initializeChains = (
-  environment: Environment,
-): Map<number, ChainConfig> => {
+export const initializeChains = (environment: Environment): Map<number, ChainConfig> => {
   const useChains = getChains(environment);
 
   const chains = new Map<number, ChainConfig>();
@@ -89,9 +79,6 @@ export const initializeChains = (
       lifiId: lifiChains.get(chainId) || ChainId.EVM,
     });
   }
-  logger.info(
-    { environment, chains: Array.from(chains.keys()) },
-    "Chains initialized",
-  );
+  logger.info({ environment, chains: Array.from(chains.keys()) }, "Chains initialized");
   return chains;
 };

@@ -57,31 +57,26 @@ fastify.get("/metrics", async (request) => {
 
   // Calculate metrics for all chains or specific chain
   const chainIds = parsedChainId ? [parsedChainId] : Array.from(chains.keys());
-  const metricsMap =
-    await MetricsService.calculateMetricsForAllChains(chainIds);
+  const metricsMap = await MetricsService.calculateMetricsForAllChains(chainIds);
 
   // Calculate LOS scores
   const losMap = await calculateLOS();
 
   // Combine into response
-  const chainMetrics = Array.from(metricsMap.entries()).map(
-    ([chainId, metrics]) => {
-      const los = losMap.get(chainId);
-      return {
-        chainId,
-        chainName: chains.get(chainId)?.chainName || "Unknown",
-        metrics,
-        los: los || null,
-      };
-    },
-  );
+  const chainMetrics = Array.from(metricsMap.entries()).map(([chainId, metrics]) => {
+    const los = losMap.get(chainId);
+    return {
+      chainId,
+      chainName: chains.get(chainId)?.chainName || "Unknown",
+      metrics,
+      los: los || null,
+    };
+  });
 
   return {
     timestamp: new Date().toISOString(),
     chains: chainMetrics,
-    poolPrices: parsedChainId
-      ? poolPrices.filter((p) => p.chainId === parsedChainId)
-      : poolPrices,
+    poolPrices: parsedChainId ? poolPrices.filter((p) => p.chainId === parsedChainId) : poolPrices,
   };
 });
 

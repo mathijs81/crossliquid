@@ -24,9 +24,7 @@ const lifiCompose = async (
   };
 };
 
-export const executeRebalance = async (
-  actions: RebalanceAction[],
-): Promise<ExecutionResult[]> => {
+export const executeRebalance = async (actions: RebalanceAction[]): Promise<ExecutionResult[]> => {
   const results: ExecutionResult[] = [];
 
   for (const action of actions) {

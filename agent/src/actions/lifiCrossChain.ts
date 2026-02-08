@@ -1,10 +1,6 @@
 import { chains, getOurAddressesForChain } from "../config.js";
 import { ZERO_ADDRESS } from "../contracts/contract-addresses.js";
-import {
-  type CrossChainRequest,
-  executeCrossChainSwap,
-  getCrossChainQuote,
-} from "../services/swapping.js";
+import { type CrossChainRequest, executeCrossChainSwap, getCrossChainQuote } from "../services/swapping.js";
 import { logger } from "../logger.js";
 import type { WalletClient } from "viem";
 import { waitForTransactionReceipt } from "viem/actions";
@@ -34,15 +30,10 @@ export async function moveManagerEthCrossChain(
   logger.info({ quote }, "Cross chain quote");
 
   if (quote.minReceive < 0.99 * Number(amount)) {
-    throw new Error(
-      "Insufficient min receive: expected at least 99% of the amount",
-    );
+    throw new Error("Insufficient min receive: expected at least 99% of the amount");
   }
 
-  if (
-    quote.transactionRequest?.value &&
-    BigInt(quote.transactionRequest.value) > amount
-  ) {
+  if (quote.transactionRequest?.value && BigInt(quote.transactionRequest.value) > amount) {
     throw new Error("Shouldn't be sending more than we're swapping");
   }
 

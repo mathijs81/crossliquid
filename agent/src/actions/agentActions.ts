@@ -3,11 +3,7 @@
  */
 
 import { formatEther } from "viem";
-import {
-  chains,
-  createAgentWalletClient,
-  getOurAddressesForChain,
-} from "../config.js";
+import { chains, createAgentWalletClient, getOurAddressesForChain } from "../config.js";
 import { ZERO_ADDRESS } from "../contracts/contract-addresses.js";
 import {
   createNewTask,
@@ -26,10 +22,7 @@ export function createAgentActions(): ActionDefinition<unknown>[] {
   const actions: ActionDefinition<any>[] = [];
 
   for (const chainId of chains.keys()) {
-    if (
-      getOurAddressesForChain(chainId)?.vault &&
-      getOurAddressesForChain(chainId)?.vault !== ZERO_ADDRESS
-    ) {
+    if (getOurAddressesForChain(chainId)?.vault && getOurAddressesForChain(chainId)?.vault !== ZERO_ADDRESS) {
       actions.push(new VaultSyncAction(chainId));
     }
     if (getOurAddressesForChain(chainId)?.manager) {
@@ -67,10 +60,7 @@ class VaultSyncAction implements ActionDefinition<VaultSyncTaskData> {
     // Probably need to have a minimum difference amount
     return vaultBalance > intendedVaultBalance;
   }
-  async start(
-    existingTasks: TaskInfoUnknown[],
-    force: boolean,
-  ): Promise<NotStartedTask | TaskInfo<VaultSyncTaskData>> {
+  async start(existingTasks: TaskInfoUnknown[], force: boolean): Promise<NotStartedTask | TaskInfo<VaultSyncTaskData>> {
     if (force || (await this.shouldStart(existingTasks))) {
       return createNewTask(this.name, this.lockResources(), {
         vaultBalance: await getVaultBalance(this.chainId),
@@ -79,15 +69,10 @@ class VaultSyncAction implements ActionDefinition<VaultSyncTaskData> {
     }
     return { message: "Vault sync action not started" };
   }
-  async update(
-    taskInfo: TaskInfo<VaultSyncTaskData>,
-  ): Promise<TaskInfo<VaultSyncTaskData>> {
+  async update(taskInfo: TaskInfo<VaultSyncTaskData>): Promise<TaskInfo<VaultSyncTaskData>> {
     switch (taskInfo.status) {
       case "pre-start": {
-        const hash = await sendSyncTransaction(
-          createAgentWalletClient(this.chainId),
-          taskInfo.taskData.vaultBalance,
-        );
+        const hash = await sendSyncTransaction(createAgentWalletClient(this.chainId), taskInfo.taskData.vaultBalance);
         return {
           ...taskInfo,
           taskData: { ...taskInfo.taskData, hash },
@@ -103,8 +88,7 @@ class VaultSyncAction implements ActionDefinition<VaultSyncTaskData> {
         return pollTxReceipt(
           publicClient,
           taskInfo,
-          () =>
-            `Synced ${formatEther(taskInfo.taskData.vaultBalance)} from vault to manager`,
+          () => `Synced ${formatEther(taskInfo.taskData.vaultBalance)} from vault to manager`,
         );
       }
       default:

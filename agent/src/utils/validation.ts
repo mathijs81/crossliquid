@@ -1,8 +1,6 @@
 import { logger } from "../logger.js";
 
-export const validatePrivateKey = (
-  key: string | undefined,
-): `0x${string}` | undefined => {
+export const validatePrivateKey = (key: string | undefined): `0x${string}` | undefined => {
   if (!key) {
     return undefined;
   }
@@ -23,9 +21,7 @@ export const validatePrivateKey = (
   return key as `0x${string}`;
 };
 
-export const validateAddress = (
-  address: string | undefined,
-): `0x${string}` | undefined => {
+export const validateAddress = (address: string | undefined): `0x${string}` | undefined => {
   if (!address) {
     return undefined;
   }

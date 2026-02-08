@@ -4,11 +4,7 @@ import { logger } from "../logger.js";
 import { getPoolCurrentTick } from "../services/pool.js";
 import type { PositionManagerService } from "../services/positionManager.js";
 import { calculateTickRange } from "../services/positionManager.js";
-import {
-  createEthUsdcPoolKey,
-  createPoolId,
-  FeeTier,
-} from "../utils/poolIds.js";
+import { createEthUsdcPoolKey, createPoolId, FeeTier } from "../utils/poolIds.js";
 
 export async function addLiquidity(
   service: PositionManagerService,
@@ -39,11 +35,7 @@ export async function addLiquidity(
     "Preparing to add liquidity",
   );
 
-  const poolKey = createEthUsdcPoolKey(
-    options.usdcAddress,
-    FeeTier.LOW,
-    options.hookAddress,
-  );
+  const poolKey = createEthUsdcPoolKey(options.usdcAddress, FeeTier.LOW, options.hookAddress);
   const poolId = createPoolId(poolKey);
   // Get current tick from pool
   let tickLower: number;
@@ -53,11 +45,7 @@ export async function addLiquidity(
     tickLower = options.tickLower;
     tickUpper = options.tickUpper;
   } else {
-    const currentTick = await getPoolCurrentTick(
-      options.chainId,
-      options.stateView,
-      poolId,
-    );
+    const currentTick = await getPoolCurrentTick(options.chainId, options.stateView, poolId);
 
     const otherTick = await getPoolCurrentTick(
       options.chainId,

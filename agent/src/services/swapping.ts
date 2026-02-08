@@ -1,8 +1,5 @@
 import { createConfig, getQuote, type TransactionRequest } from "@lifi/sdk";
-import {
-  UNIVERSAL_ROUTER_ADDRESS,
-  UniversalRouterVersion,
-} from "@uniswap/universal-router-sdk";
+import { UNIVERSAL_ROUTER_ADDRESS, UniversalRouterVersion } from "@uniswap/universal-router-sdk";
 import { Actions, V4Planner } from "@uniswap/v4-sdk";
 import {
   type Account,
@@ -106,10 +103,7 @@ export class SwappingService {
     return this.quoteLocal({ ...request, slippageBps });
   }
 
-  buildExecutionPlan(
-    quote: SwapQuoteResult,
-    request: SwapQuoteRequest,
-  ): SwapExecutionPlan {
+  buildExecutionPlan(quote: SwapQuoteResult, request: SwapQuoteRequest): SwapExecutionPlan {
     const deadlineSeconds = request.deadlineSeconds ?? DEFAULT_DEADLINE_SECONDS;
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineSeconds);
 
@@ -118,12 +112,9 @@ export class SwappingService {
         throw new Error("Routing API quote did not include calldata");
       }
 
-      const routerAddress =
-        quote.routing.to ?? this.resolveUniversalRouterAddress();
+      const routerAddress = quote.routing.to ?? this.resolveUniversalRouterAddress();
       const value = quote.routing.value ?? 0n;
-      const approvalAmount = this.isNativeCurrency(quote.tokenIn)
-        ? 0n
-        : quote.amountIn;
+      const approvalAmount = this.isNativeCurrency(quote.tokenIn) ? 0n : quote.amountIn;
 
       return {
         chainId: this.chainId,
@@ -167,20 +158,15 @@ export class SwappingService {
       throw new Error("Invalid slippage bps");
     }
 
-    const amountOutMinimum =
-      (quote.amountOut * (SLIPPAGE_DENOMINATOR - slippageBps)) /
-      SLIPPAGE_DENOMINATOR;
+    const amountOutMinimum = (quote.amountOut * (SLIPPAGE_DENOMINATOR - slippageBps)) / SLIPPAGE_DENOMINATOR;
 
     const hookData = quote.hookData ?? "0x";
 
     // For local chains, use IUniswapV4Router04 instead of UniversalRouter
     if (this.chainId === 31337) {
-      const routerAddress =
-        this.contracts.v4Router ?? this.contracts.universalRouter;
+      const routerAddress = this.contracts.v4Router ?? this.contracts.universalRouter;
       if (!routerAddress) {
-        throw new Error(
-          "No v4Router or universalRouter configured for local chain",
-        );
+        throw new Error("No v4Router or universalRouter configured for local chain");
       }
 
       // Router04 uses negative amountSpecified for exact input
@@ -189,21 +175,11 @@ export class SwappingService {
       const data = encodeFunctionData({
         abi: iUniswapV4Router04Abi,
         functionName: "swap",
-        args: [
-          amountSpecified,
-          amountOutMinimum,
-          quote.zeroForOne,
-          quote.poolKey,
-          hookData,
-          quote.recipient,
-          deadline,
-        ],
+        args: [amountSpecified, amountOutMinimum, quote.zeroForOne, quote.poolKey, hookData, quote.recipient, deadline],
       });
 
       const value = this.isNativeCurrency(quote.tokenIn) ? quote.amountIn : 0n;
-      const approvalAmount = this.isNativeCurrency(quote.tokenIn)
-        ? 0n
-        : quote.amountIn;
+      const approvalAmount = this.isNativeCurrency(quote.tokenIn) ? 0n : quote.amountIn;
 
       return {
         chainId: this.chainId,
@@ -232,16 +208,8 @@ export class SwappingService {
       },
     ]);
 
-    planner.addAction(Actions.SETTLE, [
-      this.currencyAddressFor(quote.tokenIn),
-      "0",
-      true,
-    ]);
-    planner.addAction(Actions.TAKE, [
-      this.currencyAddressFor(quote.tokenOut),
-      quote.recipient,
-      "0",
-    ]);
+    planner.addAction(Actions.SETTLE, [this.currencyAddressFor(quote.tokenIn), "0", true]);
+    planner.addAction(Actions.TAKE, [this.currencyAddressFor(quote.tokenOut), quote.recipient, "0"]);
 
     const v4ActionsCalldata = planner.finalize() as Hex;
     const commands = V4_SWAP_COMMAND as Hex;
@@ -256,9 +224,7 @@ export class SwappingService {
     });
 
     const value = this.isNativeCurrency(quote.tokenIn) ? quote.amountIn : 0n;
-    const approvalAmount = this.isNativeCurrency(quote.tokenIn)
-      ? 0n
-      : quote.amountIn;
+    const approvalAmount = this.isNativeCurrency(quote.tokenIn) ? 0n : quote.amountIn;
 
     return {
       chainId: this.chainId,
@@ -296,9 +262,7 @@ export class SwappingService {
     return hash;
   }
 
-  private async quoteLocal(
-    request: SwapQuoteRequest & { slippageBps: number },
-  ): Promise<SwapQuoteResult> {
+  private async quoteLocal(request: SwapQuoteRequest & { slippageBps: number }): Promise<SwapQuoteResult> {
     const { poolKey, zeroForOne } = this.resolvePoolKey(request);
     const poolId = createPoolId(poolKey);
     const hookData = request.hookData ?? "0x";
@@ -363,9 +327,7 @@ export class SwappingService {
     };
   }
 
-  private async quoteLifi(
-    request: SwapQuoteRequest & { slippageBps: number },
-  ): Promise<SwapQuoteResult> {
+  private async quoteLifi(request: SwapQuoteRequest & { slippageBps: number }): Promise<SwapQuoteResult> {
     const quote = await getQuote({
       fromChain: request.chainId,
       toChain: request.chainId,
@@ -400,9 +362,7 @@ export class SwappingService {
     };
   }
 
-  private async quoteRoutingApi(
-    request: SwapQuoteRequest & { slippageBps: number },
-  ): Promise<SwapQuoteResult> {
+  private async quoteRoutingApi(request: SwapQuoteRequest & { slippageBps: number }): Promise<SwapQuoteResult> {
     const apiUrl = "https://api.uniswap.org/v1/quote";
     const deadlineSeconds = request.deadlineSeconds ?? DEFAULT_DEADLINE_SECONDS;
     const deadline = Math.floor(Date.now() / 1000) + deadlineSeconds;
@@ -464,8 +424,7 @@ export class SwappingService {
     poolKey: PoolKey;
     zeroForOne: boolean;
   } {
-    const poolKey =
-      request.poolKey ?? (QUERY_POOL_KEYS[this.chainId] as PoolKey | undefined);
+    const poolKey = request.poolKey ?? (QUERY_POOL_KEYS[this.chainId] as PoolKey | undefined);
     if (!poolKey) {
       throw new Error(`No pool key configured for chain ${this.chainId}`);
     }
@@ -488,18 +447,14 @@ export class SwappingService {
 
   private resolveUniversalRouterAddress(): Address {
     if (this.chainId === 31337) {
-      const local =
-        this.contracts.universalRouter ?? process.env.UNIVERSAL_ROUTER_ADDRESS;
+      const local = this.contracts.universalRouter ?? process.env.UNIVERSAL_ROUTER_ADDRESS;
       if (!local) {
         throw new Error("UNIVERSAL_ROUTER_ADDRESS is not set for local chain");
       }
       return local as Address;
     }
 
-    return UNIVERSAL_ROUTER_ADDRESS(
-      UniversalRouterVersion.V2_0,
-      this.chainId,
-    ) as Address;
+    return UNIVERSAL_ROUTER_ADDRESS(UniversalRouterVersion.V2_0, this.chainId) as Address;
   }
 
   private isNativeCurrency(token: Address): boolean {
@@ -534,8 +489,7 @@ export class SwappingService {
     });
     const allowance = allowanceData[0] as bigint;
     const expirationRaw = allowanceData[1] as number | bigint;
-    const expiration =
-      typeof expirationRaw === "bigint" ? Number(expirationRaw) : expirationRaw;
+    const expiration = typeof expirationRaw === "bigint" ? Number(expirationRaw) : expirationRaw;
 
     const isExpired = expiration <= nowSeconds;
     const isSufficient = allowance >= requiredAmount;
@@ -558,9 +512,7 @@ export class SwappingService {
       account,
       chain: this.walletClient.chain,
       address: permit2,
-      abi: parseAbi([
-        "function approve(address token, address spender, uint160 amount, uint48 expiration)",
-      ]),
+      abi: parseAbi(["function approve(address token, address spender, uint160 amount, uint48 expiration)"]),
       functionName: "approve",
       args: [token, spender, requiredAmount, MAX_UINT48],
     });
@@ -594,18 +546,9 @@ export class SwappingService {
       throw new Error("Routing API response missing calldata");
     }
 
-    const rawValue =
-      methodParameters?.value ??
-      response.value ??
-      response.data?.value ??
-      response.tx?.value ??
-      "0";
+    const rawValue = methodParameters?.value ?? response.value ?? response.data?.value ?? response.tx?.value ?? "0";
 
-    const to =
-      methodParameters?.to ??
-      response.to ??
-      response.data?.to ??
-      response.tx?.to;
+    const to = methodParameters?.to ?? response.to ?? response.data?.to ?? response.tx?.to;
 
     return {
       calldata: calldata as Hex,
@@ -614,10 +557,7 @@ export class SwappingService {
     };
   }
 
-  private extractQuoteAmount(
-    payload: unknown,
-    field: "amountOut" | "amountIn",
-  ): bigint | null {
+  private extractQuoteAmount(payload: unknown, field: "amountOut" | "amountIn"): bigint | null {
     const response = payload as Record<string, any>;
     const direct =
       response[field] ??
@@ -641,12 +581,7 @@ export class SwappingService {
     }
 
     if (typeof direct === "object") {
-      const nested =
-        direct[field] ??
-        direct.amount ??
-        direct.value ??
-        direct.amountOut ??
-        direct.amountIn;
+      const nested = direct[field] ?? direct.amount ?? direct.value ?? direct.amountOut ?? direct.amountIn;
       if (nested !== undefined && nested !== null) {
         return BigInt(nested);
       }
@@ -675,9 +610,7 @@ export interface CrossChainQuote {
   transactionRequest: TransactionRequest;
 }
 
-export async function getCrossChainQuote(
-  request: CrossChainRequest,
-): Promise<CrossChainQuote> {
+export async function getCrossChainQuote(request: CrossChainRequest): Promise<CrossChainQuote> {
   const quote = await getQuote({
     fromChain: request.fromChain,
     toChain: request.toChain,
@@ -707,14 +640,10 @@ export async function executeCrossChainSwap(
 ): Promise<string> {
   const publicClient = chains.get(quote.request.fromChain)?.publicClient;
   if (!publicClient) {
-    throw new Error(
-      `Public client not found for chain ${quote.request.fromChain}`,
-    );
+    throw new Error(`Public client not found for chain ${quote.request.fromChain}`);
   }
   if (forManager) {
-    const positionManagerAddress = getOurAddressesForChain(
-      quote.request.fromChain,
-    ).manager;
+    const positionManagerAddress = getOurAddressesForChain(quote.request.fromChain).manager;
     return await executeAsManager(
       publicClient,
       walletClient,

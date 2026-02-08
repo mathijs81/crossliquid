@@ -18,7 +18,6 @@ export interface ChainConfig {
   lifiId: ChainId;
 }
 
-
 export interface PoolKey {
   currency0: `0x${string}`;
   currency1: `0x${string}`;
@@ -27,10 +26,8 @@ export interface PoolKey {
   hooks: `0x${string}`;
 }
 
-export const databasePath =
-  ENVIRONMENT === "production" ? "./data/agent.db" : "./data/agent-dev.db";
-export const taskDbPath =
-  ENVIRONMENT === "production" ? "./data/tasks.db" : "./data/tasks-dev.db";
+export const databasePath = ENVIRONMENT === "production" ? "./data/agent.db" : "./data/agent-dev.db";
+export const taskDbPath = ENVIRONMENT === "production" ? "./data/tasks.db" : "./data/tasks-dev.db";
 
 export const ETHUSDC_POOLS: Record<number, string[]> = {
   8453: [],
@@ -49,9 +46,7 @@ export function getOurAddressesForChain(chainId: number): DeployedContracts {
   if (ENVIRONMENT === "development") {
     return readOurDeployment();
   } else {
-    return deployedContracts[
-      chainId as keyof typeof deployedContracts
-    ] as unknown as DeployedContracts;
+    return deployedContracts[chainId as keyof typeof deployedContracts] as unknown as DeployedContracts;
   }
 }
 
@@ -109,9 +104,7 @@ export const agentConfig = {
   vaultChainId: Number.parseInt(process.env.CHAIN_ID || "8453", 10),
 };
 
-export const createAgentWalletClient = (
-  chainId: number = agentConfig.vaultChainId,
-) => {
+export const createAgentWalletClient = (chainId: number = agentConfig.vaultChainId) => {
   const privateKey = agentConfig.vaultPrivateKey;
   if (!privateKey) {
     throw new Error("VAULT_PRIVATE_KEY is not set");

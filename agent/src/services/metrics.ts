@@ -34,39 +34,23 @@ export interface ChainMetrics extends TimeWindowMetrics {
 export class MetricsService {
   private static readonly SECONDS_PER_YEAR = 365 * 24 * 3600;
 
-  static computeFeeAndLiquidity(
-    poolPrices: PoolPriceRecord[],
-  ): FeeMetrics | null {
+  static computeFeeAndLiquidity(poolPrices: PoolPriceRecord[]): FeeMetrics | null {
     if (poolPrices.length < 2) return null;
 
     const sorted = [...poolPrices]
       .filter((p) => p.feeGrowthGlobal0 !== "0" && p.feeGrowthGlobal1 !== "0")
-      .sort(
-        (a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-      );
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     if (sorted.length < 2) return null;
 
     const oldest = sorted[0];
     const newest = sorted[sorted.length - 1];
 
-    const timeDeltaSeconds =
-      (new Date(newest.timestamp).getTime() -
-        new Date(oldest.timestamp).getTime()) /
-      1000;
+    const timeDeltaSeconds = (new Date(newest.timestamp).getTime() - new Date(oldest.timestamp).getTime()) / 1000;
     if (timeDeltaSeconds < 60) return null;
 
-    const deltaFee0 =
-      Number(
-        BigInt(newest.feeGrowthGlobal0) - BigInt(oldest.feeGrowthGlobal0),
-      ) /
-      2 ** 128;
-    const deltaFee1 =
-      Number(
-        BigInt(newest.feeGrowthGlobal1) - BigInt(oldest.feeGrowthGlobal1),
-      ) /
-      2 ** 128;
+    const deltaFee0 = Number(BigInt(newest.feeGrowthGlobal0) - BigInt(oldest.feeGrowthGlobal0)) / 2 ** 128;
+    const deltaFee1 = Number(BigInt(newest.feeGrowthGlobal1) - BigInt(oldest.feeGrowthGlobal1)) / 2 ** 128;
 
     if (deltaFee0 === 0 && deltaFee1 === 0) return null;
 
@@ -83,17 +67,13 @@ export class MetricsService {
     if (capitalUsd === 0) return null;
 
     return {
-      feeApr:
-        (totalFeeUsd / capitalUsd / timeDeltaSeconds) *
-        MetricsService.SECONDS_PER_YEAR,
+      feeApr: (totalFeeUsd / capitalUsd / timeDeltaSeconds) * MetricsService.SECONDS_PER_YEAR,
       liquidityUsd: (liquidity * capitalUsd) / 1e6,
       timeDeltaSeconds,
     };
   }
 
-  static computeVolatility(
-    poolPrices: PoolPriceRecord[],
-  ): VolatilityMetrics | null {
+  static computeVolatility(poolPrices: PoolPriceRecord[]): VolatilityMetrics | null {
     if (poolPrices.length < 2) return null;
 
     const prices = poolPrices.map((p) => {
@@ -107,9 +87,7 @@ export class MetricsService {
 
     // Calculate standard deviation
     const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
-    const variance =
-      prices.reduce((sum, price) => sum + (price - mean) ** 2, 0) /
-      prices.length;
+    const variance = prices.reduce((sum, price) => sum + (price - mean) ** 2, 0) / prices.length;
     const standardDeviation = Math.sqrt(variance);
 
     // Normalized volatility as coefficient of variation (stddev / mean)
@@ -125,24 +103,16 @@ export class MetricsService {
   }
 
   // TODO: we could just pre-sort all values and then get the right slices with binary search
-  static getPoolPricesInWindow(
-    allPrices: PoolPriceRecord[],
-    windowSeconds: number,
-  ): PoolPriceRecord[] {
+  static getPoolPricesInWindow(allPrices: PoolPriceRecord[], windowSeconds: number): PoolPriceRecord[] {
     const now = Date.now();
     const cutoff = now - windowSeconds * 1000;
 
     return allPrices
       .filter((p) => new Date(p.timestamp).getTime() >= cutoff)
-      .sort(
-        (a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-      );
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }
 
-  static async calculateMetricsForChain(
-    chainId: number,
-  ): Promise<ChainMetrics | null> {
+  static async calculateMetricsForChain(chainId: number): Promise<ChainMetrics | null> {
     try {
       // Fetch enough data for last 24h
       const now = Date.now();
@@ -150,10 +120,7 @@ export class MetricsService {
       const minTimestamp = new Date(cutoff).toISOString();
 
       const allPrices = db.getPoolPricesForChain(chainId, minTimestamp);
-      allPrices.sort(
-        (a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-      );
+      allPrices.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
       if (allPrices.length === 0) {
         return null;
       }
@@ -161,9 +128,7 @@ export class MetricsService {
       // 30m, 4h, 1d
       const timeRanges = [30 * 60, 4 * 3600, 25 * 3600];
 
-      const dataSets = timeRanges.map((range) =>
-        MetricsService.getPoolPricesInWindow(allPrices, range),
-      );
+      const dataSets = timeRanges.map((range) => MetricsService.getPoolPricesInWindow(allPrices, range));
 
       return {
         chainId,
@@ -182,14 +147,11 @@ export class MetricsService {
     }
   }
 
-  static async calculateMetricsForAllChains(
-    chainIds: number[],
-  ): Promise<Map<number, ChainMetrics>> {
+  static async calculateMetricsForAllChains(chainIds: number[]): Promise<Map<number, ChainMetrics>> {
     const metrics = new Map<number, ChainMetrics>();
 
     for (const chainId of chainIds) {
-      const chainMetrics =
-        await MetricsService.calculateMetricsForChain(chainId);
+      const chainMetrics = await MetricsService.calculateMetricsForChain(chainId);
       if (chainMetrics) {
         metrics.set(chainId, chainMetrics);
       }

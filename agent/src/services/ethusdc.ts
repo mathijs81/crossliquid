@@ -48,22 +48,20 @@ export async function simulateEthToUsdcSwap(
   }
 
   try {
-    const result = await defaultReadRetryer.withRetry(
-      "simulateEthToUsdcSwap",
-      () =>
-        config.publicClient.simulateContract({
-          address: contracts.quoter,
-          abi: quoterAbi,
-          functionName: "quoteExactInputSingle",
-          args: [
-            {
-              poolKey: effectivePoolKey,
-              zeroForOne: true,
-              exactAmount: ethAmount,
-              hookData: "0x",
-            },
-          ],
-        }),
+    const result = await defaultReadRetryer.withRetry("simulateEthToUsdcSwap", () =>
+      config.publicClient.simulateContract({
+        address: contracts.quoter,
+        abi: quoterAbi,
+        functionName: "quoteExactInputSingle",
+        args: [
+          {
+            poolKey: effectivePoolKey,
+            zeroForOne: true,
+            exactAmount: ethAmount,
+            hookData: "0x",
+          },
+        ],
+      }),
     );
 
     return result.result[0];
@@ -79,10 +77,7 @@ export async function simulateEthToUsdcSwap(
   }
 }
 
-export async function getEthUsdcPoolPrice(
-  chainId: number,
-  poolKey?: PoolKey,
-): Promise<EthUsdcPoolPrice | null> {
+export async function getEthUsdcPoolPrice(chainId: number, poolKey?: PoolKey): Promise<EthUsdcPoolPrice | null> {
   const config = chains.get(chainId);
   if (!config) {
     throw new Error(`Chain ${chainId} not initialized`);
@@ -101,31 +96,29 @@ export async function getEthUsdcPoolPrice(
   try {
     const poolId = createPoolId(effectivePoolKey);
 
-    const results = await defaultReadRetryer.withRetry(
-      "getEthUsdcPoolPrice_multicall",
-      () =>
-        config.publicClient.multicall({
-          contracts: [
-            {
-              address: contracts.stateView,
-              abi: stateViewAbi,
-              functionName: "getSlot0",
-              args: [poolId],
-            },
-            {
-              address: contracts.stateView,
-              abi: stateViewAbi,
-              functionName: "getLiquidity",
-              args: [poolId],
-            },
-            {
-              address: contracts.stateView,
-              abi: stateViewAbi,
-              functionName: "getFeeGrowthGlobals",
-              args: [poolId],
-            },
-          ],
-        }),
+    const results = await defaultReadRetryer.withRetry("getEthUsdcPoolPrice_multicall", () =>
+      config.publicClient.multicall({
+        contracts: [
+          {
+            address: contracts.stateView,
+            abi: stateViewAbi,
+            functionName: "getSlot0",
+            args: [poolId],
+          },
+          {
+            address: contracts.stateView,
+            abi: stateViewAbi,
+            functionName: "getLiquidity",
+            args: [poolId],
+          },
+          {
+            address: contracts.stateView,
+            abi: stateViewAbi,
+            functionName: "getFeeGrowthGlobals",
+            args: [poolId],
+          },
+        ],
+      }),
     );
 
     const [slot0Result, liquidityResult, feeGrowthResult] = results;
@@ -135,11 +128,7 @@ export async function getEthUsdcPoolPrice(
       feeGrowthResult.status !== "success"
     ) {
       const failed = results
-        .map((r, i) =>
-          r.status === "failure"
-            ? ["slot0", "liquidity", "feeGrowthGlobals"][i]
-            : null,
-        )
+        .map((r, i) => (r.status === "failure" ? ["slot0", "liquidity", "feeGrowthGlobals"][i] : null))
         .filter(Boolean);
       logger.error({ chainId, failed }, "Multicall partial failure");
       return null;
@@ -166,9 +155,7 @@ export async function getEthUsdcPoolPrice(
   }
 }
 
-export async function collectEthUsdcData(
-  chainId: number,
-): Promise<EthUsdcData> {
+export async function collectEthUsdcData(chainId: number): Promise<EthUsdcData> {
   const poolKey = QUERY_POOL_KEYS[chainId];
   if (!poolKey) {
     throw new Error(`No default pool key for chain ${chainId}`);
@@ -176,17 +163,13 @@ export async function collectEthUsdcData(
 
   async function getEthPriceThroughSwap() {
     // We don't swap a full eth because limited liquidity might impact the price too much
-    const output = await defaultReadRetryer.withRetry(
-      "simulateEthToUsdcSwap",
-      () => simulateEthToUsdcSwap(chainId, poolKey, parseEther("0.05")),
+    const output = await defaultReadRetryer.withRetry("simulateEthToUsdcSwap", () =>
+      simulateEthToUsdcSwap(chainId, poolKey, parseEther("0.05")),
     );
     return 20n * output;
   }
 
-  const [usdcOutput, poolPrice] = await Promise.all([
-    getEthPriceThroughSwap(),
-    getEthUsdcPoolPrice(chainId, poolKey),
-  ]);
+  const [usdcOutput, poolPrice] = await Promise.all([getEthPriceThroughSwap(), getEthUsdcPoolPrice(chainId, poolKey)]);
 
   logger.info({ chainId, usdcOutput, poolPrice }, "Collected ETH-USDC data");
 

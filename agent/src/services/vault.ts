@@ -33,10 +33,7 @@ export interface VaultState {
   lastUpdated: string;
 }
 
-export const getVaultState = async (
-  chainId: number,
-  vaultAddress: `0x${string}`,
-): Promise<VaultState | null> => {
+export const getVaultState = async (chainId: number, vaultAddress: `0x${string}`): Promise<VaultState | null> => {
   const config = chains.get(chainId);
   if (!config) {
     return null;
@@ -79,9 +76,7 @@ export const getVaultState = async (
   }
 };
 
-export const getTotalVaultValue = async (
-  vaultStates: Map<number, VaultState>,
-): Promise<bigint> => {
+export const getTotalVaultValue = async (vaultStates: Map<number, VaultState>): Promise<bigint> => {
   let total = 0n;
   for (const state of vaultStates.values()) {
     if (state) {

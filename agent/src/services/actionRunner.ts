@@ -1,12 +1,6 @@
 import { logger } from "../logger.js";
 
-export type TaskStatus =
-  | "pre-start"
-  | "running"
-  | "completed"
-  | "failed"
-  | "stopped"
-  | "error";
+export type TaskStatus = "pre-start" | "running" | "completed" | "failed" | "stopped" | "error";
 
 export interface TaskInfo<T> {
   definitionName: string;
@@ -26,11 +20,7 @@ export function isActiveStatus(status: TaskStatus): boolean {
 
 let globalTaskCounter = 1;
 
-export function createNewTask<T>(
-  definitionName: string,
-  lockResources: string[],
-  data: T,
-): TaskInfo<T> {
+export function createNewTask<T>(definitionName: string, lockResources: string[], data: T): TaskInfo<T> {
   return {
     definitionName: definitionName,
     startedAt: Date.now(),
@@ -45,12 +35,7 @@ export function createNewTask<T>(
 }
 
 function isNotStarted(result: unknown): result is NotStartedTask {
-  return (
-    typeof result === "object" &&
-    result !== null &&
-    "message" in result &&
-    !("status" in result)
-  );
+  return typeof result === "object" && result !== null && "message" in result && !("status" in result);
 }
 
 export interface NotStartedTask {
@@ -77,10 +62,7 @@ export interface ActionDefinition<T> {
    * Start a task, put it in pre-start status. The first call to update()
    * should start it (allows us to persist the task before executing).
    */
-  start: (
-    existingTasks: TaskInfoUnknown[],
-    force: boolean,
-  ) => Promise<TaskInfo<T> | NotStartedTask>;
+  start: (existingTasks: TaskInfoUnknown[], force: boolean) => Promise<TaskInfo<T> | NotStartedTask>;
   /**
    * Make progress on this task if possible.
    * @returns The updated task info.
@@ -90,10 +72,7 @@ export interface ActionDefinition<T> {
 }
 
 export interface TaskStore {
-  getAllTasks: (
-    beginTimestamp: number,
-    endTimestamp?: number,
-  ) => Promise<TaskInfoUnknown[]>;
+  getAllTasks: (beginTimestamp: number, endTimestamp?: number) => Promise<TaskInfoUnknown[]>;
   getActiveTasks: () => Promise<TaskInfoUnknown[]>;
   getTask: (id: string) => Promise<TaskInfoUnknown | null>;
   addTask: (taskInfo: TaskInfoUnknown) => Promise<void>;
@@ -104,32 +83,21 @@ export class ActionRunner {
   private taskStore: TaskStore;
   private actionDefinitions: Map<string, ActionDefinition<unknown>>;
 
-  constructor(
-    taskStore: TaskStore,
-    actionDefinitions: ActionDefinition<unknown>[],
-  ) {
+  constructor(taskStore: TaskStore, actionDefinitions: ActionDefinition<unknown>[]) {
     this.taskStore = taskStore;
-    this.actionDefinitions = new Map(
-      actionDefinitions.map((definition) => [definition.name, definition]),
-    );
+    this.actionDefinitions = new Map(actionDefinitions.map((definition) => [definition.name, definition]));
   }
 
   async runActionLoop(signal?: AbortSignal) {
     const activeTasks = await this.taskStore.getActiveTasks();
 
-    logger.info(
-      { activeTasks: activeTasks.map((task) => task.definitionName) },
-      "Active tasks",
-    );
+    logger.info({ activeTasks: activeTasks.map((task) => task.definitionName) }, "Active tasks");
 
     // Make progress on active tasks
     const updateJobs = activeTasks.map(async (task) => {
       const definition = this.actionDefinitions.get(task.definitionName);
       if (!definition) {
-        logger.error(
-          { definitionName: task.definitionName },
-          "Task definition not found",
-        );
+        logger.error({ definitionName: task.definitionName }, "Task definition not found");
         return null;
       }
       try {
@@ -147,8 +115,7 @@ export class ActionRunner {
         // would set an error itself if it was an expected error
         logger.error({ task: task.id, error }, "Failed to update task");
         task.status = "error";
-        task.statusMessage =
-          error instanceof Error ? error.message : String(error);
+        task.statusMessage = error instanceof Error ? error.message : String(error);
         task.lastUpdatedAt = Date.now();
         task.finishedAt = Date.now();
         await this.taskStore.updateTask(task);
@@ -158,33 +125,23 @@ export class ActionRunner {
 
     const updatedTasks = await Promise.all(updateJobs);
     const stillActive = updatedTasks.filter(
-      (task): task is TaskInfoUnknown =>
-        task !== null && isActiveStatus(task.status),
+      (task): task is TaskInfoUnknown => task !== null && isActiveStatus(task.status),
     );
 
     if (signal?.aborted) return;
 
     // Collect locked resources from still-active tasks
-    const lockedResources = new Set(
-      stillActive.flatMap((task) => task.resourcesTaken),
-    );
+    const lockedResources = new Set(stillActive.flatMap((task) => task.resourcesTaken));
 
     // Find candidate actions whose resources are free
-    const candidateActions = Array.from(this.actionDefinitions.values()).filter(
-      (definition) =>
-        definition
-          .lockResources()
-          .every((resource) => !lockedResources.has(resource)),
+    const candidateActions = Array.from(this.actionDefinitions.values()).filter((definition) =>
+      definition.lockResources().every((resource) => !lockedResources.has(resource)),
     );
 
     // Start new tasks sequentially (new tasks may conflict with each other)
     for (const candidateAction of candidateActions) {
       if (signal?.aborted) break;
-      if (
-        candidateAction
-          .lockResources()
-          .some((resource) => lockedResources.has(resource))
-      ) {
+      if (candidateAction.lockResources().some((resource) => lockedResources.has(resource))) {
         continue;
       }
 
@@ -195,10 +152,7 @@ export class ActionRunner {
 
       const result = await candidateAction.start(stillActive, false);
       if (isNotStarted(result)) {
-        logger.debug(
-          { action: candidateAction.name, reason: result.message },
-          "Action decided not to start",
-        );
+        logger.debug({ action: candidateAction.name, reason: result.message }, "Action decided not to start");
         continue;
       }
 
@@ -215,20 +169,14 @@ export class ActionRunner {
         await this.taskStore.updateTask(updated);
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
-        logger.error(
-          { task: result.id, error: msg },
-          "Failed first update after start",
-        );
+        logger.error({ task: result.id, error: msg }, "Failed first update after start");
         result.status = "error";
         result.statusMessage = msg;
         result.finishedAt = Date.now();
         await this.taskStore.updateTask(result);
       }
 
-      logger.info(
-        { task: result.id, action: candidateAction.name },
-        "Started new task",
-      );
+      logger.info({ task: result.id, action: candidateAction.name }, "Started new task");
     }
   }
 }

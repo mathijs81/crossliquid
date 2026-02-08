@@ -73,8 +73,7 @@ class Agent {
 
       this.stats.lastError = null;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       this.stats.lastError = errorMessage;
       logger.error({ error: errorMessage }, "Error in agent loop");
     }
@@ -93,10 +92,7 @@ class Agent {
     if (this.actionLoopRunning) {
       logger.warn("Action loop still running, skipping");
       if (this.isRunning) {
-        setTimeout(
-          () => this.runActionLoop(actionIntervalMs),
-          actionIntervalMs,
-        );
+        setTimeout(() => this.runActionLoop(actionIntervalMs), actionIntervalMs);
       }
       return;
     }
@@ -113,10 +109,7 @@ class Agent {
       if (controller.signal.aborted) {
         logger.warn("Action loop aborted after timeout");
       } else {
-        logger.error(
-          { error: error instanceof Error ? error.message : String(error) },
-          "Error in action loop",
-        );
+        logger.error({ error: error instanceof Error ? error.message : String(error) }, "Error in action loop");
       }
     } finally {
       clearTimeout(timeoutId);

@@ -4,15 +4,7 @@ import path from "node:path";
 function readFile(name: string) {
   const currentDir = process.cwd();
   return fs.readFileSync(
-    path.join(
-      currentDir,
-      "..",
-      "foundry",
-      "broadcast",
-      "uniswapContracts",
-      "31337",
-      name,
-    ),
+    path.join(currentDir, "..", "foundry", "broadcast", "uniswapContracts", "31337", name),
     "utf8",
   );
 }

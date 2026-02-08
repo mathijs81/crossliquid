@@ -38,14 +38,10 @@ describe("Agent", () => {
 
   it("should not start multiple times", () => {
     agent.start(100);
-    const initialInterval = (
-      agent as unknown as { intervalId: NodeJS.Timeout | null }
-    ).intervalId;
+    const initialInterval = (agent as unknown as { intervalId: NodeJS.Timeout | null }).intervalId;
 
     agent.start(100);
-    const secondInterval = (
-      agent as unknown as { intervalId: NodeJS.Timeout | null }
-    ).intervalId;
+    const secondInterval = (agent as unknown as { intervalId: NodeJS.Timeout | null }).intervalId;
 
     expect(initialInterval).toBe(secondInterval);
     agent.stop();

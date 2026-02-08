@@ -65,16 +65,8 @@ class DatabaseService {
     `);
 
     // Migration: add feeGrowthGlobal columns to existing tables
-    this.migrateAddColumn(
-      "pool_prices",
-      "feeGrowthGlobal0",
-      "TEXT NOT NULL DEFAULT '0'",
-    );
-    this.migrateAddColumn(
-      "pool_prices",
-      "feeGrowthGlobal1",
-      "TEXT NOT NULL DEFAULT '0'",
-    );
+    this.migrateAddColumn("pool_prices", "feeGrowthGlobal0", "TEXT NOT NULL DEFAULT '0'");
+    this.migrateAddColumn("pool_prices", "feeGrowthGlobal1", "TEXT NOT NULL DEFAULT '0'");
   }
 
   private migrateAddColumn(table: string, column: string, type: string): void {
@@ -93,10 +85,7 @@ class DatabaseService {
     `);
 
     stmt.run(record.timestamp, record.chainId, record.usdcOutput);
-    logger.debug(
-      { chainId: record.chainId, usdcOutput: record.usdcOutput },
-      "Exchange rate inserted",
-    );
+    logger.debug({ chainId: record.chainId, usdcOutput: record.usdcOutput }, "Exchange rate inserted");
   }
 
   insertPoolPrice(record: PoolPriceRecord): void {
@@ -116,10 +105,7 @@ class DatabaseService {
       record.feeGrowthGlobal0,
       record.feeGrowthGlobal1,
     );
-    logger.debug(
-      { chainId: record.chainId, poolAddress: record.poolAddress },
-      "Pool price inserted",
-    );
+    logger.debug({ chainId: record.chainId, poolAddress: record.poolAddress }, "Pool price inserted");
   }
 
   getRecentRates(chainId?: number, limit = 100): ExchangeRateRecord[] {
@@ -141,21 +127,13 @@ class DatabaseService {
     return stmt.all(limit) as ExchangeRateRecord[];
   }
 
-  getPoolPricesForChain(
-    chainId: number,
-    minTimestamp: string,
-    maxTimestamp?: string,
-  ): PoolPriceRecord[] {
+  getPoolPricesForChain(chainId: number, minTimestamp: string, maxTimestamp?: string): PoolPriceRecord[] {
     const stmt = this.db.prepare<[number, string, string]>(`
       SELECT timestamp, chainId, poolAddress, sqrtPriceX96, tick, liquidity, fee, feeGrowthGlobal0, feeGrowthGlobal1 FROM pool_prices
       WHERE chainId = ? AND timestamp >= ? AND timestamp <= ?
       ORDER BY timestamp DESC
     `);
-    return stmt.all(
-      chainId,
-      minTimestamp,
-      maxTimestamp ?? "9999-99-99",
-    ) as PoolPriceRecord[];
+    return stmt.all(chainId, minTimestamp, maxTimestamp ?? "9999-99-99") as PoolPriceRecord[];
   }
 
   getRecentPoolPrices(limit = 256): PoolPriceRecord[] {

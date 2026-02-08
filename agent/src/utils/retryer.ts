@@ -29,16 +29,10 @@ class Retryer {
         return await promiseCreator();
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        const delay = Math.min(
-          this.baseDelayMs * 2 ** (attempt - 1),
-          this.maxDelayMs,
-        );
+        const delay = Math.min(this.baseDelayMs * 2 ** (attempt - 1), this.maxDelayMs);
 
         if (attempt < this.maxAttempts) {
-          logger.warn(
-            { name, attempt, delay, error: lastError.message },
-            `Operation failed try ${attempt}, retrying`,
-          );
+          logger.warn({ name, attempt, delay, error: lastError.message }, `Operation failed try ${attempt}, retrying`);
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
