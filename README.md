@@ -4,93 +4,67 @@
 
 ![CrossLiquid screenshot](./screenshot.png)
 
-## Goal
+# Goal
 
-Manage liquidity from a single vault cross-chain to find the best opportunities to generate LP fees while protecting against loss-versus-rebalancing and just-in-time liquidity sniping.
+CrossLiquid is agent-managed ETH-USDC Uniswap v4 liquidity across multiple chains. It finds the best opportunities for you to earn fees while protecting against loss-versus-rebalancing and just-in-time liquidity sniping.
 
-This prototype focuses on finding the best chains to provide USDC-ETH liquidity.
+## Current state
 
-## How it works
+Users can deposit ETH into a vault on Base, an off-chain agent scores liquidity opportunities per chain, and will swap with li.fi between ETH and USDC to be able to deploy liquidity into ETH-USDC Uniswap v4 pools. It also uses li.fi to move funds between chains.
 
-Users deposit their funds to the CrossLiquid vault on Base.
+The uniswap v4 pools are using a custom hook that allows the agent to dynamically adjust fees based on volatility. The deployment of liquidity from the vault into uniswap is fully automated, including rebalancing to keep the position in the optimal tick range.
 
-We have an off-chain agent that determines where to redistribute the funds across Base, Optimism, Unichain, Mainnet
+The cross-chain automated rebalance loop is still in progress, it is working via manual CLI commands.
+
+The data collection that the agent would use to adjust liquidity across the different chains is present and visible on the frontend.
+
+### Chains
+
+CrossLiquid runs locally on a foundry node, and because li.fi is not possible to test locally I deployed it on both Base and Unichain for demo use.
 
 ## Components
 
 ### 1. On-chain Vault (`CrossLiquidVault.sol`)
 
-A simple contract on Base that accepts donations and hands out `$CLQ` tokens. Basic mechanism to allow gradual withdrawals (e.g. keep ~5% of funds always available on Base, when depleted, the agent will repatriate funds back from the LP positions into the vault).
+A vault on Base that accepts deposits and mints `$CLQ` tokens. The intent is to keep a small liquid buffer on Base and repatriate from LP positions as needed.
 
-### 2. On-chain Uniswap pools with hooks
+### 2. Position manager (`PositionManager.sol`)
 
-- Guard against toxic flow (compare against oracle price)
+Owns the Uniswap v4 positions on each chain, exposes position/fee-growth lenses. It has a "operator" address that can execute calls as the manager to do swaps, add/remove liquidity and bridge funds to/from manager contracts on other chains.
 
-- Adjust fees to current market conditions to extract more fees in volatile conditions
+### 3. Uniswap v4 hook (`VolatilityFeeHook.sol`)
 
-- Only our liquidity is counted in the pool, no just-in-time fee sniping
+CrossLiquid deposits into Uniswap v4 pools with this custom hook. It allows the offchain agent to adjust fees based on volatility.
 
-- Fires events to see what's going on
+### 4. Off-chain agent (`agent/`)
 
-### 3. Off-chain agent (`agent/`)
+- Monitors pools across chains and computes a Liquidity Opportunity Score (LOS)
+- Executes swaps via Li.FI and prepares per-chain LP actions
+- Tracks in-flight actions to avoid double-adjusting
 
-- Monitor the pools on various chains, keep a "liquidity opportunity score" for each chain
+### 5. Frontend (`web/`)
 
-- Distribute vault funds between the various chain LPs
+Svelte UI to view liquidity opportunity scores, track the status of the LP positions and deposit funds into the vault.
 
-- Uses LI.FI composer to execute changes
+## Liquidity Opportunity Score (LOS)
 
-### 4. Frontend (`web/`)
+The Liquidity Opportunity Score (LOS) that the agent uses to score chains against each other is calculated based on the following variables:
+- Historic yield (on each chain, we track the hook-free 0.05% ETH/USDC univ4 pool and measure its fee growth). Higher yield is better.
+- Historic volatility. Higher volatility is better (but from the data it looks like the prices on all chains are perfectly correlated, so this variable is rarely very different between chains).
+- Gas fees. Higher gas fees are worse.
 
-- Svelte-based UI to deposit funds
 
-- Show current overview of pool distribution, Liquidity Opportunity Score per chain
+## Deferred / future work
 
-### 5. (stretch:) Simulator
+- hook: Make hook prevent other liquidity from being added to the pool (anti-JIT sniping)
+- hook: Include other on-chain price data to instantly react to big price swings with higher fees
+- vault: Redeem in the UI and make sure that there's always some liquid ETH in the vault
+- agent: Finish fully automated cross-chain rebalancing loop
+- Expand to more pairs beyond USDC-ETH
+- Move idle funds into lending protocols for extra yield
+- Simulator for tweaking how to do rebalancing, tick width, etc. to maximize yield while mitigating impermanent loss
 
-- Simulate historic trading patterns and how our setup would have (out?)performed vs naive singlechain LP.
-
-## Out of scope for this hackathon
-
-These things would be great to have, but to keep this project feasible for ~1 week of hacking, we choose to not focus on them now:
-
-- More pairs than just ETH-USDC
-
-- Increasing yield by storing idle funds into lending protocols
-
-## Implementation details (work-in-progress)
-
-- Liquidity Opportunity Score (LOS):
-  - Probably using variables:
-    - historic yield (+)
-    - deviation from the oracle price (+/-, depending on which asset we want to send)
-    - latency getting funds to the chain (-)
-    - gas fees of the chain (-)
-- Hook:
-  - Before swap:
-    - How to determine dynamic swap fee? How can we be friendly to aggregators so they won't skip our pool?
-  - What events to fire for best communication for the offchain agent?
-  - Access gating (probably automatic in the connection to Li.fi?)
-- Offchain agent:
-  - How do LOS scores translate to actual actions? (don't waste lots of gas on small adjustments)
-  - How to keep track of in-progress actions, prevent double-sending adjustments?
-  - Base logic, loop of:
-    1. Collect information from all pools & vault and calculate LOS for each chain
-    2. Determine 'ideal' distribution and necessary actions
-    3. Send actions to li.fi composer (compensating for in-flight actions)
-
-## Other open questions
-
-- Li.fi composer doesn't support direct Uniswap LP'ing, how do I get the funds into the pool?
-  
-   --> We send funds between our PoolManager contracts on different chains and the offchain agent manages into/out of LP positions
-- Historic yield: how do we get this without building a historical yield database?
-
-## Relevant links
-
-- [Composer (Composer & on-chain flow composition) - LI.FI](https://docs.li.fi/introduction/user-flows-and-examples/lifi-composer#key-benefits-of-li-fi-composer)
-
-Forked off [svelte-scaffold-eth: A modern starter template for building Ethereum dApps with SvelteKit 5, Foundry, and DaisyUI.](https://github.com/mathijs81/svelte-scaffold-eth)
+This project was forked off [svelte-scaffold-eth: A modern starter template for building Ethereum dApps with SvelteKit 5, Foundry, and DaisyUI.](https://github.com/mathijs81/svelte-scaffold-eth)
 
 ## Quick Start
 
@@ -104,15 +78,14 @@ git submodule update --init --recursive
 # Install dependencies for both foundry and web
 pnpm install
 
-# Start local Foundry node (in terminal 1)
-pnpm chain
+# Start local Foundry node (in terminal 1) and deploy contracts
+just run-chain
 
-# Deploy contracts + generate `web/src/lib/contracts/generated.*.ts` (in terminal 2)
-pnpm deploy:anvil
-pnpm generate
+# Start the agent (terminal 2)
+cd agent; pnpm dev
 
 # Start the web dev server (in terminal 3)
-pnpm dev
+cd web; pnpm dev
 
 # Open http://localhost:5173
 ```
@@ -120,62 +93,12 @@ pnpm dev
 Your app is now running with:
 
 - Local Foundry node on `http://localhost:8545`
-- CrossLiquid contracts (Vault, PositionManager) deployed
+- CrossLiquid contracts (Vault, PositionManager, VolatilityFeeHook) deployed
 - Uniswap v4 infrastructure (PoolManager, USDC, WETH, initialized pool)
-- Contracts deployed via Foundry scripts (see `foundry/broadcast/`)
-- Generated contract deployment/ABI map at `web/src/lib/contracts/generated.*.ts`
+- Agent running locally
+- Web frontend running locally
 
-**Note**: `pnpm deploy:anvil` automatically deploys both CrossLiquid contracts AND Uniswap v4 infrastructure for local testing.
 
-## Development Workflow
-
-### Uniswap v4 Local Deployment
-
-The deployment script automatically deploys Uniswap v4 infrastructure for local testing:
-- **PoolManager**: Core v4 singleton contract
-- **Mock Tokens**: USDC (6 decimals) and WETH (18 decimals)
-- **Initialized Pool**: USDC-WETH pool with 0.3% fee tier
-
-To deploy Uniswap v4 separately:
-```bash
-# Deploy just Uniswap v4 (useful for testing)
-cd foundry && pnpm deploy:uniswap:anvil
-
-# With test tokens minted to deployer
-MINT_TOKENS=true pnpm deploy:uniswap:anvil
-```
-
-### Testing
-
-```bash
-# Run all tests (including Uniswap v4 integration)
-pnpm test:contracts
-
-# Run only Uniswap v4 tests
-cd foundry && forge test --match-contract PositionManagerUniswap
-
-# Gas report
-pnpm test:gas
-```
-
-### Contract Structure
-
-```
-foundry/
-├── src/
-│   ├── CrossLiquidVault.sol        # ERC20 vault for deposits
-│   └── PositionManager.sol          # Manages Uniswap positions & bridging
-├── script/
-│   ├── Deploy.s.sol                 # CrossLiquid deployment
-│   └── DeployUniswapV4.s.sol       # Uniswap v4 local deployment
-└── test/
-    ├── CrossLiquidVault.t.sol
-    ├── PositionManager.t.sol
-    ├── PositionManagerUniswap.t.sol # Uniswap v4 integration tests
-    └── Integration.t.sol
-```
-
-See `docs/uniswap-v4-integration.md` for detailed integration guide.
 
 ## License
 
@@ -197,6 +120,7 @@ MIT
 
 - [svelte-scaffold-eth](https://github.com/mathijs81/svelte-scaffold-eth)
 - [scaffold-eth-2](https://github.com/scaffold-eth/scaffold-eth-2) - The original inspiration for svelte-scaffold-eth
+- [OpenZeppelin SDK](https://github.com/OpenZeppelin/) for smart contract development
 - [@wagmi/core](https://wagmi.sh/core) - Framework-agnostic Ethereum library
 - [viem](https://viem.sh) - TypeScript library for Ethereum
 - [Foundry](https://getfoundry.sh) - Fast, portable, and modular toolkit for Ethereum
