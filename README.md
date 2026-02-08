@@ -6,17 +6,30 @@
 
 # Goal
 
-CrossLiquid is agent-managed ETH-USDC Uniswap v4 liquidity across multiple chains. It finds the best opportunities for you to earn fees while protecting against loss-versus-rebalancing and just-in-time liquidity sniping.
+CrossLiquid creates agent-managed, cross-chain liquidity for earning fees on USDC-ETH pairs across Uniswap v4 pools.
+
+Concentrated liquidity can generate great yield, but it comes with amplified impermanent loss and requires constant rebalancing. The best opportunities shift between chains. Managing this manually is a hassle.
+
+CrossLiquid's agent automatically:
+- Manages and rebalances concentrated positions
+- Moves funds to whichever chain has the best yield
+- Protects against loss-versus-rebalancing and just-in-time liquidity sniping
 
 ## Current state
 
-Users can deposit ETH into a vault on Base, an off-chain agent scores liquidity opportunities per chain, and will swap with li.fi between ETH and USDC to be able to deploy liquidity into ETH-USDC Uniswap v4 pools. It also uses li.fi to move funds between chains.
+**Working:**
+- Users can deposit ETH into a vault on Base, get $CLQ tokens in return
+- Off-chain agent scores liquidity opportunities per chain
+- Agent swaps between ETH and USDC via li.fi and deploys into ETH-USDC Uniswap v4 pools
+- Agent moves funds between chains via li.fi
+- Automated deployment and rebalancing of liquidity to keep positions in optimal tick range
+- Data collection for scoring chains is live and visible on the frontend
 
-The uniswap v4 pools are using a custom hook that allows the agent to dynamically adjust fees based on volatility. The deployment of liquidity from the vault into uniswap is fully automated, including rebalancing to keep the position in the optimal tick range.
+**In progress:**
+- Fully automated cross-chain rebalance loop (works, but triggered via manual CLI commands)
+- Dynamic fee adjustment based on volatility (hook infrastructure is ready, adjustment logic not yet implemented)
 
-The cross-chain automated rebalance loop is still in progress, it is working via manual CLI commands.
-
-The data collection that the agent would use to adjust liquidity across the different chains is present and visible on the frontend.
+![how it works](./howitworks.svg)
 
 ### Chains
 
@@ -34,7 +47,7 @@ Owns the Uniswap v4 positions on each chain, exposes position/fee-growth lenses.
 
 ### 3. Uniswap v4 hook (`VolatilityFeeHook.sol`)
 
-CrossLiquid deposits into Uniswap v4 pools with this custom hook. It allows the offchain agent to adjust fees based on volatility.
+CrossLiquid deposits into Uniswap v4 pools with this custom hook. The hook infrastructure allows for dynamic fee adjustment based on volatility (implementation in progress).
 
 ### 4. Off-chain agent (`agent/`)
 
@@ -48,10 +61,10 @@ Svelte UI to view liquidity opportunity scores, track the status of the LP posit
 
 ## Liquidity Opportunity Score (LOS)
 
-The Liquidity Opportunity Score (LOS) that the agent uses to score chains against each other is calculated based on the following variables:
-- Historic yield (on each chain, we track the hook-free 0.05% ETH/USDC univ4 pool and measure its fee growth). Higher yield is better.
-- Historic volatility. Higher volatility is better (but from the data it looks like the prices on all chains are perfectly correlated, so this variable is rarely very different between chains).
-- Gas fees. Higher gas fees are worse.
+The Liquidity Opportunity Score (LOS) that the agent uses to score chains against each other is calculated based on:
+- **Historic yield** - tracks the hook-free 0.05% ETH/USDC univ4 pool on each chain and measures fee growth. Higher yield is better.
+- **Historic volatility** - higher volatility means more trading activity and fees. However, prices across all chains are extremely highly correlated, so this variable rarely differs significantly between chains.
+- **Gas fees** - higher gas costs reduce net yield and are weighted negatively.
 
 
 ## Deferred / future work
