@@ -1,6 +1,7 @@
 <script lang="ts">
 import WalletWarning from "$lib/components/WalletWarning.svelte";
 import PositionStats from "$lib/components/stats/PositionStats.svelte";
+import Actions from "$lib/components/stats/Actions.svelte";
 </script>
 
 <div class="container mx-auto p-4">
@@ -16,5 +17,6 @@ import PositionStats from "$lib/components/stats/PositionStats.svelte";
     <WalletWarning />
 
     <PositionStats />
+    <Actions />
   </div>
 </div>

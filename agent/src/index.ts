@@ -3,10 +3,14 @@ import { agent } from "./agent.js";
 import { logger } from "./logger.js";
 import { db } from "./services/database.js";
 import { ENVIRONMENT } from "./env.js";
+import { initializeTaskDatabase } from "./services/taskStore.js";
 
 const fastify = Fastify({
   loggerInstance: logger,
 });
+
+// Initialize task database for /tasks endpoint (same store as CLI list-tasks)
+const taskStore = initializeTaskDatabase();
 
 // Health check endpoint
 fastify.get("/health", async () => {
@@ -37,6 +41,22 @@ fastify.get("/pool-prices", async (request) => {
   const parsedLimit = limit ? Number.parseInt(limit, 10) : 256;
   return db.getRecentPoolPrices(parsedLimit);
 });
+
+// Agent actions/tasks (same data as CLI list-tasks)
+fastify.get("/tasks", async (request) => {
+  const { limit } = request.query as { limit?: string };
+  const parsedLimit = limit ? Number.parseInt(limit, 10) : 50;
+  const tasks = await taskStore.getRecentTasks(parsedLimit);
+  return tasks;
+});
+// actions may have bigints, so add prehook to change them:
+
+fastify.setReplySerializer((payload, statusCode) => {
+  return JSON.stringify(payload, (key, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  );
+});
+
 
 // Comprehensive metrics endpoint - combines metrics, LOS, and pool prices
 fastify.get("/metrics", async (request) => {
