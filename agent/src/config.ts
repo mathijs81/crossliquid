@@ -31,6 +31,8 @@ export interface PoolKey {
 
 export const databasePath =
   ENVIRONMENT === "production" ? "./data/agent.db" : "./data/agent-dev.db";
+export const taskDbPath =
+  ENVIRONMENT === "production" ? "./data/tasks.db" : "./data/tasks-dev.db";
 
 export const ETHUSDC_POOLS: Record<number, string[]> = {
   8453: [],

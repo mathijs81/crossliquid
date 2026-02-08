@@ -21,6 +21,7 @@ import {
 } from "./services/positionManager.js";
 import { SwappingService } from "./services/swapping.js";
 import { moveManagerEthCrossChain } from "./actions/lifiCrossChain.js";
+import { initializeTaskDatabase } from "./services/taskStore.js";
 
 const ZERO_ADDRESS: Address = "0x0000000000000000000000000000000000000000";
 
@@ -34,6 +35,7 @@ const COMMANDS = {
   "dump-usdc-transfers": "Dump all USDC transfers from the manager",
   "price-to-sqrt": "Convert ETH price to sqrtPriceX96 format",
   "move-cross-chain": "Move manager funds between chains using LiFi",
+  "list-tasks": "List recent tasks from the task store",
   help: "Show this help message",
 } as const;
 
@@ -84,6 +86,9 @@ function showHelp() {
   console.log();
   console.log("  # Convert ETH price to sqrtPriceX96");
   console.log("  pnpm cli price-to-sqrt --price 2042");
+  console.log();
+  console.log("  # List recent tasks");
+  console.log("  pnpm cli list-tasks --limit 10");
 }
 
 async function listPositions(service: PositionManagerService) {
@@ -397,6 +402,62 @@ async function main() {
           dryRun,
         );
         console.log(`Output: ${output}`);
+        break;
+      }
+
+      case "list-tasks": {
+        const { values } = parseArgs({
+          args: args.slice(1),
+          options: {
+            limit: { type: "string", default: "20" },
+            "db-path": { type: "string" },
+          },
+        });
+
+        const limit = Number(values.limit);
+        if (Number.isNaN(limit) || limit <= 0) {
+          console.error("--limit must be a positive number");
+          process.exit(1);
+        }
+
+        const dbPath = values["db-path"] ?? "./dockdata/tasks.db";
+        const taskStore = initializeTaskDatabase(dbPath);
+        const tasks = await taskStore.getRecentTasks(limit);
+
+        if (tasks.length === 0) {
+          console.log("No tasks found");
+          break;
+        }
+
+        console.log(`\nFound ${tasks.length} task(s):\n`);
+        for (const task of tasks) {
+          const startedDate = new Date(task.startedAt).toISOString();
+          const duration = task.finishedAt
+            ? `${((task.finishedAt - task.startedAt) / 1000).toFixed(1)}s`
+            : "ongoing";
+
+          const statusIcon =
+            task.status === "completed"
+              ? "✓"
+              : task.status === "failed" || task.status === "error"
+                ? "✗"
+                : task.status === "running"
+                  ? "⟳"
+                  : "○";
+
+          console.log(`${statusIcon} ${task.definitionName}`);
+          console.log(`  ID: ${task.id}`);
+          console.log(`  Status: ${task.status}`);
+          console.log(`  Started: ${startedDate}`);
+          console.log(`  Duration: ${duration}`);
+          if (task.statusMessage) {
+            console.log(`  Message: ${task.statusMessage}`);
+          }
+          if (task.resourcesTaken.length > 0) {
+            console.log(`  Resources: ${task.resourcesTaken.join(", ")}`);
+          }
+          console.log();
+        }
         break;
       }
 
