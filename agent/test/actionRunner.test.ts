@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import type {
   ActionDefinition,
@@ -7,7 +6,11 @@ import type {
   TaskInfoUnknown,
   TaskStore,
 } from "../src/services/actionRunner.js";
-import { ActionRunner, isActiveStatus } from "../src/services/actionRunner.js";
+import {
+  ActionRunner,
+  createNewTask,
+  isActiveStatus,
+} from "../src/services/actionRunner.js";
 
 // --- In-memory TaskStore ---
 
@@ -67,7 +70,7 @@ function makeCounterAction(
     ) => Promise<TaskInfo<CounterTaskData> | NotStartedTask>;
   },
 ): ActionDefinition<CounterTaskData> {
-  return {
+  const definition: ActionDefinition<CounterTaskData> = {
     name,
     lockResources: () => resources,
 
@@ -77,17 +80,8 @@ function makeCounterAction(
 
     start:
       opts?.start ??
-      (async (_activeTasks, _force) => ({
-        id: randomUUID(),
-        definitionName: name,
-        startedAt: Date.now(),
-        lastUpdatedAt: Date.now(),
-        finishedAt: null,
-        status: "pre-start" as const,
-        statusMessage: "waiting to start",
-        taskData: { updatesRemaining: updatesUntilDone },
-        resourcesTaken: resources,
-      })),
+      (async (_activeTasks, _force) =>
+        createNewTask(name, resources, { updatesRemaining: updatesUntilDone })),
 
     update: async (taskInfo) => {
       // First update: transition from pre-start to running
@@ -120,6 +114,7 @@ function makeCounterAction(
 
     stop: async () => {},
   };
+  return definition;
 }
 
 /**
@@ -135,17 +130,9 @@ function makeOneTimeAction(
     shouldStart: () => !hasStarted,
     start: async (_activeTasks, _force) => {
       hasStarted = true;
-      return {
-        id: randomUUID(),
-        definitionName: name,
-        startedAt: Date.now(),
-        lastUpdatedAt: Date.now(),
-        finishedAt: null,
-        status: "pre-start" as const,
-        statusMessage: "waiting to start",
-        taskData: { updatesRemaining: updatesUntilDone },
-        resourcesTaken: resources,
-      };
+      return createNewTask(name, resources, {
+        updatesRemaining: updatesUntilDone,
+      });
     },
   });
 }
@@ -423,6 +410,7 @@ describe("ActionRunner", () => {
       // Tick 2: completes, then immediately restarts (same tick)
       await runner.runActionLoop();
       expect(store.tasks).toHaveLength(2);
+      console.log(store.tasks);
       expect(store.tasks[0].status).toBe("completed");
       expect(store.tasks[1].status).toBe("running");
     });

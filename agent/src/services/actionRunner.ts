@@ -24,6 +24,26 @@ export function isActiveStatus(status: TaskStatus): boolean {
   return status === "pre-start" || status === "running";
 }
 
+let globalTaskCounter = 1;
+
+export function createNewTask<T>(
+  definitionName: string,
+  lockResources: string[],
+  data: T,
+): TaskInfo<T> {
+  return {
+    definitionName: definitionName,
+    startedAt: Date.now(),
+    lastUpdatedAt: Date.now(),
+    finishedAt: null,
+    status: "pre-start",
+    statusMessage: "waiting to start",
+    id: `${definitionName}-${Date.now()}-${globalTaskCounter++}`,
+    taskData: data,
+    resourcesTaken: lockResources,
+  };
+}
+
 function isNotStarted(result: unknown): result is NotStartedTask {
   return (
     typeof result === "object" &&
